@@ -91,8 +91,6 @@
           (if (= context Parser$ParseContext/ACCEPT_LINE)
             (when-not (has-valid-forms-at? line cursor)
               (indent @line-reader-prom line cursor)
-              ;; indent here with delay
-              ;; better to override acceptLine
               (throw (EOFError. -1 -1 "Unbalanced Expression" (str *ns*))))
             (proxy-super parse line cursor context))))
     (.setQuoteChars (char-array [\"]))))

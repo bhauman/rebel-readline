@@ -62,6 +62,7 @@
 
 (def string-literal #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
 (def unterm-string-literal #"\"[^\"\\]*(?:\\.[^\"\\]*)*$")
+
 (def not-delimiter-exp #"[^{}\[\]\(\)\s,\"]")
 
 (def delimiter-exp #"[{}\[\]\(\)\s,\"]")
@@ -73,6 +74,8 @@
 
 (def delimiter-include-fslash-exp #"[{}\[\]\(\)\s,\"\/]")
 (def not-delimiter-or-fslash-exp #"[^{}\[\]\(\)\s,\"\/]")
+
+(def not-delimiter-or-period-exp #"[^{}\[\]\(\)\s,\"\.]")
 
 ;; fix this with look-aheads and look-behind
 (def meta-data-exp (str "(?:\\^(?:\\{[^\\}]*\\}|" not-delimiter-exp "+)" delimiter-exp "*)" ))
@@ -144,6 +147,17 @@
        "(%\\d?)"
        followed-by-delimiter))
 
+(def namespace-exp
+  (str preceeded-by-delimiter
+       "((?:" not-delimiter-or-period-exp "+\\.)+"
+       not-delimiter-or-period-exp "+)"))
+
+;; a little trickier
+
+#_(def sexp-comment-atom #"\#_(?!\s*(\(\)\{\}\[\]))")
+
+#_(def sexp-comment #"\#_" )
+
 (defn token-tagger [syntax-str]
   (match-styles syntax-str
                 (Pattern/compile (str
@@ -160,7 +174,8 @@
                                   namespaced-symbol-exp "|"
                                   classname-exp "|"
                                   interop-call-exp "|"
-                                  function-arg-exp))
+                                  function-arg-exp "|"
+                                  namespace-exp))
               :string-literal
               :line-comment
               :def-call
@@ -183,9 +198,10 @@
               :classname
               :interop-call
               :function-arg
+              :namespace
               ))
 
-#_(time (highlights code-str))
+#_(time (token-tagger code-str))
 
 ;; TODO tune colors later
 ;; TODO add backup colors when the terminal can't handle 256 colors
@@ -197,25 +213,25 @@
 (defn fg-color [color]
   (.foreground AttributedStyle/DEFAULT color))
 
-
 (def highlight-colors
-  {:unterm-string-literal (fg-color 1)            #_AttributedStyle/RED
+  {:unterm-string-literal (fg-color 1)             #_AttributedStyle/RED
    :string-literal        (.bold (fg-color 180))   #_AttributedStyle/YELLOW
-   :def-doc-string        (.bold (fg-color 223))           #_AttributedStyle/YELLOW
-   :def-call              (.bold (fg-color 39))            #_AttributedStyle/BLUE
-   :def-varname           (.bold (fg-color 178))           #_AttributedStyle/MAGENTA
+   :def-doc-string        (.bold (fg-color 223))   #_AttributedStyle/YELLOW
+   :def-call              (.bold (fg-color 39))    #_AttributedStyle/BLUE
+   :def-varname           (.bold (fg-color 178))   #_AttributedStyle/MAGENTA
    :def-val-varname       (.bold (fg-color 85))    #_AttributedStyle/MAGENTA
-   :core-macro            (.bold (fg-color 39))     #_AttributedStyle/BLUE
-   :core-fn               (.bold (fg-color 178)) #_AttributedStyle/MAGENTA
-   :special-form          (.bold (fg-color 39))  #_AttributedStyle/CYAN
-   :keyword-colon         (.bold (fg-color 149)) #_AttributedStyle/GREEN
-   :keyword-namespace     (.bold (fg-color 123)) #_AttributedStyle/CYAN
-   :keyword-body          (.bold (fg-color 149)) #_AttributedStyle/GREEN
+   :core-macro            (.bold (fg-color 39))    #_AttributedStyle/BLUE
+   :core-fn               (.bold (fg-color 178))   #_AttributedStyle/MAGENTA
+   :special-form          (.bold (fg-color 39))    #_AttributedStyle/CYAN
+   :keyword-colon         (.bold (fg-color 149))   #_AttributedStyle/GREEN
+   :keyword-namespace     (.bold (fg-color 123))   #_AttributedStyle/CYAN
+   :keyword-body          (.bold (fg-color 149))   #_AttributedStyle/GREEN
    :symbol-namespace      (.bold (fg-color 123))
    :classname             (.bold (fg-color 123))
    :function-arg          (.bold (fg-color 85))
    :interop-call          (.bold (fg-color 220))
-   :line-comment          (.bold (fg-color 243))})
+   :line-comment          (.bold (fg-color 243))
+   :namespace             (.bold (fg-color 123))})
 
 #_(println (str (char 27) "[1;38;5;222m" ".asdfasdfasdf" (char 27 ) "0m") )
 
