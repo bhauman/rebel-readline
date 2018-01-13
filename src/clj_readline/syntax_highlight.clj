@@ -49,68 +49,71 @@
   (filter-core-var-meta #(and (:arglists %)
                               (not (:macro %)))))
 
+(defn core-vars []
+  (filter-core-var-meta #(and (not (:arglists %))
+                              (not (:macro %))
+                              (.startsWith (-> % :name name) "*"))))
+
 (def special-forms (map name '[#_def if do quote var recur throw try catch
                                monitor-enter monitor-exit new set!]))
 
 (def preceeding-paren "(?<=\\(\\s{0,3})")
 
-#_(def list-start-exp #"\(\s*")
+(def string-literal #"(?<!\\)\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
+(def unterm-string-literal #"(?<!\\)\"[^\"\\]*(?:\\.[^\"\\]*)*$")
 
-;; TODO clean up repetition here
-;; easier to read if you define as regex first and let str change it to a string
-;; handle meta and other reads as delimiters?
+(def delimiter-exps (map str #{#"\s" #"\{" #"\}" #"\(" #"\)" #"\[" #"\]" #"," #"\"" #"\^" #"\'" #"\#"}))
 
-(def string-literal #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
-(def unterm-string-literal #"\"[^\"\\]*(?:\\.[^\"\\]*)*$")
+(defn delims [f]
+  (string/join (map str (f delimiter-exps))))
 
-(def not-delimiter-exp #"[^{}\[\]\(\)\s,\"]")
+(def delimiters (delims identity))
 
-(def delimiter-exp #"[{}\[\]\(\)\s,\"]")
+(def delimiter-exp     (str "["  delimiters "]"))
+(def not-delimiter-exp (str "[^" delimiters "]"))
 
-(def delimiter-exp-minus-quote #"[{}\[\]\(\)\s,]")
+(def delimiter-exp-minus-quote    (str "["  (delims (partial remove #{"\\\""})) "]"))
+(def delimiter-exp-minus-meta     (str "["  (delims (partial remove #{"\\^"}))  "]"))
 
-(def delimiter-or-beginning-of-line-exp #"(?<=^|[{}\[\]\(\)\s,\"])")
-(def delimiter-or-end-of-line-exp #"(?=$|[{}\[\]\(\)\s,\"])")
-
-(def delimiter-include-fslash-exp #"[{}\[\]\(\)\s,\"\/]")
-(def not-delimiter-or-fslash-exp #"[^{}\[\]\(\)\s,\"\/]")
-
-(def not-delimiter-or-period-exp #"[^{}\[\]\(\)\s,\"\.]")
+(def delimiter-include-fslash-exp (str "["  (delims (partial cons #"\/")) "]"))
+(def not-delimiter-or-fslash-exp  (str "[^" (delims (partial cons #"\/")) "]"))
+(def not-delimiter-or-period-exp  (str "[^" (delims (partial cons #"\.")) "]"))
 
 ;; fix this with look-aheads and look-behind
-(def meta-data-exp (str "(?:\\^(?:\\{[^\\}]*\\}|" not-delimiter-exp "+)" delimiter-exp "*)" ))
+(def meta-data-exp (str "(?:[\\^]\\{[^\\}]+\\}|[\\^]" not-delimiter-exp "+)"))
+
+(def meta-data-area-exp (str "(?:" delimiter-exp-minus-meta "{0,5}"
+                             "(?:" meta-data-exp "))+"))
 
 (def end-line-comment-regexp #"(;[^\n]*)\n")
 
 (def followed-by-delimiter (str "(?=" delimiter-exp "|$)"))
 (def preceeded-by-delimiter (str "(?<=" delimiter-exp "|^)"))
 
+(def metadata-name-exp
+  (str "(?:" meta-data-area-exp ")?"
+       delimiter-exp "*"
+       "(" not-delimiter-exp "+)?"))
+
+(def metadata-name-docs-exp
+  (str metadata-name-exp
+       delimiter-exp-minus-quote "*"
+       "(" string-literal ")?"))
+
 (def def-with-doc
   (str preceeding-paren
        "(defn|defmacro|defn-|defprotocol|defmulti)"  ;;defn
-       delimiter-exp "+"
-       meta-data-exp "*"
-       "(" not-delimiter-exp "+)?"    ;; name
-       delimiter-exp-minus-quote "*"
-       "(" string-literal ")?"))     ;; docs
+       metadata-name-docs-exp)) 
 
 (def other-def
   (str preceeding-paren
        "(def" not-delimiter-exp "+)"
-       delimiter-exp "+"
-       meta-data-exp "*"
-       "(" not-delimiter-exp "+)?"    ;; name
-       ))
+       metadata-name-exp))
 
 (def simple-def
   (str preceeding-paren
        "(def)"
-       delimiter-exp "+"
-       meta-data-exp "*"
-       "(" not-delimiter-exp "+)?" ;; name
-       delimiter-exp-minus-quote "*"
-       "(" string-literal ")?" ;; docs
-       ))
+       metadata-name-docs-exp))
 
 (def core-macro-exp (str
                      preceeding-paren
@@ -124,6 +127,10 @@
 (def core-fns-exp (str preceeded-by-delimiter
                        (vars-to-reg-or-str (core-fns))
                        followed-by-delimiter))
+
+(def core-vars-exp (str preceeded-by-delimiter
+                        (vars-to-reg-or-str (core-vars))
+                        followed-by-delimiter))
 
 (def keyword-exp (str preceeded-by-delimiter
                       "(:)(?:(" not-delimiter-or-fslash-exp "+)\\/)?(" 
@@ -142,6 +149,10 @@
   (str preceeded-by-delimiter
        "(\\." not-delimiter-or-fslash-exp "+)"))
 
+(def protocol-def-name-exp
+  (str preceeded-by-delimiter
+       "([a-z]" not-delimiter-exp "*" "[A-Z]" not-delimiter-exp "+)"))
+
 (def function-arg-exp
   (str preceeded-by-delimiter
        "(%\\d?)"
@@ -152,11 +163,15 @@
        "((?:" not-delimiter-or-period-exp "+\\.)+"
        not-delimiter-or-period-exp "+)"))
 
-;; a little trickier
+(def character-exp
+  (str preceeded-by-delimiter
+       #"(\\[^\s]|\\\w+|\\o\d+|\\u\d+)"
+       followed-by-delimiter))
 
-#_(def sexp-comment-atom #"\#_(?!\s*(\(\)\{\}\[\]))")
-
-#_(def sexp-comment #"\#_" )
+(def dynamic-var-exp
+  (str preceeded-by-delimiter
+       "(\\*" not-delimiter-exp  "+\\*)"
+       followed-by-delimiter))
 
 (defn token-tagger [syntax-str]
   (match-styles syntax-str
@@ -170,12 +185,16 @@
                                   special-form-exp "|"
                                   "(" unterm-string-literal ")|"
                                   core-fns-exp "|"
+                                  core-vars-exp "|"
                                   keyword-exp "|"
                                   namespaced-symbol-exp "|"
                                   classname-exp "|"
                                   interop-call-exp "|"
                                   function-arg-exp "|"
-                                  namespace-exp))
+                                  namespace-exp "|"
+                                  character-exp "|"
+                                  protocol-def-name-exp "|"
+                                  dynamic-var-exp))
               :string-literal
               :line-comment
               :def-call
@@ -190,6 +209,7 @@
               :special-form
               :unterm-string-literal
               :core-fn
+              :core-var
               :keyword-colon
               :keyword-namespace
               :keyword-body
@@ -199,14 +219,12 @@
               :interop-call
               :function-arg
               :namespace
+              :character
+              :protocol-def-name
+              :dynamic-var
               ))
 
-#_(time (token-tagger code-str))
-
-;; TODO tune colors later
-;; TODO add backup colors when the terminal can't handle 256 colors
-;; TODO make this richer to handle bold underline actually these
-;; keys should just point to AttributedStyle's
+#_(time (token-tagger (apply str (repeat 100 code-str))))
 
 ;; TODO add colors for light background
 
@@ -231,7 +249,11 @@
    :function-arg          (.bold (fg-color 85))
    :interop-call          (.bold (fg-color 220))
    :line-comment          (.bold (fg-color 243))
-   :namespace             (.bold (fg-color 123))})
+   :namespace             (.bold (fg-color 123))
+   :character             (.bold (fg-color 180))
+   :protocol-def-name     (.bold (fg-color 220))
+   :core-var              (.bold (fg-color 167))
+   :dynamic-var           (.bold (fg-color 85))})
 
 #_(println (str (char 27) "[1;38;5;222m" ".asdfasdfasdf" (char 27 ) "0m") )
 
@@ -260,16 +282,16 @@
 
 #_ (time (highlight-clj-str code-str))
 
-(def code-str
-  "(defn parsed-line      \"asdfasdf how \\\" is {} that\"  [{:keys [cursor line word word-cursor word-index words]}]
+#_(def code-str
+  "(defn ^asdfa ^asd parsed-line      \"asdfasdf how \\\" is {} that\"  [{:keys [cursor line word word-cursor word-index words]}]
   (assert (and cursor, line, word, word-cursor, word-index words))
   (do stuff)
   (proxy [ParsedLine] [] ;comment 1
     (pr \"hello\");; comment 2 
-    (anda)
+    (anda) *ns* *asf*
     \"asdfasdf how \\\" is {} that\"
     (.cursor [] cursor)
-    (line [] line) %1
+    (line [] line) %1 \\\" \\space
     :asdfasdf/keyword-yep :a/cow :car
     (syn-name/asdfasd [] word) 
     \"asdfasdf how \\\" is {} that\"1

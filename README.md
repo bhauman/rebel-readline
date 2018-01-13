@@ -7,9 +7,9 @@ A Clojure library designed to ... well, that part is up to you.
 * color prompts
 
 * make sure all color situations are respected
-
-* very strange effect where consecutive similar colors alternate on and off
-  - (do (do (do (do ))))
+* COLOR handle meta-data
+* COLOR handle namespaced maps
+* WE NEED a generic cross-platform color theme
 
 * paredit
   - brackets
