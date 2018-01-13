@@ -5,7 +5,7 @@
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
    [java.util.regex Pattern]))
 
-(defn match-styles [x regexp & group-styles]
+(defn tag-matches [x regexp & group-styles]
   (let [m (.matcher regexp x)]
     (apply
      concat
@@ -174,55 +174,54 @@
        followed-by-delimiter))
 
 (defn token-tagger [syntax-str]
-  (match-styles syntax-str
-                (Pattern/compile (str
-                                  "(" string-literal ")|"
-                                  end-line-comment-regexp "|"
-                                  def-with-doc "|"
-                                  other-def "|"
-                                  simple-def "|"
-                                  core-macro-exp "|"
-                                  special-form-exp "|"
-                                  "(" unterm-string-literal ")|"
-                                  core-fns-exp "|"
-                                  core-vars-exp "|"
-                                  keyword-exp "|"
-                                  namespaced-symbol-exp "|"
-                                  classname-exp "|"
-                                  interop-call-exp "|"
-                                  function-arg-exp "|"
-                                  namespace-exp "|"
-                                  character-exp "|"
-                                  protocol-def-name-exp "|"
-                                  dynamic-var-exp))
-              :string-literal
-              :line-comment
-              :def-call
-              :def-varname
-              :def-doc-string
-              :def-call ;-2
-              :def-varname ;-2
-              :def-call ;-3
-              :def-val-varname
-              :def-doc-string
-              :core-macro
-              :special-form
-              :unterm-string-literal
-              :core-fn
-              :core-var
-              :keyword-colon
-              :keyword-namespace
-              :keyword-body
-              :symbol-namespace
-              :symbol-body
-              :classname
-              :interop-call
-              :function-arg
-              :namespace
-              :character
-              :protocol-def-name
-              :dynamic-var
-              ))
+  (tag-matches syntax-str
+               (Pattern/compile (str
+                                 "(" string-literal ")|"
+                                 end-line-comment-regexp "|"
+                                 def-with-doc "|"
+                                 other-def "|"
+                                 simple-def "|"
+                                 core-macro-exp "|"
+                                 special-form-exp "|"
+                                 "(" unterm-string-literal ")|"
+                                 core-fns-exp "|"
+                                 core-vars-exp "|"
+                                 keyword-exp "|"
+                                 namespaced-symbol-exp "|"
+                                 classname-exp "|"
+                                 interop-call-exp "|"
+                                 function-arg-exp "|"
+                                 namespace-exp "|"
+                                 character-exp "|"
+                                 protocol-def-name-exp "|"
+                                 dynamic-var-exp))
+               :string-literal
+               :line-comment
+               :def-call
+               :def-varname
+               :def-doc-string
+               :def-call
+               :def-varname
+               :def-call
+               :def-val-varname
+               :def-doc-string
+               :core-macro
+               :special-form
+               :unterm-string-literal
+               :core-fn
+               :core-var
+               :keyword-colon
+               :keyword-namespace
+               :keyword-body
+               :symbol-namespace
+               :symbol-body
+               :classname
+               :interop-call
+               :function-arg
+               :namespace
+               :character
+               :protocol-def-name
+               :dynamic-var))
 
 #_(time (token-tagger (apply str (repeat 100 code-str))))
 
