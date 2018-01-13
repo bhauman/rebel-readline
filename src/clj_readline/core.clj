@@ -6,11 +6,15 @@
    [clojure.main]
    [clojure.repl]
    [compliment.core :as compliment]
-   [clojure.walk :refer [prewalk]]
    [cljfmt.core :refer [reformat-string]]
    [clojure.tools.reader.reader-types :as rtyp]
+
    [clj-readline.indenting :as ind]
-   [clj-readline.syntax-highlight :refer [highlight-clj-str]])
+   [clj-readline.syntax-highlight :refer [highlight-clj-str]]
+   ;; for dev
+   [clojure.tools.nrepl.server]
+   [cider.nrepl]
+   )
   (:import
    [org.jline.terminal TerminalBuilder]
    [org.jline.terminal Terminal$Signal] 
@@ -30,10 +34,11 @@
     EOFError
     Widget]
    [org.jline.keymap KeyMap]
-   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
+   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle #_InfoCmp$Capability]
    [org.jline.reader.impl DefaultParser]
    [org.jline.reader.impl.completer StringsCompleter])
   (:gen-class))
+
 
 ;; this is an indent call that is specific to ACCEPT_LINE based actions
 (defn indent [line-reader line cursor]
@@ -116,10 +121,6 @@
           (compare s1 s2)
           res)))))
 
-#_(map #(.value %)
-     (sort (map #(candidate %)
-           (reverse (compliment/completions "def")))))
-
 ;; TODO - we need to get context infp in here to fully use compliment to its fullest
 ;; TODO - we also need to look at how strings are passed along for completion
 ;;        for files etc
@@ -136,9 +137,7 @@
 (defn highlighter []
   (proxy [Highlighter] []
     (highlight [^LineReader reader ^String buffer]
-      (.toAttributedString (highlight-clj-str buffer)))))
-
-#_(println (.toAnsi (.highlight (highlighter) (line-reader) ":asdf/Asdfasdf")))
+      (.toAttributedString (#'highlight-clj-str buffer)))))
 
 ;; the main line reader
 
@@ -152,7 +151,7 @@
             s (str buf)
             begin-of-line-pos (ind/search-for-line-start s (dec cursor))
             leading-white-space (ind/count-leading-white-space (subs s begin-of-line-pos))
-            indent-amount (ind/indent-amount s begin-of-line-pos)
+            indent-amount (#'ind/indent-amount s begin-of-line-pos)
             cursor-in-leading-white-space? (< cursor
                                               (+ leading-white-space begin-of-line-pos))]
         ;; first we will remove-the whitespace
@@ -193,16 +192,6 @@
     
     ))
 
-#_(defn read-eval-loop [reader]
-  (let [line (try (.readLine reader (with-out-str (clojure.main/repl-prompt)))
-                  (catch UserInterruptException e
-                    (println "exiting!")
-                    (System/exit 0))
-                  (catch EndOfFileException e
-                    (println "end of input!")
-                    (System/exit 0)))]
-    line))
-
 ;; color isn't working for 256 color
 (defn prompt []
   (with-out-str (clojure.main/repl-prompt))
@@ -231,7 +220,21 @@
                    (= (type e) UserInterruptException) nil
                    :else (clojure.main/repl-caught e)))))
 
+;; making a field 
+#_(let [t (.getTerminal (line-reader))
+        pty_field (-> t .getClass .getSuperclass (.getDeclaredField "pty"))]
+    (.setAccessible pty_field true)
+    (let [pty (.get pty_field t)] ;; there is also a .set Method
+      pty
+      (.doGetConfig pty)
+      )
+   
+  )
+
 (defn -main []
+  ;; for development
+  (clojure.tools.nrepl.server/start-server :port 7888 :handler cider.nrepl/cider-nrepl-handler)
+
   ;; read all garbage before starting
   
   ;; also include prompt
