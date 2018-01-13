@@ -1,89 +1,137 @@
 (ns clj-readline.indenting
   (:require
    [clojure.string :as string]
-   [cljfmt.core :refer [reformat-string]]))
+   [clj-readline.syntax-highlight :as syn]
+   [cljfmt.core :refer [reformat-string]])
+  (:import
+   [java.util.regex Pattern]))
 
-#_(def rrr "12121\"asfasfd\"122\n1212\"asdf\\\"asdfa\"121\n2123123\"as\ndfasdf")
+;; sexp traversal 
 
-(def string-literal #"(\"[^\"\\]*(?:\\.[^\"\\]*)*\")")
+(def areas-where-brackets-dont-count-exp
+  (str
+   syn/end-line-comment-regexp "|"
+   "(" syn/string-literal ")|"
+   "(" syn/unterm-string-literal ")|"
+   syn/character-exp ))
 
-(defn bounds-of-matches [s regex]
-  (let [m (.matcher regex s)]
-    (->> (iterate
-          (fn [x]
-            (when (.find m)
-              [(.start m 1) (.end m 1)]))
-          nil)
-         (drop 1)
-         (take-while some?))))
+;; not used yet
+(defn non-interp-bounds [code-str]
+  (map rest
+       (syn/tag-matches code-str
+                        (Pattern/compile areas-where-brackets-dont-count-exp)
+                        :end-line-comment
+                        :string-literal
+                        :unterm-string-literal
+                        :character)))
 
-(def unterm-string-literal #"(\"[^\"\\]*(?:\\.[^\"\\]*)*)$")
+(def sexp-traversal-parse-exp
+  (str areas-where-brackets-dont-count-exp "|"
+       #"(\()" "|" ; open paren
+       #"(\))" "|" ; close paren
+       #"(\{)" "|" ; open brace
+       #"(\})" "|" ; close brace
+       #"(\[)" "|" ; open bracket
+       #"(\])"     ; close bracket
+       
+       ))
 
-#_(re-seq unterm-string-literal " \n \" \n  \"  ")
+(defn tag-for-sexp-traversal [code-str]
+  (syn/tag-matches code-str
+                   (Pattern/compile sexp-traversal-parse-exp)
+                   :end-line-comment
+                   :string-literal
+                   :unterm-string-literal
+                   :character
+                   :open-paren
+                   :close-paren
+                   :open-brace
+                   :close-brace
+                   :open-bracket
+                   :close-bracket))
 
-(defn in-quote? [s pos]
-  (let [bounds (bounds-of-matches s string-literal)
-        last-bound (-> bounds last second)]
-    (if (and last-bound (< last-bound pos))
-      ;; need to check for unterminated string literal
-      (not-empty (re-seq unterm-string-literal (subs s last-bound pos)))
-      (some #(<= (first %) pos (dec (second %))) bounds))))
+(def flip-it {:open-paren :close-paren
+              :close-paren :open-paren
+              :open-brace :close-brace
+              :close-brace :open-brace
+              :open-bracket :close-bracket
+              :close-bracket :open-bracket})
+
+(defn scan-builder [open-test close-test]
+  (fn [specific-test stack x]
+    (cond
+      (open-test x)
+      (cons x stack)
+      (close-test x)
+      (cond
+        (and (empty? stack) (specific-test x))
+        (reduced x)
+        (empty? stack) (reduced nil) ;; found closing bracket of wrong type
+        (= (-> stack first last) (flip-it (last x)))
+        (rest stack)
+        ;; unbalanced
+        :else (reduced nil))
+      :else stack)))
+
+;; not used yet
+(defn find-open-sexp-end [tagged-parses pos]
+  (reduce
+   (partial
+    (scan-builder
+     #(#{:open-bracket :open-brace :open-paren} (last %))
+     #(#{:close-bracket :close-brace :close-paren} (last %)))
+    identity)
+   nil
+   (drop-while
+    #(<= (nth % 2) pos)
+    tagged-parses)))
+
+(defn find-open-sexp-start [tagged-parses pos]
+  (reduce
+   (partial
+    (scan-builder
+     #(#{:close-bracket :close-brace :close-paren} (last %))
+     #(#{:open-bracket :open-brace :open-paren} (last %)))
+    identity)
+   nil
+   (reverse (take-while
+             #(<= (nth % 2) pos)
+             tagged-parses))))
+
+#_(time (find-open-sexp-start (tag-for-sexp-traversal xxx) (dec (count xxx))))
+
+(defn in-quote? [tagged-parses pos]
+  (->> tagged-parses
+       (filter #(#{:string-literal
+                   :unterm-string-literal
+                   :character
+                   :end-line-comment} (last %)))
+       (filter (fn [[_ start end _]]
+                 (<= start pos (dec end))))
+       first))
 
 (defn search-for-line-start [s pos]
   (loop [p pos]
     (cond
       (zero? p) p
-      (= (.charAt s p) \newline)
+      (= (.charAt ^String s p) \newline)
       (inc p)
-      :else (recur (dec p)))))
-
-(defn search-for-quote-start [s pos]
-  (loop [p pos]
-    (cond
-      (zero? p) p
-      (and (= (.charAt s p) \")
-           (not= (.charAt s (dec p)) \\))
-      p
       :else (recur (dec p)))))
 
 (def flip-delimiter {\} \{ \] \[ \) \(
                      \{ \} \[ \] \( \)})
 
-
-;; have to ensure that we are not in a quote
-;; or an uncompleted partial quote
-(defn search-for-sexp-start
-  ([s pos] (search-for-sexp-start s pos nil))
-  ([s pos bracket]
-   (loop [p pos]
-     (cond
-       (<= p 0) 0
-       ;; ignore quotes
-       (= \" (.charAt s p))
-       (recur (dec (search-for-quote-start s (dec p))))
-
-       (and bracket (= bracket (.charAt s p))) ;; found bracket
-       p
-
-       (and (not bracket) (#{\( \{ \[} (.charAt s p)))
-       p
-       
-       (#{\} \] \)} (.charAt s p))
-       (recur (dec (search-for-sexp-start s
-                                          (dec p)
-                                          (flip-delimiter
-                                           (.charAt s p)))))
-       :else (recur (dec p))))))
-
 (defn indent-proxy-str [s cursor]
-  (when-not (in-quote? s cursor)
-    (let [sexp-start (search-for-sexp-start s (dec cursor))
-          line-start (search-for-line-start s sexp-start)]
-      (str (apply str (repeat (- sexp-start line-start) \space))
-           (subs s sexp-start cursor)
-           "\n1" (flip-delimiter (.charAt s sexp-start))))))
+  (let [tagged-parses (tag-for-sexp-traversal s)]
+    (when-not (in-quote? tagged-parses cursor)
+      (when-let [[delim sexp-start] (find-open-sexp-start tagged-parses (dec cursor))]
+        (let [line-start (search-for-line-start s sexp-start)]
+          (str (apply str (repeat (- sexp-start line-start) \space))
+               (subs s sexp-start cursor)
+               "\n1" (flip-delimiter (first delim))))))))
 
-#_(defn count-leading-white-space [s] (count (take-while #{\space \t} s)))
+#_ (time (indent-proxy-str xxx 463))
+ 
 (defn count-leading-white-space [s] (count (re-find #"^[^\S\n]+" s)))
 
 ;; TODO have to think more about indenting inside of maps
@@ -95,17 +143,11 @@
     (if-let [prx (indent-proxy-str s cursor)]
       (->> (try (reformat-string prx)
                 (catch Exception e
+                  ;; this is the fallback for indenting 
+                  #_(count-leading-white-space prx)
                   ;; TODO this is temporary so that we can keep track of bad parses
                   (throw (ex-info "bad indenting parse" {:s s :cursor cursor :prx prx} e))))
            string/split-lines
            last
            count-leading-white-space)
       0)))
-
-#_(defn remove-forward-white-space-at [s pos]
-  (assert (<= pos (count s)))
-  (let [blank-count (count-leading-white-space (subs s pos))]
-    (str (subs s 0 pos) (subs s (+ pos blank-count) (count s)))))
-
-#_(defn insert-at [s pos st]
-  (str (subs s 0 pos) st (subs s pos (count s))))
