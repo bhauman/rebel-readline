@@ -2,20 +2,22 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [clojure.tools.reader :as r]
    [clojure.main]
    [clojure.repl]
    [compliment.core :as compliment]
    [cljfmt.core :refer [reformat-string]]
+   [clojure.tools.reader :as r]
    [clojure.tools.reader.reader-types :as rtyp]
 
    [clj-readline.indenting :as ind]
-   [clj-readline.syntax-highlight :refer [highlight-clj-str]]
+   [clj-readline.syntax-highlight :as syn :refer [highlight-clj-str]]
+   [clj-readline.utils :refer [log]]
    ;; for dev
    [clojure.tools.nrepl.server]
    [cider.nrepl]
    )
   (:import
+   [java.util.regex Pattern]
    [org.jline.terminal TerminalBuilder]
    [org.jline.terminal Terminal$Signal] 
    [org.jline.terminal Terminal$SignalHandler]  
@@ -85,7 +87,60 @@
     (and (not-empty (filter :source forms))
          (not (:exception (last forms))))))
 
-;; a parser for jline that respects some clojurisms
+;; we need to tokeninze on our own during completion because of completion
+;; logic in LineReaderImpl and how it interacts with the results of the default parser
+
+(def completion-tokenizing-rexp
+  (Pattern/compile
+   (str ind/areas-where-brackets-dont-count-exp "|"
+        "(" syn/not-delimiter-exp "+)")))
+
+(defn tokenize-line [line]
+  (syn/tag-matches line
+                   completion-tokenizing-rexp
+                   :end-line-comment
+                   :string-literal 
+                   :unterm-string-literal
+                   :character
+                   :complete-word))
+
+;; TODO we could make string literals and unterm string literals complete
+;; on their contents
+(defn parse-line [line cursor]
+  (let [tokens (tokenize-line line)
+        words  (filter (comp #{:string-literal
+                               :unterm-string-literal
+                               :complete-word}
+                             last)
+                       tokens)
+        word   (first (filter
+                       (fn [[_ s e]]
+                         (<= s cursor e))
+                       words))
+        word-index (.indexOf (vec words) word)
+        word-cursor (if-not word
+                      0
+                      (- cursor (second word)))]
+    ;; TODO this can return a parsedline directly
+    ;; but for now this is easier to debug
+    {:word-index (or word-index -1)
+     :word  (or (first word) "")
+     :word-cursor word-cursor
+     :tokens tokens
+     :words (map first words)
+     :line line
+     :cursor cursor}))
+
+(defn parsed-line [{:keys [word-index word word-cursor words line cursor]}]
+  (proxy [ParsedLine] []
+    (word [] word)
+    (wordIndex [] word-index)
+    (wordCursor [] word-cursor)
+    (words [] (java.util.LinkedList. words))
+    (line [] line)
+    (cursor [] cursor)))
+
+;; a parser for jline that respects clojurisms
 (defn make-parser [line-reader-prom]
   (doto
       (proxy [DefaultParser] []
@@ -93,11 +148,14 @@
           (boolean (#{\space \tab \return \newline  \, \{ \} \( \) \[ \] }
                     (.charAt buffer pos))))
         (parse [^String line cursor ^Parser$ParseContext context]
-          (if (= context Parser$ParseContext/ACCEPT_LINE)
+          (cond
+            (= context Parser$ParseContext/ACCEPT_LINE)
             (when-not (has-valid-forms-at? line cursor)
               (indent @line-reader-prom line cursor)
               (throw (EOFError. -1 -1 "Unbalanced Expression" (str *ns*))))
-            (proxy-super parse line cursor context))))
+            (= context Parser$ParseContext/COMPLETE)
+            (parsed-line (parse-line line cursor))
+            :else (proxy-super parse line cursor context))))
     (.setQuoteChars (char-array [\"]))))
 
 ;; completions
@@ -128,8 +186,16 @@
 (defn clojure-completer []
   (proxy [Completer] []
     (complete [^LineReader reader ^ParsedLine line ^java.util.List candidates]
-      (.addAll candidates (take 10 (map #(candidate %)
-                                       (compliment/completions (.word line))))))))
+      #_(log {:cursor (.cursor line)
+              :word   (.word line)
+              :word-cursor (.wordCursor line)
+              :word-index  (.wordIndex line)
+              :words (.words line)})
+      (let [word (.word line)]
+        (when (and (not (string/blank? word))
+                   (pos? (count word)))
+          (.addAll candidates (take 10 (map #(candidate %)
+                                            (compliment/completions (.word line))))))))))
 
 ;; syntax highlighting
 ;; TODO reader error highlighting and feedback
@@ -143,6 +209,7 @@
 
 ;; add functionality 
 
+;; line indenting widget
 (defn indent-line-widget [line-reader]
   (reify Widget
     (apply [_]
@@ -165,15 +232,70 @@
       ;; return true to re-render
       true)))
 
+(defn indent-or-complete-widget [line-reader]
+  (reify Widget
+    (apply [_]
+      (let [buf (.getBuffer line-reader)
+            cursor (.cursor buf)
+            s (str buf)
+            begin-of-line-pos (ind/search-for-line-start s (dec cursor))
+            leading-white-space (ind/count-leading-white-space (subs s begin-of-line-pos))
+            ;; indent-amount (#'ind/indent-amount s begin-of-line-pos)
+            cursor-in-leading-white-space? (<= cursor
+                                               (+ leading-white-space begin-of-line-pos))]
+        (if cursor-in-leading-white-space?
+          (.callWidget line-reader "indent-line")
+          (.callWidget line-reader LineReader/MENU_COMPLETE))
+        true))))
+
+;; --------------------------
+;; paredit
+;; --------------------------
+
+
+
+#_(defn open-widget [line-reader]
+  (reify Widget
+    (apply [_]
+      (let [buf (.getBuffer line-reader)
+            cursor (.cursor buf)
+            s (str buf)
+            begin-of-line-pos (ind/search-for-line-start s (dec cursor))
+            leading-white-space (ind/count-leading-white-space (subs s begin-of-line-pos))
+            ;; indent-amount (#'ind/indent-amount s begin-of-line-pos)
+            cursor-in-leading-white-space? (<= cursor
+                                               (+ leading-white-space begin-of-line-pos))]
+        (if cursor-in-leading-white-space?
+          (.callWidget line-reader "indent-line")
+          (.callWidget line-reader LineReader/MENU_COMPLETE))
+        true)))
+
+
+  )
+
+
+
+
+(defn register-widget [line-reader widget-id widget]
+  (doto line-reader
+    (-> (.getWidgets)
+        (.put widget-id widget))))
+
+(defn bind-key [line-reader widget-id key-str]
+  (doto line-reader
+    (-> (.getKeyMaps)
+        (get "emacs")
+        (.bind (org.jline.reader.Reference. widget-id) key-str))))
+
 (defn add-functionality [line-reader]
   (-> line-reader
-      (.getWidgets)
-      (.put "indent-line" (indent-line-widget line-reader)))
-  (.bind (get (.getKeyMaps line-reader) "emacs")
-         (org.jline.reader.Reference. "indent-line") (str
-                                                      (KeyMap/ctrl \X)
-                                                      (KeyMap/ctrl \I))))
+      (register-widget "indent-line" (indent-line-widget line-reader))
+      (register-widget "indent-or-complete" (indent-or-complete-widget line-reader))
+      
+      (bind-key "indent-line"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \I)))
+      (bind-key "indent-or-complete" (str #_(KeyMap/ctrl \X) (KeyMap/ctrl \I)))))
 
+#_(add-functionality (line-reader))
 
 (defn line-reader []
   (let [line-reader-prom (promise)]
@@ -187,10 +309,11 @@
       ((fn [x] (deliver line-reader-prom x)))
       ;; make sure that we don't have to double escape things 
       (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
+      ;; never insert tabs
+      (.unsetOpt LineReader$Option/INSERT_TAB)
+      #_(.unsetOpt LineReader$Option/CASE_INSENSITIVE)
       (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
-      add-functionality)
-    
-    ))
+      add-functionality)))
 
 ;; color isn't working for 256 color
 (defn prompt []
