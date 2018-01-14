@@ -62,7 +62,8 @@
 (def string-literal #"(?<!\\)\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
 (def unterm-string-literal #"(?<!\\)\"[^\"\\]*(?:\\.[^\"\\]*)*$")
 
-(def delimiter-exps (map str #{#"\s" #"\{" #"\}" #"\(" #"\)" #"\[" #"\]" #"," #"\"" #"\^" #"\'" #"\#"}))
+(def delimiter-exps (map str #{#"\s" #"\{" #"\}" #"\(" #"\)" #"\[" #"\]"
+                               #"," #"\"" #"\^" #"\'" #"\#" #"\@"}))
 
 (defn delims [f]
   (string/join (map str (f delimiter-exps))))
@@ -102,7 +103,7 @@
 
 (def def-with-doc
   (str preceeding-paren
-       "(defn|defmacro|defn-|defprotocol|defmulti)"  ;;defn
+       "(defn\\-|defn|defmacro|defprotocol|defmulti)"  ;;defn
        metadata-name-docs-exp)) 
 
 (def other-def
@@ -173,28 +174,31 @@
        "(\\*" not-delimiter-exp  "+\\*)"
        followed-by-delimiter))
 
+(def syntax-token-tagging-rexp
+  (Pattern/compile (str
+                    "(" string-literal ")|"
+                    end-line-comment-regexp "|"
+                    def-with-doc "|"
+                    other-def "|"
+                    simple-def "|"
+                    core-macro-exp "|"
+                    special-form-exp "|"
+                    "(" unterm-string-literal ")|"
+                    core-fns-exp "|"
+                    core-vars-exp "|"
+                    keyword-exp "|"
+                    namespaced-symbol-exp "|"
+                    classname-exp "|"
+                    interop-call-exp "|"
+                    function-arg-exp "|"
+                    namespace-exp "|"
+                    character-exp "|"
+                    protocol-def-name-exp "|"
+                    dynamic-var-exp)))
+
 (defn token-tagger [syntax-str]
   (tag-matches syntax-str
-               (Pattern/compile (str
-                                 "(" string-literal ")|"
-                                 end-line-comment-regexp "|"
-                                 def-with-doc "|"
-                                 other-def "|"
-                                 simple-def "|"
-                                 core-macro-exp "|"
-                                 special-form-exp "|"
-                                 "(" unterm-string-literal ")|"
-                                 core-fns-exp "|"
-                                 core-vars-exp "|"
-                                 keyword-exp "|"
-                                 namespaced-symbol-exp "|"
-                                 classname-exp "|"
-                                 interop-call-exp "|"
-                                 function-arg-exp "|"
-                                 namespace-exp "|"
-                                 character-exp "|"
-                                 protocol-def-name-exp "|"
-                                 dynamic-var-exp))
+               syntax-token-tagging-rexp
                :string-literal
                :line-comment
                :def-call
