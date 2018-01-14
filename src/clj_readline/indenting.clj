@@ -113,7 +113,7 @@
 (defn search-for-line-start [s pos]
   (loop [p pos]
     (cond
-      (zero? p) p
+      (<= p 0) 0
       (= (.charAt ^String s p) \newline)
       (inc p)
       :else (recur (dec p)))))
@@ -141,7 +141,10 @@
   (if (zero? cursor)
     0
     (if-let [prx (indent-proxy-str s cursor)]
-      (->> (try (reformat-string prx)
+      (->> (try (reformat-string prx {:remove-trailing-whitespace? false
+                                      :insert-missing-whitespace? false
+                                      :remove-surrounding-whitespace? false
+                                      :remove-consecutive-blank-lines? false})
                 (catch Exception e
                   ;; this is the fallback for indenting 
                   #_(count-leading-white-space prx)
