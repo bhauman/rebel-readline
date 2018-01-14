@@ -8,37 +8,41 @@
 
 ;; sexp traversal 
 
-(def areas-where-brackets-dont-count-exp
-  (str
-   syn/end-line-comment-regexp "|"
-   "(" syn/string-literal ")|"
-   "(" syn/unterm-string-literal ")|"
-   syn/character-exp ))
+(def areas-where-brackets-dont-count-rexp
+  (Pattern/compile
+   (str
+    syn/end-line-comment-regexp "|"
+    "(" syn/string-literal ")|"
+    "(" syn/unterm-string-literal ")|"
+    syn/character-exp )))
 
 ;; not used yet
 (defn non-interp-bounds [code-str]
   (map rest
        (syn/tag-matches code-str
-                        (Pattern/compile areas-where-brackets-dont-count-exp)
+                        areas-where-brackets-dont-count-rexp
                         :end-line-comment
                         :string-literal
                         :unterm-string-literal
                         :character)))
 
-(def sexp-traversal-parse-exp
-  (str areas-where-brackets-dont-count-exp "|"
-       #"(\()" "|" ; open paren
-       #"(\))" "|" ; close paren
-       #"(\{)" "|" ; open brace
-       #"(\})" "|" ; close brace
-       #"(\[)" "|" ; open bracket
-       #"(\])"     ; close bracket
-       
-       ))
+(defn in-non-interp-bounds? [code-str pos]
+  (some #(<= (first %) pos (dec (second %))) (non-interp-bounds code-str)))
+
+(def sexp-traversal-parse-rexp
+  (Pattern/compile
+   (str areas-where-brackets-dont-count-rexp "|"
+        #"(\()" "|" ; open paren
+        #"(\))" "|" ; close paren
+        #"(\{)" "|" ; open brace
+        #"(\})" "|" ; close brace
+        #"(\[)" "|" ; open bracket
+        #"(\])"     ; close bracket
+       )))
 
 (defn tag-for-sexp-traversal [code-str]
   (syn/tag-matches code-str
-                   (Pattern/compile sexp-traversal-parse-exp)
+                   sexp-traversal-parse-rexp
                    :end-line-comment
                    :string-literal
                    :unterm-string-literal
