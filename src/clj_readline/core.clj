@@ -13,8 +13,8 @@
    [clj-readline.syntax-highlight :as syn :refer [highlight-clj-str]]
    [clj-readline.utils :refer [log]]
    ;; for dev
-   [clojure.tools.nrepl.server]
-   [cider.nrepl]
+   #_[clojure.tools.nrepl.server]
+   #_[cider.nrepl]
    )
   (:import
    [java.util.regex Pattern]
@@ -37,9 +37,11 @@
     Widget]
    [org.jline.keymap KeyMap]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle #_InfoCmp$Capability]
-   [org.jline.reader.impl DefaultParser]
+   [org.jline.reader.impl DefaultParser BufferImpl]
    [org.jline.reader.impl.completer StringsCompleter])
   (:gen-class))
+
+
 
 
 ;; this is an indent call that is specific to ACCEPT_LINE based actions
@@ -51,6 +53,8 @@
   (.runMacro line-reader (str (KeyMap/ctrl \X) (KeyMap/ctrl \I))))
 
 ;; validating that it is likely a readable form
+
+;; we may not need clojure.tools.reader ?
 
 (defn read-identity [tag form]
   [::reader-tag tag form])
@@ -92,7 +96,7 @@
 
 (def completion-tokenizing-rexp
   (Pattern/compile
-   (str ind/areas-where-brackets-dont-count-exp "|"
+   (str ind/areas-where-brackets-dont-count-rexp "|"
         "(" syn/not-delimiter-exp "+)")))
 
 (defn tokenize-line [line]
@@ -208,6 +212,17 @@
 ;; the main line reader
 
 ;; add functionality 
+(defn register-widget [line-reader widget-id widget]
+  (doto line-reader
+    (-> (.getWidgets)
+        (.put widget-id widget))))
+
+(defn bind-key [line-reader widget-id key-str]
+  (doto line-reader
+    (-> (.getKeyMaps)
+        ;; TODO which map are we modifying here?
+        (get "emacs")
+        (.bind (org.jline.reader.Reference. widget-id) key-str))))
 
 ;; line indenting widget
 (defn indent-line-widget [line-reader]
@@ -252,40 +267,173 @@
 ;; paredit
 ;; --------------------------
 
+;; buffer helper 
+(defn buffer
+  ([s] (buffer s nil))
+  ([s c]
+   (doto (BufferImpl.)
+     (.write s)
+     (.cursor (or c (count s))))))
+
+;; ------------
+;; paredit open
+
+(defn should-self-insert-open? [code-str cursor]
+  (log :hey code-str cursor (ind/in-non-interp-bounds? code-str cursor))
+  (if-let [[start end token-type] (ind/in-non-interp-bounds? code-str cursor)]
+    (not (and (= :character token-type)
+              (not (= end (inc start)))))
+    true))
+
+#_(and (should-self-insert-open?  " \\ a  " 2)
+     (not (should-self-insert-open?  " \\a  " 2))
+     )
+#_(ind/in-non-interp-bounds? " \\  " (dec 2))
 
 
-#_(defn open-widget [line-reader]
+
+(defn paredit-insert-pair [open-char buffer]
+  (let [cursor (.cursor buffer)]
+    (when-not (or (ind/blank-at-position? (str buffer) (dec cursor))
+                  (#{\( \{ \[} (char (.prevChar buffer))))
+      (.write buffer (int \space)))
+    (doto buffer
+      (.write (int open-char))
+      (.write (int (ind/flip-delimiter open-char)))
+      (.move  -1))
+    (when-not (or (ind/blank-at-position? (str buffer) (inc (.cursor buffer)))
+                  (#{\) \} \]} (char (.nextChar buffer))))
+      (.move buffer 1)
+      (.write buffer (int \space))
+      (.move buffer -2))
+    true))
+
+(defn paredit-open [open-char buffer]
+  (let [cursor (.cursor buffer)
+        s (str buffer)]
+    (if (ind/in-non-interp-bounds? s cursor)
+      (not (should-self-insert-open? s cursor))
+      (paredit-insert-pair open-char buffer))))
+
+(defn paredit-open-widget [open-char line-reader]
   (reify Widget
     (apply [_]
-      (let [buf (.getBuffer line-reader)
-            cursor (.cursor buf)
-            s (str buf)
-            begin-of-line-pos (ind/search-for-line-start s (dec cursor))
-            leading-white-space (ind/count-leading-white-space (subs s begin-of-line-pos))
-            ;; indent-amount (#'ind/indent-amount s begin-of-line-pos)
-            cursor-in-leading-white-space? (<= cursor
-                                               (+ leading-white-space begin-of-line-pos))]
-        (if cursor-in-leading-white-space?
-          (.callWidget line-reader "indent-line")
-          (.callWidget line-reader LineReader/MENU_COMPLETE))
-        true)))
+      (if (paredit-open open-char (.getBuffer line-reader))
+        true
+        (do (.callWidget line-reader LineReader/SELF_INSERT)
+            true)))))
+
+;; ------------
+;; paredit close
+
+(comment
+
+  (let [b (buffer "(       )")]
+    (.move b -1)
+    (paredit-close-action b)
+  b
+  )
+  
+  (list 1
+      2
+      3)
+
+(ind/find-open-sexp-end (ind/tag-for-sexp-traversal "()") 1)
+
+)
 
 
+
+(defn backwards-clean-whitespace [buffer]
+  (loop []
+    (when (Character/isWhitespace (.prevChar buffer))
+      (.backspace buffer)
+      (recur))))
+
+(defn paredit-close-action [buffer]
+  (let [s (str buffer)
+        tagged-parses (ind/tag-for-sexp-traversal s)
+        [_ start _ _] (ind/find-open-sexp-end tagged-parses (.cursor buffer))]
+    (if-not start
+      false
+      (do
+        (.cursor buffer start)
+        (backwards-clean-whitespace buffer)
+        ;; TODO blink by calling widget a
+        (.move buffer 1)
+        true))))
+
+(defn paredit-close [buffer]
+  (let [cursor (.cursor buffer)
+        s (str buffer)]
+    (if (ind/in-non-interp-bounds? s cursor)
+      (and (not (should-self-insert-open? s cursor)) :self-insert)
+      (paredit-close-action buffer))))
+
+(defn paredit-close-widget [line-reader]
+  (reify Widget
+    (apply [_]
+      (let [buf (.getBuffer line-reader)]
+        (condp = (paredit-close buf)
+          :self-insert
+          (do (.callWidget line-reader LineReader/SELF_INSERT)
+              true)
+          true
+          (do
+            #_(.move buf -1)
+            #_(.callWidget line-reader LineReader/VI_MATCH_BRACKET)
+            #_(future
+              (do
+                (Thread/sleep 500)
+                (.callWidget line-reader LineReader/VI_MATCH_BRACKET)
+                (.move buf 1)))
+            true)
+          false false)))))
+
+
+
+#_(ind/in-non-interp-bounds? "\\r" 2)
+
+#_(let [b (buffer "aa11 1")]
+  (.move b -3)
+  (paredit-open \( b)
+  b
+    #_(.prevChar b)
+    )
+
+#_(defn paredit-open-quote [buffer]
+  (let [cursor (.cursor buffer)
+        s (str buffer)]
+    (if-let [res (ind/in-non-interp-bounds? s (dec cursor))]
+      (if (and ))
+      (paredit-open \" buffer))))
+
+#_(ind/non-interp-bounds "\" \" \\  ")
+
+(defn add-paredit [line-reader]
+  (-> line-reader
+      (register-widget "paredit-open-paren"   (paredit-open-widget \( line-reader))
+      (register-widget "paredit-open-brace"   (paredit-open-widget \{ line-reader))
+      (register-widget "paredit-open-bracket" (paredit-open-widget \[ line-reader))
+      (register-widget "paredit-open-quote"   (paredit-open-widget \" line-reader))
+      (register-widget "paredit-close"        (paredit-close-widget line-reader))
+
+      (bind-key "paredit-open-paren"   (str "("))
+      (bind-key "paredit-open-brace"   (str "{"))
+      (bind-key "paredit-open-bracket" (str "["))
+      
+      (bind-key "paredit-close"   (str ")"))
+      (bind-key "paredit-close"   (str "}"))
+      (bind-key "paredit-close"   (str "]"))
+
+      ;; TODO backspace
+      
+      )
   )
 
 
 
 
-(defn register-widget [line-reader widget-id widget]
-  (doto line-reader
-    (-> (.getWidgets)
-        (.put widget-id widget))))
-
-(defn bind-key [line-reader widget-id key-str]
-  (doto line-reader
-    (-> (.getKeyMaps)
-        (get "emacs")
-        (.bind (org.jline.reader.Reference. widget-id) key-str))))
 
 (defn add-functionality [line-reader]
   (-> line-reader
@@ -294,6 +442,9 @@
       
       (bind-key "indent-line"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \I)))
       (bind-key "indent-or-complete" (str #_(KeyMap/ctrl \X) (KeyMap/ctrl \I)))))
+
+
+
 
 #_(add-functionality (line-reader))
 
@@ -313,7 +464,8 @@
       (.unsetOpt LineReader$Option/INSERT_TAB)
       #_(.unsetOpt LineReader$Option/CASE_INSENSITIVE)
       (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
-      add-functionality)))
+      add-functionality
+      add-paredit)))
 
 ;; color isn't working for 256 color
 (defn prompt []
@@ -356,7 +508,7 @@
 
 (defn -main []
   ;; for development
-  (clojure.tools.nrepl.server/start-server :port 7888 :handler cider.nrepl/cider-nrepl-handler)
+  #_(clojure.tools.nrepl.server/start-server :port 7888 :handler cider.nrepl/cider-nrepl-handler)
 
   ;; read all garbage before starting
   
