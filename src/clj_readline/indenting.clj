@@ -16,6 +16,13 @@
     "(" syn/unterm-string-literal ")|"
     syn/character-exp )))
 
+(defn position-in-range? [s pos]
+  (<= 0 pos (dec (count s))))
+
+(defn blank-at-position? [s pos]
+  (or (not (position-in-range? s pos))
+      (Character/isWhitespace (.charAt s pos))))
+
 ;; not used yet
 (defn non-interp-bounds [code-str]
   (map rest
@@ -26,8 +33,14 @@
                         :unterm-string-literal
                         :character)))
 
-(defn in-non-interp-bounds? [code-str pos]
-  (some #(<= (first %) pos (dec (second %))) (non-interp-bounds code-str)))
+(defn in-non-interp-bounds? [code-str pos] ;; position of insertion not before
+  (or (some #(and (< (first %) pos (second %)) %)
+            (non-interp-bounds code-str))
+      (and (<= 0 pos (dec (count code-str)))
+           (= (.charAt code-str pos) \\)
+           [pos (inc pos) :character])))
+
+#_(tag-for-sexp-traversal " \"\" \\ ")
 
 (def sexp-traversal-parse-rexp
   (Pattern/compile
@@ -123,7 +136,7 @@
       :else (recur (dec p)))))
 
 (def flip-delimiter {\} \{ \] \[ \) \(
-                     \{ \} \[ \] \( \)})
+                     \{ \} \[ \] \( \) \" \"})
 
 (defn indent-proxy-str [s cursor]
   (let [tagged-parses (tag-for-sexp-traversal s)]
