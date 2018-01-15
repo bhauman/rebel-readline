@@ -86,7 +86,7 @@
 (def meta-data-area-exp (str "(?:" delimiter-exp-minus-meta "{0,5}"
                              "(?:" meta-data-exp "))+"))
 
-(def end-line-comment-regexp #"(;[^\n]*)\n")
+(def end-line-comment-regexp #"(;[^\n]*)(?=\n|$)")
 
 (def followed-by-delimiter (str "(?=" delimiter-exp "|$)"))
 (def preceeded-by-delimiter (str "(?<=" delimiter-exp "|^)"))
