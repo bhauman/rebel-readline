@@ -1,13 +1,6 @@
-(ns clj-readline.indenting
+(ns clj-readline.tools.sexp
   (:require
-   [clojure.string :as string]
-   [clj-readline.syntax-highlight :as syn]
-   [clj-readline.parsing.tokenizer :as tokenize]
-   [cljfmt.core :refer [reformat-string]])
-  (:import
-   [java.util.regex Pattern]))
-
-;; sexp traversal 
+   [clj-readline.parsing.tokenizer :as tokenize]))
 
 (defn position-in-range? [s pos]
   (<= 0 pos (dec (count s))))
@@ -16,7 +9,6 @@
   (or (not (position-in-range? s pos))
       (Character/isWhitespace (.charAt s pos))))
 
-;; not used yet
 (defn non-interp-bounds [code-str]
   (map rest
        (tokenize/tag-non-interp code-str)))
@@ -102,39 +94,7 @@
       (inc p)
       :else (recur (dec p)))))
 
-(def flip-delimiter {\} \{ \] \[ \) \(
-                     \{ \} \[ \] \( \) \" \"})
+(def flip-delimiter-char {\} \{ \] \[ \) \(
+                          \{ \} \[ \] \( \) \" \"})
 
-(defn indent-proxy-str [s cursor]
-  (let [tagged-parses (tokenize/tag-sexp-traversal s)]
-    (when-not (in-quote? tagged-parses cursor)
-      (when-let [[delim sexp-start] (find-open-sexp-start tagged-parses (dec cursor))]
-        (let [line-start (search-for-line-start s sexp-start)]
-          (str (apply str (repeat (- sexp-start line-start) \space))
-               (subs s sexp-start cursor)
-               "\n1" (flip-delimiter (first delim))))))))
-
-#_ (time (indent-proxy-str xxx 463))
- 
 (defn count-leading-white-space [s] (count (re-find #"^[^\S\n]+" s)))
-
-;; TODO have to think more about indenting inside of maps
-(defn indent-amount [s cursor]
-  ;; TODO handle case where parse fails
-  ;; by just grabbing the previous lines indent
-  (if (zero? cursor)
-    0
-    (if-let [prx (indent-proxy-str s cursor)]
-      (->> (try (reformat-string prx {:remove-trailing-whitespace? false
-                                      :insert-missing-whitespace? false
-                                      :remove-surrounding-whitespace? false
-                                      :remove-consecutive-blank-lines? false})
-                (catch Exception e
-                  ;; this is the fallback for indenting 
-                  #_(count-leading-white-space prx)
-                  ;; TODO this is temporary so that we can keep track of bad parses
-                  (throw (ex-info "bad indenting parse" {:s s :cursor cursor :prx prx} e))))
-           string/split-lines
-           last
-           count-leading-white-space)
-      0)))

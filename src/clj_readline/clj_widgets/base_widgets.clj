@@ -2,8 +2,9 @@
   (:require
    [clojure.repl]
    [clojure.string :as string]
-   [clj-readline.indenting :as ind]
    [clj-readline.parsing.tokenizer :as tokenize]
+   [clj-readline.tools.indent :as indent]
+   [clj-readline.tools.sexp :as sexp]   
    [clj-readline.syntax-highlight :as syn]
    [clj-readline.utils :refer [log]])
   (:use clj-readline.jline-api)
@@ -13,6 +14,8 @@
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
     #_InfoCmp$Capability]
    [java.util.regex Pattern]))
+
+#_(remove-ns 'clj-readline.clj-widgets.base-widget)
 
 ;; TODO make services like source, document, and apropos abstract
 
@@ -29,9 +32,9 @@
    (when (:indent @*state*)
        (let [curs (cursor)
              s (buffer-as-string) ;; up-to-cursor better here?
-             begin-of-line-pos   (ind/search-for-line-start s (dec curs))
-             leading-white-space (ind/count-leading-white-space (subs s begin-of-line-pos))
-         indent-amount       (#'ind/indent-amount s begin-of-line-pos)
+             begin-of-line-pos   (sexp/search-for-line-start s (dec curs))
+             leading-white-space (sexp/count-leading-white-space (subs s begin-of-line-pos))
+         indent-amount       (#'indent/indent-amount s begin-of-line-pos)
          cursor-in-leading-white-space? (< curs
                                            (+ leading-white-space begin-of-line-pos))]
          
@@ -49,8 +52,8 @@
   (create-widget
     (let [curs (cursor)
           s (buffer-as-string) ;; up-to-cursor better here?
-          begin-of-line-pos (ind/search-for-line-start s (dec curs))
-          leading-white-space (ind/count-leading-white-space (subs s begin-of-line-pos))
+          begin-of-line-pos (sexp/search-for-line-start s (dec curs))
+          leading-white-space (sexp/count-leading-white-space (subs s begin-of-line-pos))
           ;; indent-amount (#'ind/indent-amount s begin-of-line-pos)
           cursor-in-leading-white-space? (<= curs
                                              (+ leading-white-space begin-of-line-pos))]
@@ -80,7 +83,7 @@
   (let [s (buffer-as-string)
         curs (cursor)
         tagged-parses (tokenize/tag-sexp-traversal s)
-        [_ start _ _] (ind/find-open-sexp-start tagged-parses curs)]
+        [_ start _ _] (sexp/find-open-sexp-start tagged-parses curs)]
     (when start
       (when-let [[word word-start word-end _]
                  (and start (= (.charAt s start) \()
@@ -342,7 +345,6 @@
      (when-let [aprs (formatted-apropos wrd)]
        (display-message aprs)))
    true))
-
 
 ;; ------------------------------------------
 ;; In place eval widget

@@ -115,15 +115,17 @@
 ;; ----------------------------------------
 
 (defn candidate [{:keys [candidate type ns]}]
-  (proxy [Candidate] [candidate ;; value 
-                      candidate ;; display
-                      nil ;; group
-                      (cond-> nil
-                        type (str (first (name type)))
-                        ns   (str " " ns)) 
-                      nil ;; suffix
-                      nil ;; key
-                      true]
+  (Candidate.
+   candidate ;; value 
+   candidate ;; display
+   nil ;; group
+   (cond-> nil
+     type (str (first (name type)))
+     ns   (str " " ns)) 
+   nil ;; suffix
+   nil ;; key
+   true)
+  #_(proxy [Candidate] []
     ;; apparently this comparator doesn't affect final sorting 
     (compareTo [^Candidate candidate]
       (let [s1 (proxy-super value)
