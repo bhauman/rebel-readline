@@ -2,19 +2,12 @@
   (:require
    [clojure.string :as string]
    [clj-readline.syntax-highlight :as syn]
+   [clj-readline.parsing.tokenizer :as tokenize]
    [cljfmt.core :refer [reformat-string]])
   (:import
    [java.util.regex Pattern]))
 
 ;; sexp traversal 
-
-(def areas-where-brackets-dont-count-rexp
-  (Pattern/compile
-   (str
-    syn/end-line-comment-regexp "|"
-    "(" syn/string-literal ")|"
-    "(" syn/unterm-string-literal ")|"
-    syn/character-exp )))
 
 (defn position-in-range? [s pos]
   (<= 0 pos (dec (count s))))
@@ -26,12 +19,7 @@
 ;; not used yet
 (defn non-interp-bounds [code-str]
   (map rest
-       (syn/tag-matches code-str
-                        areas-where-brackets-dont-count-rexp
-                        :end-line-comment
-                        :string-literal
-                        :unterm-string-literal
-                        :character)))
+       (tokenize/tag-non-interp code-str)))
 
 (defn in-non-interp-bounds? [code-str pos] ;; position of insertion not before
   (or (some #(and (< (first %) pos (second %)) %)
@@ -41,31 +29,6 @@
            [pos (inc pos) :character])))
 
 #_(tag-for-sexp-traversal " \"\" \\ ")
-
-(def sexp-traversal-parse-rexp
-  (Pattern/compile
-   (str areas-where-brackets-dont-count-rexp "|"
-        #"(\()" "|" ; open paren
-        #"(\))" "|" ; close paren
-        #"(\{)" "|" ; open brace
-        #"(\})" "|" ; close brace
-        #"(\[)" "|" ; open bracket
-        #"(\])"     ; close bracket
-       )))
-
-(defn tag-for-sexp-traversal [code-str]
-  (syn/tag-matches code-str
-                   sexp-traversal-parse-rexp
-                   :end-line-comment
-                   :string-literal
-                   :unterm-string-literal
-                   :character
-                   :open-paren
-                   :close-paren
-                   :open-brace
-                   :close-brace
-                   :open-bracket
-                   :close-bracket))
 
 (def flip-it {:open-paren :close-paren
               :close-paren :open-paren
@@ -82,38 +45,42 @@
       (close-test x)
       (cond
         (and (empty? stack) (specific-test x))
-        (reduced x)
-        (empty? stack) (reduced nil) ;; found closing bracket of wrong type
+        (reduced [:finished x])
+        (empty? stack) (reduced [:finished nil]) ;; found closing bracket of wrong type
         (= (-> stack first last) (flip-it (last x)))
         (rest stack)
         ;; unbalanced
-        :else (reduced nil))
+        :else (reduced [:finished nil]))
       :else stack)))
 
 ;; not used yet
 (defn find-open-sexp-end [tagged-parses pos]
-  (reduce
-   (partial
-    (scan-builder
-     #(#{:open-bracket :open-brace :open-paren} (last %))
-     #(#{:close-bracket :close-brace :close-paren} (last %)))
-    identity)
-   nil
-   (drop-while
-    #(<= (nth % 2) pos)
-    tagged-parses)))
+  (let [res (reduce
+             (partial
+              (scan-builder
+               #(#{:open-bracket :open-brace :open-paren} (last %))
+               #(#{:close-bracket :close-brace :close-paren} (last %)))
+              identity)
+             nil
+             (drop-while
+              #(<= (nth % 2) pos)
+              tagged-parses))]
+    (when (= :finished (first res))
+      (second res))))
 
 (defn find-open-sexp-start [tagged-parses pos]
-  (reduce
-   (partial
-    (scan-builder
-     #(#{:close-bracket :close-brace :close-paren} (last %))
-     #(#{:open-bracket :open-brace :open-paren} (last %)))
-    identity)
-   nil
-   (reverse (take-while
-             #(<= (nth % 2) pos)
-             tagged-parses))))
+  (let [res (reduce
+             (partial
+              (scan-builder
+               #(#{:close-bracket :close-brace :close-paren} (last %))
+               #(#{:open-bracket :open-brace :open-paren} (last %)))
+              identity)
+             nil
+             (reverse (take-while
+                       #(<= (nth % 2) pos)
+                       tagged-parses)))]
+    (when (= :finished (first res))
+      (second res))))
 
 #_(time (find-open-sexp-start (tag-for-sexp-traversal xxx) (dec (count xxx))))
 
@@ -139,7 +106,7 @@
                      \{ \} \[ \] \( \) \" \"})
 
 (defn indent-proxy-str [s cursor]
-  (let [tagged-parses (tag-for-sexp-traversal s)]
+  (let [tagged-parses (tokenize/tag-sexp-traversal s)]
     (when-not (in-quote? tagged-parses cursor)
       (when-let [[delim sexp-start] (find-open-sexp-start tagged-parses (dec cursor))]
         (let [line-start (search-for-line-start s sexp-start)]

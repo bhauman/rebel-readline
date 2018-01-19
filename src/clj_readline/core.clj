@@ -1,471 +1,21 @@
 (ns clj-readline.core
   (:require
-   [clojure.java.io :as io]
-   [clojure.string :as string]
-   [clojure.main]
-   [clojure.repl]
-   [compliment.core :as compliment]
-   [cljfmt.core :refer [reformat-string]]
+   [clj-readline.read-forms :as forms]
+   [clj-readline.clj-linereader :refer [line-reader]]
+   [clj-readline.jline-api :as api]
+   [clj-readline.line-print-writer :as line-print-writer]
+   [clj-readline.utils :refer [log]]
    [clojure.tools.reader :as r]
    [clojure.tools.reader.reader-types :as rtyp]
-
-   [clj-readline.indenting :as ind]
-   [clj-readline.syntax-highlight :as syn :refer [highlight-clj-str]]
-   [clj-readline.utils :refer [log]]
-   ;; for dev
-   #_[clojure.tools.nrepl.server]
-   #_[cider.nrepl]
-   )
+   [clojure.main]
+   [clojure.string :as string])
   (:import
-   [java.util.regex Pattern]
-   [org.jline.terminal TerminalBuilder]
-   [org.jline.terminal Terminal$Signal] 
-   [org.jline.terminal Terminal$SignalHandler]  
    [org.jline.reader
-    Highlighter
-    Completer
-    Candidate
-    Parser
-    Parser$ParseContext
-    ParsedLine
-    LineReader
-    LineReader$Option
-    LineReaderBuilder
     UserInterruptException
-    EndOfFileException
-    EOFError
-    Widget]
-   [org.jline.keymap KeyMap]
-   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle #_InfoCmp$Capability]
-   [org.jline.reader.impl DefaultParser BufferImpl]
-   [org.jline.reader.impl.completer StringsCompleter])
+    EndOfFileException])
   (:gen-class))
 
-
-
-
-;; this is an indent call that is specific to ACCEPT_LINE based actions
-(defn indent [line-reader line cursor]
-  ;; you could work on the buffer here instead
-  ;; TODO this key binding needs to be looked up from the macro if possible
-  ;; changing the buffer here is the most stable but the logic is quite different
-  ;; than the current indent action
-  (.runMacro line-reader (str (KeyMap/ctrl \X) (KeyMap/ctrl \I))))
-
-;; validating that it is likely a readable form
-
-;; we may not need clojure.tools.reader ?
-
-(defn read-identity [tag form]
-  [::reader-tag tag form])
-
-(defn read-form [{:keys [eof rdr]}]
-  (let [res
-        (binding [r/*default-data-reader-fn* read-identity]
-          (try
-            (r/read {:eof eof
-                     :read-cond :preserve} rdr)
-            (catch Exception e
-              {:exception e})))]
-    (cond
-      (= res eof) eof
-      (and (map? res) (:exception res)) res
-      (and (map? (meta res))
-           (:source (meta res))) (assoc (meta res)
-                                        :read-value res)
-      :else {:read-value res
-             :source (pr-str res)})))
-
-(defn read-forms [s]
-  (let [eof (Object.)]
-    (->> (repeat {:rdr (rtyp/source-logging-push-back-reader s)
-                  :eof eof})
-         (map read-form)
-         (take-while #(not= eof %)))))
-
-(defn take-valid-forms-at [s pos]
-  (read-forms (subs s 0 (min (count s) pos))))
-
-(defn has-valid-forms-at? [s pos]
-  (when-let [forms (not-empty (take-valid-forms-at s pos))]
-    (and (not-empty (filter :source forms))
-         (not (:exception (last forms))))))
-
-;; we need to tokeninze on our own during completion because of completion
-;; logic in LineReaderImpl and how it interacts with the results of the default parser
-
-(def completion-tokenizing-rexp
-  (Pattern/compile
-   (str ind/areas-where-brackets-dont-count-rexp "|"
-        "(" syn/not-delimiter-exp "+)")))
-
-(defn tokenize-line [line]
-  (syn/tag-matches line
-                   completion-tokenizing-rexp
-                   :end-line-comment
-                   :string-literal 
-                   :unterm-string-literal
-                   :character
-                   :complete-word))
-
-;; TODO we could make string literals and unterm string literals complete
-;; on their contents
-(defn parse-line [line cursor]
-  (let [tokens (tokenize-line line)
-        words  (filter (comp #{:string-literal
-                               :unterm-string-literal
-                               :complete-word}
-                             last)
-                       tokens)
-        word   (first (filter
-                       (fn [[_ s e]]
-                         (<= s cursor e))
-                       words))
-        word-index (.indexOf (vec words) word)
-        word-cursor (if-not word
-                      0
-                      (- cursor (second word)))]
-    ;; TODO this can return a parsedline directly
-    ;; but for now this is easier to debug
-    {:word-index (or word-index -1)
-     :word  (or (first word) "")
-     :word-cursor word-cursor
-     :tokens tokens
-     :words (map first words)
-     :line line
-     :cursor cursor}))
-
-(defn parsed-line [{:keys [word-index word word-cursor words line cursor]}]
-  (proxy [ParsedLine] []
-    (word [] word)
-    (wordIndex [] word-index)
-    (wordCursor [] word-cursor)
-    (words [] (java.util.LinkedList. words))
-    (line [] line)
-    (cursor [] cursor)))
-
-;; a parser for jline that respects clojurisms
-(defn make-parser [line-reader-prom]
-  (doto
-      (proxy [DefaultParser] []
-        (isDelimiterChar [^CharSequence buffer pos]
-          (boolean (#{\space \tab \return \newline  \, \{ \} \( \) \[ \] }
-                    (.charAt buffer pos))))
-        (parse [^String line cursor ^Parser$ParseContext context]
-          (cond
-            (= context Parser$ParseContext/ACCEPT_LINE)
-            (when-not (has-valid-forms-at? line cursor)
-              (indent @line-reader-prom line cursor)
-              (throw (EOFError. -1 -1 "Unbalanced Expression" (str *ns*))))
-            (= context Parser$ParseContext/COMPLETE)
-            (parsed-line (parse-line line cursor))
-            :else (proxy-super parse line cursor context))))
-    (.setQuoteChars (char-array [\"]))))
-
-;; completions
-
-(defn candidate [{:keys [candidate type ns]}]
-  (proxy [Candidate] [candidate ;; value 
-                      candidate ;; display
-                      nil ;; group
-                      (cond-> nil
-                        type (str (first (name type)))
-                        ns   (str " " ns)) 
-                      nil ;; suffix
-                      nil ;; key
-                      true]
-    ;; apparently this comparator doesn't affect final sorting 
-    (compareTo [^Candidate candidate]
-      (let [s1 (proxy-super value)
-            s2 (.value candidate)
-            res (compare (count s1) (count s2))]
-        (if (zero? res)
-          (compare s1 s2)
-          res)))))
-
-;; TODO - we need to get context infp in here to fully use compliment to its fullest
-;; TODO - we also need to look at how strings are passed along for completion
-;;        for files etc
-
-(defn clojure-completer []
-  (proxy [Completer] []
-    (complete [^LineReader reader ^ParsedLine line ^java.util.List candidates]
-      #_(log {:cursor (.cursor line)
-              :word   (.word line)
-              :word-cursor (.wordCursor line)
-              :word-index  (.wordIndex line)
-              :words (.words line)})
-      (let [word (.word line)]
-        (when (and (not (string/blank? word))
-                   (pos? (count word)))
-          (.addAll candidates (take 10 (map #(candidate %)
-                                            (compliment/completions (.word line))))))))))
-
-;; syntax highlighting
-;; TODO reader error highlighting and feedback
-
-(defn highlighter []
-  (proxy [Highlighter] []
-    (highlight [^LineReader reader ^String buffer]
-      (.toAttributedString (#'highlight-clj-str buffer)))))
-
-;; the main line reader
-
-;; add functionality 
-(defn register-widget [line-reader widget-id widget]
-  (doto line-reader
-    (-> (.getWidgets)
-        (.put widget-id widget))))
-
-(defn bind-key [line-reader widget-id key-str]
-  (doto line-reader
-    (-> (.getKeyMaps)
-        ;; TODO which map are we modifying here?
-        (get "emacs")
-        (.bind (org.jline.reader.Reference. widget-id) key-str))))
-
-;; line indenting widget
-(defn indent-line-widget [line-reader]
-  (reify Widget
-    (apply [_]
-      (let [buf (.getBuffer line-reader)
-            cursor (.cursor buf)
-            s (str buf)
-            begin-of-line-pos (ind/search-for-line-start s (dec cursor))
-            leading-white-space (ind/count-leading-white-space (subs s begin-of-line-pos))
-            indent-amount (#'ind/indent-amount s begin-of-line-pos)
-            cursor-in-leading-white-space? (< cursor
-                                              (+ leading-white-space begin-of-line-pos))]
-        ;; first we will remove-the whitespace
-        (.cursor buf begin-of-line-pos)
-        (.delete buf leading-white-space)
-        (.write buf (apply str (repeat indent-amount \space)))
-
-        ;; rectify cursor
-        (when-not cursor-in-leading-white-space?
-          (.cursor buf (+ indent-amount (- cursor leading-white-space)))))
-      ;; return true to re-render
-      true)))
-
-(defn indent-or-complete-widget [line-reader]
-  (reify Widget
-    (apply [_]
-      (let [buf (.getBuffer line-reader)
-            cursor (.cursor buf)
-            s (str buf)
-            begin-of-line-pos (ind/search-for-line-start s (dec cursor))
-            leading-white-space (ind/count-leading-white-space (subs s begin-of-line-pos))
-            ;; indent-amount (#'ind/indent-amount s begin-of-line-pos)
-            cursor-in-leading-white-space? (<= cursor
-                                               (+ leading-white-space begin-of-line-pos))]
-        (if cursor-in-leading-white-space?
-          (.callWidget line-reader "indent-line")
-          (.callWidget line-reader LineReader/MENU_COMPLETE))
-        true))))
-
-;; --------------------------
-;; paredit
-;; --------------------------
-
-;; buffer helper 
-(defn buffer
-  ([s] (buffer s nil))
-  ([s c]
-   (doto (BufferImpl.)
-     (.write s)
-     (.cursor (or c (count s))))))
-
-;; ------------
-;; paredit open
-
-(defn should-self-insert-open? [code-str cursor]
-  (log :hey code-str cursor (ind/in-non-interp-bounds? code-str cursor))
-  (if-let [[start end token-type] (ind/in-non-interp-bounds? code-str cursor)]
-    (not (and (= :character token-type)
-              (not (= end (inc start)))))
-    true))
-
-#_(and (should-self-insert-open?  " \\ a  " 2)
-     (not (should-self-insert-open?  " \\a  " 2))
-     )
-#_(ind/in-non-interp-bounds? " \\  " (dec 2))
-
-
-
-(defn paredit-insert-pair [open-char buffer]
-  (let [cursor (.cursor buffer)]
-    (when-not (or (ind/blank-at-position? (str buffer) (dec cursor))
-                  (#{\( \{ \[} (char (.prevChar buffer))))
-      (.write buffer (int \space)))
-    (doto buffer
-      (.write (int open-char))
-      (.write (int (ind/flip-delimiter open-char)))
-      (.move  -1))
-    (when-not (or (ind/blank-at-position? (str buffer) (inc (.cursor buffer)))
-                  (#{\) \} \]} (char (.nextChar buffer))))
-      (.move buffer 1)
-      (.write buffer (int \space))
-      (.move buffer -2))
-    true))
-
-(defn paredit-open [open-char buffer]
-  (let [cursor (.cursor buffer)
-        s (str buffer)]
-    (if (ind/in-non-interp-bounds? s cursor)
-      (not (should-self-insert-open? s cursor))
-      (paredit-insert-pair open-char buffer))))
-
-(defn paredit-open-widget [open-char line-reader]
-  (reify Widget
-    (apply [_]
-      (if (paredit-open open-char (.getBuffer line-reader))
-        true
-        (do (.callWidget line-reader LineReader/SELF_INSERT)
-            true)))))
-
-;; ------------
-;; paredit close
-
-(comment
-
-  (let [b (buffer "(       )")]
-    (.move b -1)
-    (paredit-close-action b)
-  b
-  )
-  
-  (list 1
-      2
-      3)
-
-(ind/find-open-sexp-end (ind/tag-for-sexp-traversal "()") 1)
-
-)
-
-
-
-(defn backwards-clean-whitespace [buffer]
-  (loop []
-    (when (Character/isWhitespace (.prevChar buffer))
-      (.backspace buffer)
-      (recur))))
-
-(defn paredit-close-action [buffer]
-  (let [s (str buffer)
-        tagged-parses (ind/tag-for-sexp-traversal s)
-        [_ start _ _] (ind/find-open-sexp-end tagged-parses (.cursor buffer))]
-    (if-not start
-      false
-      (do
-        (.cursor buffer start)
-        (backwards-clean-whitespace buffer)
-        ;; TODO blink by calling widget a
-        (.move buffer 1)
-        true))))
-
-(defn paredit-close [buffer]
-  (let [cursor (.cursor buffer)
-        s (str buffer)]
-    (if (ind/in-non-interp-bounds? s cursor)
-      (and (not (should-self-insert-open? s cursor)) :self-insert)
-      (paredit-close-action buffer))))
-
-(defn paredit-close-widget [line-reader]
-  (reify Widget
-    (apply [_]
-      (let [buf (.getBuffer line-reader)]
-        (condp = (paredit-close buf)
-          :self-insert
-          (do (.callWidget line-reader LineReader/SELF_INSERT)
-              true)
-          true
-          (do
-            #_(.move buf -1)
-            #_(.callWidget line-reader LineReader/VI_MATCH_BRACKET)
-            #_(future
-              (do
-                (Thread/sleep 500)
-                (.callWidget line-reader LineReader/VI_MATCH_BRACKET)
-                (.move buf 1)))
-            true)
-          false false)))))
-
-
-
-#_(ind/in-non-interp-bounds? "\\r" 2)
-
-#_(let [b (buffer "aa11 1")]
-  (.move b -3)
-  (paredit-open \( b)
-  b
-    #_(.prevChar b)
-    )
-
-#_(defn paredit-open-quote [buffer]
-  (let [cursor (.cursor buffer)
-        s (str buffer)]
-    (if-let [res (ind/in-non-interp-bounds? s (dec cursor))]
-      (if (and ))
-      (paredit-open \" buffer))))
-
-#_(ind/non-interp-bounds "\" \" \\  ")
-
-(defn add-paredit [line-reader]
-  (-> line-reader
-      (register-widget "paredit-open-paren"   (paredit-open-widget \( line-reader))
-      (register-widget "paredit-open-brace"   (paredit-open-widget \{ line-reader))
-      (register-widget "paredit-open-bracket" (paredit-open-widget \[ line-reader))
-      (register-widget "paredit-open-quote"   (paredit-open-widget \" line-reader))
-      (register-widget "paredit-close"        (paredit-close-widget line-reader))
-
-      (bind-key "paredit-open-paren"   (str "("))
-      (bind-key "paredit-open-brace"   (str "{"))
-      (bind-key "paredit-open-bracket" (str "["))
-      
-      (bind-key "paredit-close"   (str ")"))
-      (bind-key "paredit-close"   (str "}"))
-      (bind-key "paredit-close"   (str "]"))
-
-      ;; TODO backspace
-      
-      )
-  )
-
-
-
-
-
-(defn add-functionality [line-reader]
-  (-> line-reader
-      (register-widget "indent-line" (indent-line-widget line-reader))
-      (register-widget "indent-or-complete" (indent-or-complete-widget line-reader))
-      
-      (bind-key "indent-line"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \I)))
-      (bind-key "indent-or-complete" (str #_(KeyMap/ctrl \X) (KeyMap/ctrl \I)))))
-
-
-
-
-#_(add-functionality (line-reader))
-
-(defn line-reader []
-  (let [line-reader-prom (promise)]
-    (doto (-> (LineReaderBuilder/builder)
-              (.terminal (-> (TerminalBuilder/builder)
-                             (.build)))
-              (.completer (clojure-completer))
-              (.highlighter (highlighter))
-              (.parser  (make-parser line-reader-prom))
-              (.build))
-      ((fn [x] (deliver line-reader-prom x)))
-      ;; make sure that we don't have to double escape things 
-      (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
-      ;; never insert tabs
-      (.unsetOpt LineReader$Option/INSERT_TAB)
-      #_(.unsetOpt LineReader$Option/CASE_INSENSITIVE)
-      (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
-      add-functionality
-      add-paredit)))
+#_(remove-ns 'clj-readline.core)
 
 ;; color isn't working for 256 color
 (defn prompt []
@@ -475,36 +25,89 @@
              (with-out-str (clojure.main/repl-prompt)))
     (.toAnsi sb)))
 
+
+;; this is just a throwaway
+;; for the demo
+(defmulti repl-command first)
+
+;; TODO add levenstein matching
+(defmethod repl-command :default [[com]]
+  (println "No command" (pr-str com) "found."))
+
+(defmethod repl-command :repl/indent [_]
+  (swap! api/*state* assoc :indent true)
+  (println "Indenting on!"))
+
+(defmethod repl-command :repl/highlight [_]
+  (swap! api/*state* assoc :highlight true)
+  (println "Highlighting on!"))
+
+(defmethod repl-command :repl/eldoc [_]
+  (swap! api/*state* assoc :eldoc true)
+  (println "Eldoc on!"))
+
+(defmethod repl-command :repl/quit [_]
+  (println "Bye!")
+  ;; request exit
+  (System/exit 0)
+  nil
+  )
+
+(defn get-command [forms]
+  (when (some->> (first forms)
+                 :read-value
+                 (#(when (and (keyword? %)
+                              (= (namespace %) "repl"))
+                     %)))
+    (keep :read-value forms)))
+
 (defn repl-read [reader]
   (fn [request-prompt request-exit]
     (let [possible-forms (.readLine reader (prompt))
-          possible-forms (read-forms possible-forms)]
+          possible-forms (forms/read-forms possible-forms)]
       (cond (empty? possible-forms)
             request-prompt
+            (get-command possible-forms)
+            (repl-command (get-command possible-forms))
             (first possible-forms)
             (r/read {:read-cond :allow} (rtyp/source-logging-push-back-reader
                                          (-> possible-forms first :source)))))))
 
-(defn repl [reader]
-  (clojure.main/repl
-   :prompt (fn [])
-   :read (repl-read reader)
-   :caught (fn [e]
-             (cond (= (type e) EndOfFileException)
-                   (System/exit 0)
-                   (= (type e) UserInterruptException) nil
-                   :else (clojure.main/repl-caught e)))))
+(defn output-handler [reader]
+  (fn [{:keys [text]}]
+    (when (not (string/blank? text))
+      (api/reader-println reader text))))
 
-;; making a field 
-#_(let [t (.getTerminal (line-reader))
-        pty_field (-> t .getClass .getSuperclass (.getDeclaredField "pty"))]
-    (.setAccessible pty_field true)
-    (let [pty (.get pty_field t)] ;; there is also a .set Method
-      pty
-      (.doGetConfig pty)
-      )
-   
-  )
+(defn repl [reader]
+  (let [out nil #_(line-print-writer/print-writer :out (output-handler reader))]
+    ;; you can do this to capture all thread output
+    #_(alter-var-root #'*out* (fn [_] out))
+    (binding [api/*state* (atom {:indent true
+                                 :highlight true
+                                 :eldoc true})
+              ;*out* out
+              ]
+      (clojure.main/repl
+       :prompt (fn [])
+       :read (repl-read reader)
+       :caught (fn [e]
+                 (cond (= (type e) EndOfFileException)
+                       (System/exit 0)
+                       (= (type e) UserInterruptException) nil
+                       :else
+                       ;; TODO work on error highlighting
+                       (do
+                         (log (Throwable->map e))
+                         (clojure.main/repl-caught e))))))))
+
+#_(def XXXX (line-reader))
+
+#_(let [field (api/get-accessible-field XXXX "reading")]
+    (type (.get field XXXX))
+    (false? (.get field XXXX))
+    (true? (.get field XXXX))
+    (false? (boolean (.get field XXXX)))
+    )
 
 (defn -main []
   ;; for development
