@@ -7,7 +7,7 @@
   (-set-config! [_ v]))
 
 (defprotocol Completions
-  (-complete [_ word surrounding-sexp]))
+  (-complete [_ word options]))
 
 (defprotocol CurrentNs
   (-current-ns [_]))
@@ -44,6 +44,18 @@
 (defn apropos [wrd]
   (when (satisfies? Apropos *service*)
     (-apropos *service* wrd)))
+
+(defn source [wrd]
+  (when (satisfies? Source *service*)
+    (-source *service* wrd)))
+
+(defn resolve-var-meta [wrd]
+  (when (satisfies? ResolveVarMeta *service*)
+    (-resolve-var-meta *service* wrd)))
+
+(defn resolve-ns-meta [wrd]
+  (when (satisfies? ResolveNsMeta *service*)
+    (-resolve-ns-meta *service* wrd)))
 
 
 

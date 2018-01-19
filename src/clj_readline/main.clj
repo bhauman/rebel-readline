@@ -92,23 +92,18 @@
   (let [out nil #_(line-print-writer/print-writer :out (output-handler reader))]
     ;; you can do this to capture all thread output
     #_(alter-var-root #'*out* (fn [_] out))
-    (binding [api/*state* (atom {:indent true
-                                 :highlight true
-                                 :eldoc true})
-              ;*out* out
-              ]
-      (clojure.main/repl
-       :prompt (fn [])
-       :read (repl-read reader)
-       :caught (fn [e]
-                 (cond (= (type e) EndOfFileException)
-                       (System/exit 0)
-                       (= (type e) UserInterruptException) nil
-                       :else
-                       ;; TODO work on error highlighting
-                       (do
-                         (log (Throwable->map e))
-                         (clojure.main/repl-caught e))))))))
+    (clojure.main/repl
+     :prompt (fn [])
+     :read (repl-read reader)
+     :caught (fn [e]
+               (cond (= (type e) EndOfFileException)
+                     (System/exit 0)
+                     (= (type e) UserInterruptException) nil
+                     :else
+                     ;; TODO work on error highlighting
+                     (do
+                       (log (Throwable->map e))
+                       (clojure.main/repl-caught e)))))))
 
 #_(def XXXX (line-reader))
 
@@ -126,7 +121,7 @@
   ;; read all garbage before starting
   
   ;; also include prompt
-  (let [reader (line-reader (local-clj-service/create {}))]
+  (let [reader (line-reader (local-clj-service/create))]
     (repl reader)
     #_(println ":::" (read-eval-loop reader))
     )

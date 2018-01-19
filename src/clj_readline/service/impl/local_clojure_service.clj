@@ -11,8 +11,13 @@
 
 (def safe-meta (comp meta safe-resolve))
 
-(defn create [init-config]
-  (let [config-atom (atom init-config)]
+(def default-config
+  {:indent true
+   :eldoc true
+   :highlight true})
+
+(defn create* [options]
+  (let [config-atom (atom options)]
     (reify
       core/Config
       (-get-config [_] @config-atom)
@@ -39,8 +44,12 @@
       core/Document
       (-doc [_ var-str]
         (eval `(clojure.core/with-out-str
-                 (clojure.repl/doc ~(symbol var-str)))))
-      )))
+                 (clojure.repl/doc ~(symbol var-str))))))))
+
+(defn create
+  ([] (create nil))
+  ([options]
+   (create* (merge default-config options))))
 
 #_(core/-get-config (create {}))
 

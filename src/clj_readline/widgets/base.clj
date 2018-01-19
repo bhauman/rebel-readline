@@ -18,17 +18,9 @@
 
 ;; TODO make services like source, document, and apropos abstract
 
-(defn safe-resolve [s]
-  (some-> s
-          symbol
-          (-> resolve (try (catch Throwable e nil)))))
-
-(def safe-meta (comp meta safe-resolve))
-
 (def indent-line-widget
   (create-widget
-   (log :state @*state*)
-   (when (:indent @*state*)
+   (when (:indent (srv/config))
        (let [curs (cursor)
              s (buffer-as-string) ;; up-to-cursor better here?
              begin-of-line-pos   (sexp/search-for-line-start s (dec curs))
@@ -107,7 +99,7 @@
 
 (defn display-argument-help-message []
   (when-let [funcall-str (one-space-after-funcall-word?)]
-    (when-let [fun-meta (safe-meta funcall-str)]
+    (when-let [fun-meta (srv/resolve-var-meta funcall-str)]
       (name-arglist-display fun-meta))))
 
 ;; TODO this ttd atom doesn't work really
@@ -126,7 +118,7 @@
      ;; hook here
      ;; if prev-char is a space and the char before that is part
      ;; of a word, and that word is a fn call
-     (when (:eldoc @*state*)
+     (when (:eldoc (srv/config))
        (when-let [message (display-argument-help-message)]
          (reset! ttd-atom 1)
          (display-message message)))
@@ -174,13 +166,13 @@
       s)))
 
 (defn clojure-docs-url* [ns name]
-  (when (.startsWith ns "clojure.")
+  (when (.startsWith (str ns) "clojure.")
     (cond-> "https://clojuredocs.org/"
       ns (str ns)
       name (str "/" name))))
 
 (defn clojure-docs-url [wrd]
-  (when-let [{:keys [ns name]} (safe-meta wrd)]
+  (when-let [{:keys [ns name]} (srv/resolve-var-meta wrd)]
     ;; TODO check if one of the available namespaces
     (when ns {:url (clojure-docs-url* (str ns) (str name))
               :ns (str ns)
@@ -189,7 +181,7 @@
 ;; TODO hard coded colors
 (defn doc-at-point []
   (when-let [[wrd] (word-at-cursor)]
-    (when-let [{:keys [doc] :as var-meta-data} (safe-meta wrd)]
+    (when-let [{:keys [doc] :as var-meta-data} (srv/resolve-var-meta wrd)]
       (when doc
         (let [doc (shrink-multiline-to-terminal-size doc)]
           (if-let [name-line (name-arglist-display var-meta-data)]
@@ -217,8 +209,8 @@
 
 (defn source-at-point []
   (when-let [[wrd] (word-at-cursor)]
-    (when-let [{:keys [doc] :as var-meta-data} (safe-meta wrd)]
-      (when-let [source (clojure.repl/source-fn (symbol wrd))]
+    (when-let [{:keys [doc] :as var-meta-data} (srv/resolve-var-meta wrd)]
+      (when-let [source (srv/source wrd)]
         (when-let [name-line (name-arglist-display var-meta-data)]
           (let [source (shrink-multiline-to-terminal-size source)]
             (when-not (string/blank? source)

@@ -5,7 +5,7 @@
    [clj-readline.tools.read-forms :as forms]
    [clj-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
    [clj-readline.parsing.tokenizer :as tokenize]
-   [clj-readline.service.core :as service-core]
+   [clj-readline.service.core :as srv]
    [clojure.string :as string]
    [compliment.core :as compliment]
    [clj-readline.jline-api :as api])
@@ -151,7 +151,7 @@
 (defn highlighter []
   (proxy [Highlighter] []
     (highlight [^LineReader reader ^String buffer]
-      (if (:highlight @api/*state*)
+      (if (:highlight (srv/config))
         (.toAttributedString (highlight-clj-str buffer))
         (AttributedString. buffer)))))
 
@@ -188,11 +188,7 @@
    :line-reader (line-reader*)})
 
 (defn read-line [{:keys [service line-reader]} prompt-fn request-prompt request-exit]
-  (binding [service-core/*service* service
-            ;; TODO temporary
-            api/*state* (atom {:indent true
-                               :highlight true
-                               :eldoc true})]
+  (binding [srv/*service* service]
     ;; TODO redirect all output around this call to read-line
     ;; TODO interpret commands here!!
     (let [res (try
@@ -202,7 +198,3 @@
                 (catch EndOfFileException e
                   request-exit))]
       res)))
-
-
-
-
