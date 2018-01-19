@@ -1,4 +1,4 @@
-(ns clj-readline.clj-widgets.base-widgets
+(ns clj-readline.widgets.base
   (:require
    [clojure.repl]
    [clojure.string :as string]
@@ -14,8 +14,6 @@
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
     #_InfoCmp$Capability]
    [java.util.regex Pattern]))
-
-#_(remove-ns 'clj-readline.clj-widgets.base-widget)
 
 ;; TODO make services like source, document, and apropos abstract
 
@@ -57,9 +55,12 @@
           ;; indent-amount (#'ind/indent-amount s begin-of-line-pos)
           cursor-in-leading-white-space? (<= curs
                                              (+ leading-white-space begin-of-line-pos))]
+      (log :indent-or-complete cursor-in-leading-white-space?)
+      
       (if cursor-in-leading-white-space?
         (call-widget "indent-line")
-        (call-widget LineReader/MENU_COMPLETE))
+        (do (log "HERE")
+            (call-widget LineReader/MENU_COMPLETE)))
       true)))
 
 ;; ------------------------------------------------
@@ -140,7 +141,7 @@
 
 (defn word-at-position [p]
   (->> (tokenize/tag-words (str *buffer*))
-       (filter #(= :complete-word (last %)))
+       (filter #(= :word (last %)))
        (filter #(<= (second %) p (inc (nth % 2))))
        first))
 

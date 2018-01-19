@@ -8,10 +8,10 @@
                  [org.clojure/tools.reader "1.1.1"]
                  [cljfmt "0.5.7"]
                  [compliment "0.3.5"]
-                 [org.clojure/tools.nrepl "0.2.12"]
-                 [cider/cider-nrepl "0.16.0-SNAPSHOT"]]
+                 #_[org.clojure/tools.nrepl "0.2.12"]
+                 #_[cider/cider-nrepl "0.16.0-SNAPSHOT"]]
   
-  :main clj-readline.core
+  :main clj-readline.main
 
   
   )

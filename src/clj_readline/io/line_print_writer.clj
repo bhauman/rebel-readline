@@ -1,4 +1,4 @@
-(ns clj-readline.line-print-writer
+(ns clj-readline.io.line-print-writer
   (:require
    [clojure.string :as string])
   (:import
@@ -23,6 +23,10 @@
   (str (doto (java.lang.StringBuilder.)
          (.append ch-array off len))))
 
+;; this print_writer pushes back uncomplete strings less than 500 chars long
+;; trys to respect an output that must print newlines after flushing.
+;; this is for handling output when the line reader is engaged and 
+;; one needs to print the output "before" the prompt
 (defn print-writer [channel-type handler]
   (let [buf (CharBuffer/allocate 1024)]
     (PrintWriter. (proxy [Writer] []

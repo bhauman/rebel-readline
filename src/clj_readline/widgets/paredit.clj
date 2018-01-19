@@ -1,6 +1,6 @@
-(ns clj-readline.clj-widgets.paredit
+(ns clj-readline.widgets.paredit
   (:require
-   [clj-readline.indenting :as ind])
+   [clj-readline.tools.indent :as ind])
   (:use clj-readline.jline-api)
   (:import
    [org.jline.keymap KeyMap]
@@ -8,6 +8,8 @@
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
     #_InfoCmp$Capability]
    [java.util.regex Pattern]))
+
+;; this is a WIP and is out of date right now
 
 ;; ------------
 ;; paredit open

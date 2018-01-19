@@ -1,8 +1,8 @@
-(ns clj-readline.clj-linereader
+(ns clj-readline.line-reader
   (:require
-   [clj-readline.clj-widgets.base-widgets :as base-widgets]
-   [clj-readline.read-forms :as forms]
-   [clj-readline.syntax-highlight :as syn :refer [highlight-clj-str]]
+   [clj-readline.widgets.base :as base-widgets]
+   [clj-readline.tools.read-forms :as forms]
+   [clj-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
    [clj-readline.parsing.tokenizer :as tokenize]
    [clojure.string :as string]
    [compliment.core :as compliment]
@@ -44,7 +44,7 @@
   (let [tokens (tokenize/tag-words line)
         words  (filter (comp #{:string-literal
                                :unterm-string-literal
-                               :complete-word}
+                               :word}
                              last)
                        tokens)
         word   (first (filter
@@ -64,7 +64,6 @@
      :words (map first words)
      :line line
      :cursor cursor}))
-
 
 (defn parsed-line [{:keys [word-index word word-cursor words line cursor]}]
   (proxy [ParsedLine] []
@@ -115,17 +114,15 @@
 ;; ----------------------------------------
 
 (defn candidate [{:keys [candidate type ns]}]
-  (Candidate.
-   candidate ;; value 
-   candidate ;; display
-   nil ;; group
-   (cond-> nil
-     type (str (first (name type)))
-     ns   (str " " ns)) 
-   nil ;; suffix
-   nil ;; key
-   true)
-  #_(proxy [Candidate] []
+  (proxy [Candidate] [candidate ;; value 
+                      candidate ;; display
+                      nil ;; group
+                      (cond-> nil
+                        type (str (first (name type)))
+                        ns   (str " " ns)) 
+                      nil ;; suffix
+                      nil ;; key
+                      true]
     ;; apparently this comparator doesn't affect final sorting 
     (compareTo [^Candidate candidate]
       (let [s1 (proxy-super value)

@@ -1,9 +1,9 @@
-(ns clj-readline.core
+(ns clj-readline.main
   (:require
-   [clj-readline.read-forms :as forms]
-   [clj-readline.clj-linereader :refer [line-reader]]
+   [clj-readline.tools.read-forms :as forms]
+   [clj-readline.line-reader :refer [line-reader]]
    [clj-readline.jline-api :as api]
-   [clj-readline.line-print-writer :as line-print-writer]
+   [clj-readline.io.line-print-writer :as line-print-writer]
    [clj-readline.utils :refer [log]]
    [clojure.tools.reader :as r]
    [clojure.tools.reader.reader-types :as rtyp]
@@ -24,7 +24,6 @@
     (.styled sb (.foreground AttributedStyle/DEFAULT 33)
              (with-out-str (clojure.main/repl-prompt)))
     (.toAnsi sb)))
-
 
 ;; this is just a throwaway
 ;; for the demo
