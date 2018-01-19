@@ -4,7 +4,8 @@
    [clojure.string :as string]
    [clj-readline.parsing.tokenizer :as tokenize]
    [clj-readline.tools.indent :as indent]
-   [clj-readline.tools.sexp :as sexp]   
+   [clj-readline.tools.sexp :as sexp]
+   [clj-readline.service.core :as srv]
    [clj-readline.tools.syntax-highlight :as highlight]
    [clj-readline.utils :refer [log]])
   (:use clj-readline.jline-api)
@@ -55,12 +56,9 @@
           ;; indent-amount (#'ind/indent-amount s begin-of-line-pos)
           cursor-in-leading-white-space? (<= curs
                                              (+ leading-white-space begin-of-line-pos))]
-      (log :indent-or-complete cursor-in-leading-white-space?)
-      
       (if cursor-in-leading-white-space?
         (call-widget "indent-line")
-        (do (log "HERE")
-            (call-widget LineReader/MENU_COMPLETE)))
+        (call-widget LineReader/MENU_COMPLETE))
       true)))
 
 ;; ------------------------------------------------
@@ -328,7 +326,7 @@
 
 (defn formatted-apropos [wrd]
   (let [suggests (sort-by (juxt count identity)
-                          (map str (clojure.repl/apropos wrd)))]
+                          (map str (srv/apropos wrd)))]
     (when-let [suggests (not-empty (take 50 suggests))]
       (let [terminal-width (:cols (terminal-size))
             max-length (apply max (map count suggests))]

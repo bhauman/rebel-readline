@@ -1,9 +1,10 @@
 (ns clj-readline.main
   (:require
    [clj-readline.tools.read-forms :as forms]
-   [clj-readline.line-reader :refer [line-reader]]
+   [clj-readline.line-reader :refer [line-reader] :as lr]
    [clj-readline.jline-api :as api]
    [clj-readline.io.line-print-writer :as line-print-writer]
+   [clj-readline.service.impl.local-clojure-service :as local-clj-service]
    [clj-readline.utils :refer [log]]
    [clojure.tools.reader :as r]
    [clojure.tools.reader.reader-types :as rtyp]
@@ -60,7 +61,7 @@
                      %)))
     (keep :read-value forms)))
 
-(defn repl-read [reader]
+#_(defn repl-read [reader]
   (fn [request-prompt request-exit]
     (let [possible-forms (.readLine reader (prompt))
           possible-forms (forms/read-forms possible-forms)]
@@ -71,6 +72,16 @@
             (first possible-forms)
             (r/read {:read-cond :allow} (rtyp/source-logging-push-back-reader
                                          (-> possible-forms first :source)))))))
+
+(defn repl-read [reader]
+  (fn [request-prompt request-exit]
+    (let [possible-forms (lr/read-line reader prompt request-prompt request-exit)]
+      (if (#{request-prompt request-exit} possible-forms)
+        possible-forms
+        (let [possible-forms (forms/read-forms possible-forms)]
+          (when (first possible-forms)
+            (r/read {:read-cond :allow} (rtyp/source-logging-push-back-reader
+                                         (-> possible-forms first :source)))))))))
 
 (defn output-handler [reader]
   (fn [{:keys [text]}]
@@ -115,7 +126,7 @@
   ;; read all garbage before starting
   
   ;; also include prompt
-  (let [reader (line-reader)]
+  (let [reader (line-reader (local-clj-service/create {}))]
     (repl reader)
     #_(println ":::" (read-eval-loop reader))
     )

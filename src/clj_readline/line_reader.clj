@@ -1,9 +1,11 @@
 (ns clj-readline.line-reader
+  (:refer-clojure :exclude [read-line])
   (:require
    [clj-readline.widgets.base :as base-widgets]
    [clj-readline.tools.read-forms :as forms]
    [clj-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
    [clj-readline.parsing.tokenizer :as tokenize]
+   [clj-readline.service.core :as service-core]
    [clojure.string :as string]
    [compliment.core :as compliment]
    [clj-readline.jline-api :as api])
@@ -153,7 +155,11 @@
         (.toAttributedString (highlight-clj-str buffer))
         (AttributedString. buffer)))))
 
-(defn line-reader []
+;; ----------------------------------------
+;; Building the line reader
+;; ----------------------------------------
+
+(defn line-reader* []
   (let [line-reader-prom (promise)]
     (doto (-> (LineReaderBuilder/builder)
               (.terminal (-> (TerminalBuilder/builder)
@@ -172,3 +178,31 @@
       (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
       base-widgets/add-default-widgets-and-bindings
       #_add-paredit)))
+
+;; ----------------------------------------
+;; Main API
+;; ----------------------------------------
+
+(defn line-reader [service]
+  {:service service
+   :line-reader (line-reader*)})
+
+(defn read-line [{:keys [service line-reader]} prompt-fn request-prompt request-exit]
+  (binding [service-core/*service* service
+            ;; TODO temporary
+            api/*state* (atom {:indent true
+                               :highlight true
+                               :eldoc true})]
+    ;; TODO redirect all output around this call to read-line
+    ;; TODO interpret commands here!!
+    (let [res (try
+                (.readLine line-reader (prompt-fn))
+                (catch UserInterruptException e
+                  request-prompt)
+                (catch EndOfFileException e
+                  request-exit))]
+      res)))
+
+
+
+
