@@ -5,7 +5,7 @@
    [clj-readline.parsing.tokenizer :as tokenize]
    [clj-readline.tools.indent :as indent]
    [clj-readline.tools.sexp :as sexp]   
-   [clj-readline.syntax-highlight :as syn]
+   [clj-readline.tools.syntax-highlight :as highlight]
    [clj-readline.utils :refer [log]])
   (:use clj-readline.jline-api)
   (:import
@@ -225,7 +225,7 @@
             (when-not (string/blank? source)
               (doto name-line
                 (.append (System/getProperty "line.separator"))
-                (.append (syn/highlight-clj-str source))))))))))
+                (.append (highlight/highlight-clj-str source))))))))))
 
 (def source-at-point-widget
   (create-widget

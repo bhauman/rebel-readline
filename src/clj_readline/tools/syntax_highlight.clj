@@ -1,4 +1,4 @@
-(ns clj-readline.syntax-highlight
+(ns clj-readline.tools.syntax-highlight
   (:require
    [clojure.string :as string]
    [clj-readline.parsing.tokenizer :as tokenize])
