@@ -93,7 +93,7 @@
 ;; still rough
 ;; TODO line acceptance needs to be parameterized
 ;; TODO should behave just like the 'reply' project here
-(defn make-parser [line-reader-prom]
+(defn make-parser []
   (doto
       (proxy [DefaultParser] []
         (isDelimiterChar [^CharSequence buffer pos]
@@ -103,7 +103,7 @@
           (cond
             (= context Parser$ParseContext/ACCEPT_LINE)
             (when-not (has-valid-forms-at? line cursor)
-              (indent @line-reader-prom line cursor)
+              (indent api/*line-reader* line cursor)
               (throw (EOFError. -1 -1 "Unbalanced Expression" (str *ns*))))
             (= context Parser$ParseContext/COMPLETE)
             (parsed-line (parse-line line cursor))
@@ -159,24 +159,23 @@
 ;; ----------------------------------------
 
 (defn line-reader* []
-  (let [line-reader-prom (promise)]
-    (doto (-> (LineReaderBuilder/builder)
-              (.terminal (-> (TerminalBuilder/builder)
-                             (.build)))
-              (.completer (clojure-completer))
-              (.highlighter (highlighter))
-              ;; TODO get rid of promise just set the parser afterward
-              (.parser  (make-parser line-reader-prom))
-              (.build))
-      ((fn [x] (deliver line-reader-prom x)))
-      ;; make sure that we don't have to double escape things 
-      (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
-      ;; never insert tabs
-      (.unsetOpt LineReader$Option/INSERT_TAB)
-      #_(.unsetOpt LineReader$Option/CASE_INSENSITIVE)
-      (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
-      base-widgets/add-default-widgets-and-bindings
-      #_add-paredit)))
+  (doto (-> (LineReaderBuilder/builder)
+            (.terminal (-> (TerminalBuilder/builder)
+                           (.build)))
+            (.completer (clojure-completer))
+            (.highlighter (highlighter))
+            ;; TODO get rid of promise just set the parser afterward
+            (.parser  (make-parser))
+            (.build))
+    ((fn [x] (deliver line-reader-prom x)))
+    ;; make sure that we don't have to double escape things
+    (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
+    ;; never insert tabs
+    (.unsetOpt LineReader$Option/INSERT_TAB)
+    #_(.unsetOpt LineReader$Option/CASE_INSENSITIVE)
+    (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
+    base-widgets/add-default-widgets-and-bindings
+    #_add-paredit))
 
 ;; ----------------------------------------
 ;; Main API
@@ -187,7 +186,8 @@
    :line-reader (line-reader*)})
 
 (defn read-line [{:keys [service line-reader]} prompt-fn request-prompt request-exit]
-  (binding [srv/*service* service]
+  (binding [srv/*service* service
+            api/*line-reader* line-reader]
     ;; TODO redirect all output around this call to read-line
     ;; TODO interpret commands here!!
     (let [res (try

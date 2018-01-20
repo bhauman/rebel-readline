@@ -22,7 +22,6 @@
 
 (def ^:dynamic *line-reader* nil)
 (def ^:dynamic *buffer* nil)
-(def ^:dynamic *state* (atom {:indent true}))
 
 ;; helper for development
 (defn buffer*

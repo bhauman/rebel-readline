@@ -16,8 +16,6 @@
     EndOfFileException])
   (:gen-class))
 
-#_(remove-ns 'clj-readline.core)
-
 ;; color isn't working for 256 color
 (defn prompt []
   (with-out-str (clojure.main/repl-prompt))
@@ -25,41 +23,6 @@
     (.styled sb (.foreground AttributedStyle/DEFAULT 33)
              (with-out-str (clojure.main/repl-prompt)))
     (.toAnsi sb)))
-
-;; this is just a throwaway
-;; for the demo
-(defmulti repl-command first)
-
-;; TODO add levenstein matching
-(defmethod repl-command :default [[com]]
-  (println "No command" (pr-str com) "found."))
-
-(defmethod repl-command :repl/indent [_]
-  (swap! api/*state* assoc :indent true)
-  (println "Indenting on!"))
-
-(defmethod repl-command :repl/highlight [_]
-  (swap! api/*state* assoc :highlight true)
-  (println "Highlighting on!"))
-
-(defmethod repl-command :repl/eldoc [_]
-  (swap! api/*state* assoc :eldoc true)
-  (println "Eldoc on!"))
-
-(defmethod repl-command :repl/quit [_]
-  (println "Bye!")
-  ;; request exit
-  (System/exit 0)
-  nil
-  )
-
-(defn get-command [forms]
-  (when (some->> (first forms)
-                 :read-value
-                 (#(when (and (keyword? %)
-                              (= (namespace %) "repl"))
-                     %)))
-    (keep :read-value forms)))
 
 #_(defn repl-read [reader]
   (fn [request-prompt request-exit]
