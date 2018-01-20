@@ -1,36 +1,45 @@
-(ns clj-readline.tools.read-forms
-  (:require
-   [clojure.tools.reader :as r]
-   [clojure.tools.reader.reader-types :as rtyp]))
+(ns clj-readline.tools.read-forms)
 
-(defn read-identity [tag form]
-  [::reader-tag tag form])
+(defn read-forms
+  "Reads all the forms in a given string, if it encounters an EOF
+  because of an open delimiter it will return the
+  `open-delimiter-error-marker` in the list of results. If it
+  encounters another exception it will return the exception in the
+  list as well.
 
-(defn read-form [{:keys [eof rdr]}]
-  (let [res
-        (binding [r/*default-data-reader-fn* read-identity]
-          (try
-            (r/read {:eof eof
-                     :read-cond :preserve} rdr)
-            (catch Exception e
-              {:exception e})))]
-    (cond
-      (= res eof) eof
-      (and (map? res) (:exception res)) res
-      (and (map? (meta res))
-           (:source (meta res))) (assoc (meta res)
-                                        :read-value res)
-      :else {:read-value res
-             :source (pr-str res)})))
+  This function is primarily used to determine wether a the line
+  reader should accept the given buffer of text or wether it should
+  display a secondary prompt."
+  [line-str open-delimiter-error-marker]
+  (let [reader (clojure.lang.LineNumberingPushbackReader. (java.io.StringReader. line-str))
+        end (Object.)]
+    (take-while
+     #(not= % end)
+     (repeatedly
+      #(binding [*default-data-reader-fn* (fn [a b] b)]
+         (try
+           (read {:eof end} reader)
+           (catch clojure.lang.LispReader$ReaderException e
+             (if (.. e
+                     getCause
+                     getMessage
+                     (startsWith "EOF while reading")) 
+               open-delimiter-error-marker
+               e))))))))
 
-(defn read-forms [s]
-  (let [eof (Object.)]
-    (->> (repeat {:rdr (rtyp/source-logging-push-back-reader s)
-                  :eof eof})
-         (map read-form)
-         (take-while #(not= eof %)))))
+#_(read-forms "(1 2 3  " :ehhh?)
 
-(defn take-valid-forms-at [s pos]
-  (read-forms (subs s 0 (min (count s) pos))))
+(defn default-accept-line
+  "Given a string containing clojure forms `line-str` and a `cursor`
+  index into the string, this function will return true as long as the
+  expression \"upto the cursor\" doesn't have a dangling open
+  delimiter in it. This will return true for a blank / empty line.
 
-
+  This function is used to determine wether a the line reader should
+  accept the given buffer of text or wether it should display a
+  secondary prompt."
+  [line-str cursor]
+  (let [x (subs line-str 0 (min (count line-str) cursor))
+        open-delimiter-marker (Object.)]
+    (not (some #(= open-delimiter-marker %)
+               (read-forms x open-delimiter-marker)))))
