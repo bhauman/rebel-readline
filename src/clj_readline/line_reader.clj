@@ -167,7 +167,6 @@
             ;; TODO get rid of promise just set the parser afterward
             (.parser  (make-parser))
             (.build))
-    ((fn [x] (deliver line-reader-prom x)))
     ;; make sure that we don't have to double escape things
     (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
     ;; never insert tabs
