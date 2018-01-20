@@ -35,6 +35,10 @@
 
 (defn config [] (-get-config *service*))
 
+(defn apply-to-config [f & args]
+  (when-let [res (apply f (config) args)]
+    (-set-config! *service* res)))
+
 (defn completions
   ([word]
    (completions word nil))
@@ -44,6 +48,10 @@
 (defn apropos [wrd]
   (when (satisfies? Apropos *service*)
     (-apropos *service* wrd)))
+
+(defn doc [wrd]
+  (when (satisfies? Document *service*)
+    (-doc *service* wrd)))
 
 (defn source [wrd]
   (when (satisfies? Source *service*)
@@ -56,6 +64,4 @@
 (defn resolve-ns-meta [wrd]
   (when (satisfies? ResolveNsMeta *service*)
     (-resolve-ns-meta *service* wrd)))
-
-
 

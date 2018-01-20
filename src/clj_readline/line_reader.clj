@@ -6,6 +6,7 @@
    [clj-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
    [clj-readline.parsing.tokenizer :as tokenize]
    [clj-readline.service.core :as srv]
+   [clj-readline.commands :as commands]
    [clojure.string :as string]
    [compliment.core :as compliment]
    [clj-readline.jline-api :as api])
@@ -28,8 +29,6 @@
    [org.jline.reader.impl DefaultParser BufferImpl]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
    [org.jline.terminal TerminalBuilder]))
-
-;; fixing the Jline parser to understand clojure code
 
 ;; ---------------------------------------
 ;; Jline parser for Clojure
@@ -192,9 +191,16 @@
     ;; TODO redirect all output around this call to read-line
     ;; TODO interpret commands here!!
     (let [res (try
-                (.readLine line-reader (prompt-fn))
+                (let [res' (.readLine line-reader (prompt-fn))]
+                  (if-not (commands/handle-command res')
+                    res'
+                    request-prompt))
                 (catch UserInterruptException e
                   request-prompt)
                 (catch EndOfFileException e
-                  request-exit))]
+                  request-exit)
+                (catch clojure.lang.ExceptionInfo e
+                  (if (:request-exit (ex-data e))
+                    request-exit
+                    (throw e))))]
       res)))
