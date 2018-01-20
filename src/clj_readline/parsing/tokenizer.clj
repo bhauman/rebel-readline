@@ -1,6 +1,7 @@
 (ns clj-readline.parsing.tokenizer
   (:require
-   [clojure.string :as string])
+   [clojure.string :as string]
+   [clojure.repl])
   (:import
    [java.util.regex Pattern]))
 

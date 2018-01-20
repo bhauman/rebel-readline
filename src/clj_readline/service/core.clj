@@ -1,4 +1,6 @@
-(ns clj-readline.service.core)
+(ns clj-readline.service.core
+  (:require
+   [clj-readline.tools.read-forms :as forms]))
 
 (def ^:dynamic *service* nil)
 
@@ -26,6 +28,9 @@
 
 (defprotocol Document
   (-doc [_ var-str]))
+
+(defprotocol AcceptLine
+  (-accept-line [_ line cursor]))
 
 (defprotocol ReadString
   (-read-string [_ str-form]))
@@ -65,3 +70,7 @@
   (when (satisfies? ResolveNsMeta *service*)
     (-resolve-ns-meta *service* wrd)))
 
+(defn accept-line [line-str cursor]
+  (if (satisfies? AcceptLine *service*)
+    (-accept-line *service* line-str cursor)
+    (forms/default-accept-line line-str cursor)))

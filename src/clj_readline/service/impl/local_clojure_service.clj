@@ -14,7 +14,8 @@
 (def default-config
   {:indent true
    :eldoc true
-   :highlight true})
+   :highlight true
+   :redirect-output true})
 
 (defn create* [options]
   (let [config-atom (atom options)]

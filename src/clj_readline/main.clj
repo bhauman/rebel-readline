@@ -5,9 +5,8 @@
    [clj-readline.jline-api :as api]
    [clj-readline.io.line-print-writer :as line-print-writer]
    [clj-readline.service.impl.local-clojure-service :as local-clj-service]
+   [clj-readline.service.core :as srv]
    [clj-readline.utils :refer [log]]
-   [clojure.tools.reader :as r]
-   [clojure.tools.reader.reader-types :as rtyp]
    [clojure.main]
    [clojure.string :as string])
   (:import
@@ -24,27 +23,14 @@
              (with-out-str (clojure.main/repl-prompt)))
     (.toAnsi sb)))
 
-#_(defn repl-read [reader]
-  (fn [request-prompt request-exit]
-    (let [possible-forms (.readLine reader (prompt))
-          possible-forms (forms/read-forms possible-forms)]
-      (cond (empty? possible-forms)
-            request-prompt
-            (get-command possible-forms)
-            (repl-command (get-command possible-forms))
-            (first possible-forms)
-            (r/read {:read-cond :allow} (rtyp/source-logging-push-back-reader
-                                         (-> possible-forms first :source)))))))
-
 (defn repl-read [reader]
   (fn [request-prompt request-exit]
     (let [possible-forms (lr/read-line reader prompt request-prompt request-exit)]
       (if (#{request-prompt request-exit} possible-forms)
         possible-forms
-        (let [possible-forms (forms/read-forms possible-forms)]
-          (when (first possible-forms)
-            (r/read {:read-cond :allow} (rtyp/source-logging-push-back-reader
-                                         (-> possible-forms first :source)))))))))
+        (when-not (string/blank? possible-forms)
+          (with-in-str possible-forms
+            (read {:read-cond :allow} *in*)))))))
 
 (defn output-handler [reader]
   (fn [{:keys [text]}]
@@ -52,21 +38,39 @@
       (api/reader-println reader text))))
 
 (defn repl [reader]
-  (let [out nil #_(line-print-writer/print-writer :out (output-handler reader))]
-    ;; you can do this to capture all thread output
-    #_(alter-var-root #'*out* (fn [_] out))
-    (clojure.main/repl
-     :prompt (fn [])
-     :read (repl-read reader)
-     :caught (fn [e]
-               (cond (= (type e) EndOfFileException)
-                     (System/exit 0)
-                     (= (type e) UserInterruptException) nil
-                     :else
-                     ;; TODO work on error highlighting
-                     (do
-                       (log (Throwable->map e))
-                       (clojure.main/repl-caught e)))))))
+  (clojure.main/repl
+   :prompt (fn [])
+   :read (repl-read reader)
+   :caught (fn [e]
+             (cond (= (type e) EndOfFileException)
+                   (System/exit 0)
+                   (= (type e) UserInterruptException) nil
+                   :else
+                   ;; TODO work on error highlighting
+                   (do
+                     (log (Throwable->map e))
+                     (clojure.main/repl-caught e)))))
+  #_(binding [api/*line-reader* (:line-reader reader)
+            srv/*service* (:service reader)]
+    (let [out (line-print-writer/print-writer :out (output-handler (:line-reader reader)))]
+      ;; you can do this to capture all thread output
+      #_(alter-var-root #'*out* (fn [_] out))
+      (binding [*out* out]
+        (clojure.main/repl
+         :prompt (fn [])
+         :read (repl-read reader)
+         :caught (fn [e]
+                   (cond (= (type e) EndOfFileException)
+                         (System/exit 0)
+                         (= (type e) UserInterruptException) nil
+                         :else
+                         ;; TODO work on error highlighting
+                         (do
+                           (log (Throwable->map e))
+                           (clojure.main/repl-caught e)))))))
+
+    )
+)
 
 #_(def XXXX (line-reader))
 

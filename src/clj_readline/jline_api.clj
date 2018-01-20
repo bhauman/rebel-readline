@@ -1,6 +1,7 @@
 (ns clj-readline.jline-api
   (:require
-   [clj-readline.utils :refer [log]])
+   [clj-readline.utils :refer [log]]
+   [clj-readline.service.core :as srv])
   (:import
    [org.jline.reader
     Highlighter
@@ -124,16 +125,18 @@
 (defn reader-println
   ([s] (reader-println *line-reader* s))
   ([reader s]
+   (assert srv/*service* "Must have a service bound in order to print.")
    (binding [*line-reader* reader]
      (let [writer (.writer (.getTerminal reader))]
-       (log :ehhhhh? (reading?) s)
        (if (reading?)
          (do
            (.callWidget reader LineReader/CLEAR)
            (.println writer s)
            (.callWidget reader LineReader/REDRAW_LINE)
            (.callWidget reader LineReader/REDISPLAY)
-           (.flush writer))
+           #_(.redisplay reader)
+           (.flush writer)
+           )
          (do
            (.println writer s)
            (.flush writer)))))))

@@ -1,15 +1,16 @@
 (ns clj-readline.line-reader
   (:refer-clojure :exclude [read-line])
   (:require
-   [clj-readline.widgets.base :as base-widgets]
-   [clj-readline.tools.read-forms :as forms]
-   [clj-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
+   [clj-readline.commands :as commands]
+   [clj-readline.io.line-print-writer :as line-print-writer]
+   [clj-readline.jline-api :as api]
    [clj-readline.parsing.tokenizer :as tokenize]
    [clj-readline.service.core :as srv]
-   [clj-readline.commands :as commands]
+   [clj-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
+   [clj-readline.widgets.base :as base-widgets]
+   [clj-readline.utils :refer [log]]
    [clojure.string :as string]
-   [compliment.core :as compliment]
-   [clj-readline.jline-api :as api])
+   [compliment.core :as compliment])
   (:import
    [org.jline.keymap KeyMap]
    [org.jline.reader
@@ -27,8 +28,8 @@
     EOFError
     Widget]
    [org.jline.reader.impl DefaultParser BufferImpl]
-   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
-   [org.jline.terminal TerminalBuilder]))
+   [org.jline.terminal TerminalBuilder]
+   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
 ;; ---------------------------------------
 ;; Jline parser for Clojure
@@ -75,11 +76,6 @@
     (line [] line)
     (cursor [] cursor)))
 
-(defn has-valid-forms-at? [s pos]
-  (when-let [forms (not-empty (forms/take-valid-forms-at s pos))]
-    (and (not-empty (filter :source forms))
-         (not (:exception (last forms))))))
-
 ;; this is an indent call that is specific to ACCEPT_LINE based actions
 ;; the functionality implemented here is indenting when you hit return on a line
 (defn indent [line-reader line cursor]
@@ -102,7 +98,7 @@
         (parse [^String line cursor ^Parser$ParseContext context]
           (cond
             (= context Parser$ParseContext/ACCEPT_LINE)
-            (when-not (has-valid-forms-at? line cursor)
+            (when-not (srv/accept-line line cursor)
               (indent api/*line-reader* line cursor)
               (throw (EOFError. -1 -1 "Unbalanced Expression" (str *ns*))))
             (= context Parser$ParseContext/COMPLETE)
@@ -184,22 +180,36 @@
   {:service service
    :line-reader (line-reader*)})
 
-(defn read-line [{:keys [service line-reader]} prompt-fn request-prompt request-exit]
+(defn output-handler [{:keys [line-reader service]}]
+  (fn [{:keys [text]}]
+    (log :output-handler text)
+    (when (not (string/blank? text))
+      (binding [srv/*service* service]
+        (api/reader-println line-reader text)))))
+
+(defn read-line [{:keys [service line-reader] :as reader} prompt-fn request-prompt request-exit]
   (binding [srv/*service* service
             api/*line-reader* line-reader]
     ;; TODO redirect all output around this call to read-line
-    ;; TODO interpret commands here!!
-    (let [res (try
-                (let [res' (.readLine line-reader (prompt-fn))]
-                  (if-not (commands/handle-command res')
-                    res'
-                    request-prompt))
-                (catch UserInterruptException e
-                  request-prompt)
-                (catch EndOfFileException e
-                  request-exit)
-                (catch clojure.lang.ExceptionInfo e
-                  (if (:request-exit (ex-data e))
-                    request-exit
-                    (throw e))))]
-      res)))
+    (let [save-out *out*]
+      (when (:redirect-output (srv/config))
+        (alter-var-root #'*out*
+                        (fn [_] (line-print-writer/print-writer
+                                 :out
+                                 (output-handler reader)))))
+      (try
+        (let [res' (.readLine line-reader (prompt-fn))]
+          (if-not (commands/handle-command res')
+            res'
+            request-prompt))
+        (catch UserInterruptException e
+          request-prompt)
+        (catch EndOfFileException e
+          request-exit)
+        (catch clojure.lang.ExceptionInfo e
+          (if (:request-exit (ex-data e))
+            request-exit
+            (throw e)))
+        (finally
+          (when (:redirect-output (srv/config))
+            (alter-var-root #'*out* (fn [_] save-out))))))))
