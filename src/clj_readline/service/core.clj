@@ -1,6 +1,9 @@
 (ns clj-readline.service.core
   (:require
-   [clj-readline.tools.read-forms :as forms]))
+   [clj-readline.tools.colors :as colors]
+   [clj-readline.tools.read-forms :as forms])
+  (:import
+   [org.jline.utils AttributedStyle]))
 
 (def ^:dynamic *service* nil)
 
@@ -38,6 +41,13 @@
 (defprotocol Evaluation
   (-eval [_ form]))
 
+(def default-config
+  {:indent true
+   :eldoc true
+   :highlight true
+   :redirect-output true
+   :color-theme colors/dark-screen-theme})
+
 (defn config [] (-get-config *service*))
 
 (defn apply-to-config [f & args]
@@ -74,3 +84,8 @@
   (if (satisfies? AcceptLine *service*)
     (-accept-line *service* line-str cursor)
     (forms/default-accept-line line-str cursor)))
+
+(defn color [sk]
+  (or
+   (-> (config) :color-theme sk)
+   AttributedStyle/DEFAULT))

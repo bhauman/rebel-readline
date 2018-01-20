@@ -12,7 +12,7 @@
   (:import
    [org.jline.keymap KeyMap]
    [org.jline.reader LineReader]
-   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
+   [org.jline.utils AttributedStringBuilder AttributedString 
     #_InfoCmp$Capability]
    [java.util.regex Pattern]))
 
@@ -82,19 +82,16 @@
         (and (= (+ start word-end) curs)
              word)))))
 
-;; TODO hard coded colors
 (defn name-arglist-display [meta-data]
   (let [{:keys [ns doc arglists name]} meta-data]
     (when (and ns name)
       (let [x (doto (AttributedStringBuilder.)
-                (.styled (.faint (.foreground AttributedStyle/DEFAULT 123))
-                         (str ns))
-                (.styled (.foreground AttributedStyle/DEFAULT 243) "/")
-                (.styled (.faint (.foreground AttributedStyle/DEFAULT 178))
-                         (str name)))]
+                (.styled (srv/color :eldoc-namespace) (str ns))
+                (.styled (srv/color :eldoc-separator) "/")
+                (.styled (srv/color :eldoc-varname) (str name)))]
         (when arglists
           (doto x
-            (.styled (.foreground AttributedStyle/DEFAULT 243)
+            (.styled (srv/color :eldoc-arglists)
                      (str ": " (pr-str arglists)))))))))
 
 (defn display-argument-help-message []
@@ -178,7 +175,6 @@
               :ns (str ns)
               :name name})))
 
-;; TODO hard coded colors
 (defn doc-at-point []
   (when-let [[wrd] (word-at-cursor)]
     (when-let [{:keys [doc] :as var-meta-data} (srv/resolve-var-meta wrd)]
@@ -189,12 +185,11 @@
               (when-let [url (:url (clojure-docs-url wrd))]
                 (doto name-line
                   (.append (System/getProperty "line.separator"))
-                  (.styled (.underline (.faint (.foreground AttributedStyle/DEFAULT 39)))
+                  (.styled (srv/color :light-anchor)
                            url)))
               (doto name-line
                 (.append (System/getProperty "line.separator"))
-                (.styled (.foreground AttributedStyle/DEFAULT 222)
-                         doc)))
+                (.styled (srv/color :doc) doc)))
             doc))))))
 
 (def document-at-point-widget
@@ -236,18 +231,16 @@
 (defn osc-hyper-link [url show]
   (str (char 27) "]8;;"  url (KeyMap/ctrl \G) show (char 27) "]8;;" (KeyMap/ctrl \G)))
 
-;; TODO hard coded colors
 (defn format-pair-to-width [wrd width [ns' name']]
   (let [sep (apply str (repeat (- width (count ns') (count name')) \space))
-        idx (.indexOf name' wrd)
-        doc-url (clojure-docs-url* ns' name')]
+        idx (.indexOf name' wrd)]
     (doto (AttributedStringBuilder.)
-      (.append (subs name' 0 idx))
-      (.styled (.foreground AttributedStyle/DEFAULT 45)
+      (.styled (srv/color :apropos-word) (subs name' 0 idx))
+      (.styled (srv/color :apropos-highlight)
                (subs name' idx (+ idx (count wrd))))
-      (.append (subs name' (+ idx (count wrd))))
+      (.styled (srv/color :apropos-word) (subs name' (+ idx (count wrd))))
       (.append sep)
-      (.styled (.faint (.foreground AttributedStyle/DEFAULT 243)) ns'))))
+      (.styled (srv/color :apropos-namespace) ns'))))
 
 (defn format-column [wrd column]
   (let [max-width (apply max (map count column))]

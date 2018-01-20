@@ -1,6 +1,7 @@
 (ns clj-readline.service.impl.local-clojure-service
   (:require
    [clj-readline.service.core :as core]
+   [clj-readline.tools.colors :as colors]
    [compliment.core :as compliment]
    [clojure.repl]))
 
@@ -10,12 +11,6 @@
           (-> resolve (try (catch Throwable e nil)))))
 
 (def safe-meta (comp meta safe-resolve))
-
-(def default-config
-  {:indent true
-   :eldoc true
-   :highlight true
-   :redirect-output true})
 
 (defn create* [options]
   (let [config-atom (atom options)]
@@ -50,7 +45,7 @@
 (defn create
   ([] (create nil))
   ([options]
-   (create* (merge default-config options))))
+   (create* (merge core/default-config options))))
 
 #_(core/-get-config (create {}))
 
