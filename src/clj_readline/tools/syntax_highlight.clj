@@ -9,7 +9,7 @@
   (.foreground AttributedStyle/DEFAULT color))
 
 (def highlight-colors
-  {:unterm-string-literal (fg-color 1)             #_AttributedStyle/RED
+  {:unterm-string-literal (.bold (fg-color 180))   #_AttributedStyle/YELLOW
    :string-literal        (.bold (fg-color 180))   #_AttributedStyle/YELLOW
    :def-doc-string        (.bold (fg-color 223))   #_AttributedStyle/YELLOW
    :def-call              (.bold (fg-color 39))    #_AttributedStyle/BLUE
