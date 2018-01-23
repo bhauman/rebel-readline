@@ -54,11 +54,16 @@
   (when-let [res (apply f (config) args)]
     (-set-config! *service* res)))
 
+(defn current-ns []
+  (when (satisfies? CurrentNs *service*)
+    (-current-ns *service*)))
+
 (defn completions
   ([word]
    (completions word nil))
-  ([word surrounding-sexp]
-   (-complete *service* word surrounding-sexp)))
+  ([word options]
+   (when (satisfies? Completions *service*)
+     (-complete *service* word options))))
 
 (defn apropos [wrd]
   (when (satisfies? Apropos *service*)
