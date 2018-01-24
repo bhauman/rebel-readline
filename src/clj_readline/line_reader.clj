@@ -150,6 +150,7 @@
                       nil ;; suffix
                       nil ;; key
                       false]
+    ;; TODO remove
     ;; apparently this comparator doesn't affect final sorting 
     (compareTo [^Candidate candidate]
       (let [s1 (proxy-super value)

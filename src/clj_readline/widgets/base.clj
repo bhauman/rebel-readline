@@ -177,20 +177,15 @@
 
 (defn doc-at-point []
   (when-let [[wrd] (word-at-cursor)]
-    (when-let [{:keys [doc] :as var-meta-data} (srv/resolve-var-meta wrd)]
-      (when doc
-        (let [doc (shrink-multiline-to-terminal-size doc)]
-          (if-let [name-line (name-arglist-display var-meta-data)]
-            (do
-              (when-let [url (:url (clojure-docs-url wrd))]
-                (doto name-line
-                  (.append (System/getProperty "line.separator"))
-                  (.styled (srv/color :light-anchor)
-                           url)))
-              (doto name-line
-                (.append (System/getProperty "line.separator"))
-                (.styled (srv/color :doc) doc)))
-            doc))))))
+    (when-let [doc (srv/doc wrd)]
+      (let [doc (shrink-multiline-to-terminal-size doc)
+            sb (AttributedStringBuilder.)]
+        (when-let [url (:url (clojure-docs-url wrd))]
+          (doto sb
+            (.styled (srv/color :light-anchor) url)
+            (.append (System/getProperty "line.separator"))))
+        (doto sb
+          (.styled (srv/color :doc) doc))))))
 
 (def document-at-point-widget
   (create-widget

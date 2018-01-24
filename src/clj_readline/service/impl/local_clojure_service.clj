@@ -39,8 +39,7 @@
       (-apropos [_ var-str] (clojure.repl/apropos var-str))
       core/Document
       (-doc [_ var-str]
-        (eval `(clojure.core/with-out-str
-                 (clojure.repl/doc ~(symbol var-str))))))))
+        (compliment/documentation var-str)))))
 
 (defn create
   ([] (create nil))

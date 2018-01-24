@@ -36,7 +36,7 @@
    :eldoc-arglists  (fg-color 243)
 
    :doc             (fg-color 222)
-   :light-anchor    (.underline (.faint (fg-color 39)))
+   :light-anchor    (.faint (fg-color 39))
 
    :apropos-word       AttributedStyle/DEFAULT
    :apropos-highlight  (fg-color 45)
