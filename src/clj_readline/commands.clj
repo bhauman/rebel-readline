@@ -40,6 +40,10 @@
       (do (command cmd?) true)
       false)))
 
+(defn all-commands []
+  (filter #(= (namespace %) "repl")
+   (keys (.getMethodTable command))))
+
 #_(binding [srv/*service* (clj-readline.service.impl.local-clojure-service/create)]
     (handle-command ":repl/toggle-ind")
     (handle-command ":repl/toggle-indent")

@@ -160,6 +160,17 @@
           (compare s1 s2)
           res)))))
 
+(defn repl-command-complete [{:keys [line tokens word]}]
+  (when (and (= 1 (count tokens))
+             (.startsWith (string/triml line) ":r")
+             (.startsWith word ":r"))
+    (->> (commands/all-commands)
+         (map str)
+         (filter #(.startsWith % word))
+         (sort-by (juxt count identity))
+         (map #(hash-map :candidate % :type :repl-command))
+         not-empty)))
+
 ;; TODO abstract completion service here
 (defn clojure-completer []
   (proxy [Completer] []
@@ -173,7 +184,9 @@
                             ns'     (assoc :ns ns')
                             context (assoc :context context)))]
             (->> 
-             (srv/completions (.word line) options)
+             (or
+              (repl-command-complete (meta line))
+              (srv/completions (.word line) options))
              (map #(candidate %))
              (take 10)
              (.addAll candidates))))))))
