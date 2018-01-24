@@ -7,6 +7,8 @@
    [clj-readline.parsing.tokenizer :as tokenize]
    [clj-readline.service.core :as srv]
    [clj-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
+   [clj-readline.tools.indent :as indent]
+   [clj-readline.tools.sexp :as sexp]   
    [clj-readline.widgets.base :as base-widgets]
    [clj-readline.utils :refer [log]]
    [clojure.string :as string]
@@ -40,12 +42,10 @@
 ;; I.e. is this line complete or do we need to display a secondary
 ;; prompt
 
-;; TODO we could make string literals and unterm string literals complete
-;; on their contents
 (defn parse-line [line cursor]
   (let [tokens (tokenize/tag-words line)
-        words  (filter (comp #{:string-literal
-                               :unterm-string-literal
+        words  (filter (comp #{:string-literal-without-quotes
+                               :unterm-string-literal-without-quotes
                                :word}
                              last)
                        tokens)
@@ -62,19 +62,21 @@
     {:word-index (or word-index -1)
      :word  (or (first word) "")
      :word-cursor word-cursor
-     :tokens tokens
+     :tokens words
+     :word-token word
      :words (map first words)
      :line line
      :cursor cursor}))
 
-(defn parsed-line [{:keys [word-index word word-cursor words line cursor]}]
-  (proxy [ParsedLine] []
+(defn parsed-line [{:keys [word-index word word-cursor words tokens line cursor] :as parse-data}]
+  (proxy [ParsedLine clojure.lang.IMeta] []
     (word [] word)
     (wordIndex [] word-index)
     (wordCursor [] word-cursor)
     (words [] (java.util.LinkedList. words))
     (line [] line)
-    (cursor [] cursor)))
+    (cursor [] cursor)
+    (meta [] parse-data)))
 
 ;; this is an indent call that is specific to ACCEPT_LINE based actions
 ;; the functionality implemented here is indenting when you hit return on a line
@@ -86,9 +88,6 @@
   (.runMacro line-reader (str (KeyMap/ctrl \X) (KeyMap/ctrl \I))))
 
 ;; a parser for jline that respects clojurisms
-;; still rough
-;; TODO line acceptance needs to be parameterized
-;; TODO should behave just like the 'reply' project here
 (defn make-parser []
   (doto
       (proxy [DefaultParser] []
@@ -109,6 +108,38 @@
 ;; ----------------------------------------
 ;; Jline completer for Clojure candidates
 ;; ----------------------------------------
+
+;; Completion context
+
+(defn parsed-line-word-coords [^ParsedLine parsed-line]
+  (let [pos (.cursor parsed-line)
+        word-cursor (.wordCursor parsed-line)
+        word (.word parsed-line)
+        word-start (- pos word-cursor)
+        word-end (+ pos (- (count word) word-cursor))]
+    [word-start word-end]))
+
+;; TODO this has string hacks in it that wouldn't be needed
+;; with better sexp parsing 
+(defn replace-word-with-prefix [parsed-line]
+  (let [[start end] (parsed-line-word-coords parsed-line)
+        [_ _ _ typ] (:word-token (meta parsed-line))
+        line (.line parsed-line)]
+    [(str (subs line 0 start)
+         "__prefix__" (when (= typ :unterm-string-literal-without-quotes) \")
+         (subs line end (count line)))
+     (+ start (count "__prefix__")
+        (if (#{:string-literal-without-quotes :unterm-string-literal-without-quotes}
+             typ) 1 0))]))
+
+(defn complete-context [^ParsedLine parsed-line]
+  (when-let [[form-str end-of-marker] (replace-word-with-prefix parsed-line)]
+    (when-let [valid-sexp (sexp/valid-sexp-from-point form-str end-of-marker)]
+      (binding [*default-data-reader-fn* identity]
+        (try (read-string valid-sexp)
+             (catch Throwable e
+               (log :complete-context e)
+               nil))))))
 
 (defn candidate [{:keys [candidate type ns]}]
   (proxy [Candidate] [candidate ;; value 
@@ -136,8 +167,18 @@
       (let [word (.word line)]
         (when (and (not (string/blank? word))
                    (pos? (count word)))
-          (.addAll candidates (take 10 (map #(candidate %)
-                                            (compliment/completions (.word line))))))))))
+          (let [options (let [ns' (srv/current-ns)
+                              context (complete-context line)]
+                          (cond-> {}
+                            ns'     (assoc :ns ns')
+                            context (assoc :context context)))]
+            (->> 
+             (compliment/completions
+              (.word line)
+              options)
+             (map #(candidate %))
+             (take 10)
+             (.addAll candidates))))))))
 
 ;; ----------------------------------------
 ;; Jline highlighter for Clojure code
@@ -160,14 +201,12 @@
                            (.build)))
             (.completer (clojure-completer))
             (.highlighter (highlighter))
-            ;; TODO get rid of promise just set the parser afterward
             (.parser  (make-parser))
             (.build))
     ;; make sure that we don't have to double escape things
     (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
     ;; never insert tabs
     (.unsetOpt LineReader$Option/INSERT_TAB)
-    #_(.unsetOpt LineReader$Option/CASE_INSENSITIVE)
     (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
     base-widgets/add-default-widgets-and-bindings
     #_add-paredit))
@@ -182,7 +221,6 @@
 
 (defn output-handler [{:keys [line-reader service]}]
   (fn [{:keys [text]}]
-    (log :output-handler text)
     (when (not (string/blank? text))
       (binding [srv/*service* service]
         (api/reader-println line-reader text)))))
@@ -190,7 +228,7 @@
 (defn read-line [{:keys [service line-reader] :as reader} prompt-fn request-prompt request-exit]
   (binding [srv/*service* service
             api/*line-reader* line-reader]
-    ;; TODO redirect all output around this call to read-line
+    ;; TODO consider redirecting *err* as well
     (let [save-out *out*]
       (when (:redirect-output (srv/config))
         (alter-var-root #'*out*

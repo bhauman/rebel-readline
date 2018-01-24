@@ -29,6 +29,17 @@
               :open-bracket :close-bracket
               :close-bracket :open-bracket})
 
+(def delim-key->delim
+  {:open-paren \(
+   :close-paren \)
+   :open-brace \{
+   :close-brace \}
+   :open-bracket \[
+   :close-bracket \]})
+
+(def delim->delim-key
+  (zipmap (keys delim-key->delim) (vals delim-key->delim)))
+
 (defn scan-builder [open-test close-test]
   (fn [specific-test stack x]
     (cond
@@ -46,33 +57,39 @@
       :else stack)))
 
 ;; not used yet
-(defn find-open-sexp-end [tagged-parses pos]
-  (let [res (reduce
-             (partial
-              (scan-builder
-               #(#{:open-bracket :open-brace :open-paren} (last %))
-               #(#{:close-bracket :close-brace :close-paren} (last %)))
-              identity)
-             nil
-             (drop-while
-              #(<= (nth % 2) pos)
-              tagged-parses))]
-    (when (= :finished (first res))
-      (second res))))
+(defn find-open-sexp-end
+  ([tagged-parses pos]
+   (find-open-sexp-end tagged-parses pos identity))
+  ([tagged-parses pos final-delim-pred]
+   (let [res (reduce
+              (partial
+               (scan-builder
+                #(#{:open-bracket :open-brace :open-paren} (last %))
+                #(#{:close-bracket :close-brace :close-paren} (last %)))
+               final-delim-pred)
+              nil
+              (drop-while
+               #(<= (nth % 2) pos)
+               tagged-parses))]
+     (when (= :finished (first res))
+       (second res)))))
 
-(defn find-open-sexp-start [tagged-parses pos]
-  (let [res (reduce
-             (partial
-              (scan-builder
-               #(#{:close-bracket :close-brace :close-paren} (last %))
-               #(#{:open-bracket :open-brace :open-paren} (last %)))
-              identity)
-             nil
-             (reverse (take-while
-                       #(<= (nth % 2) pos)
-                       tagged-parses)))]
-    (when (= :finished (first res))
-      (second res))))
+(defn find-open-sexp-start
+  ([tagged-parses pos]
+   (find-open-sexp-start tagged-parses pos identity))
+  ([tagged-parses pos final-delim-pred]
+   (let [res (reduce
+              (partial
+               (scan-builder
+                #(#{:close-bracket :close-brace :close-paren} (last %))
+                #(#{:open-bracket :open-brace :open-paren} (last %)))
+               final-delim-pred)
+              nil
+              (reverse (take-while
+                        #(<= (nth % 2) pos)
+                        tagged-parses)))]
+     (when (= :finished (first res))
+       (second res)))))
 
 #_(time (find-open-sexp-start (tag-for-sexp-traversal xxx) (dec (count xxx))))
 
@@ -98,3 +115,45 @@
                           \{ \} \[ \] \( \) \" \"})
 
 (defn count-leading-white-space [s] (count (re-find #"^[^\S\n]+" s)))
+
+(defn closing-delimiter-for-parse [tagged-parses start-pos end-pos]
+  (when-let [[delim start-pos' _ delim-key] (find-open-sexp-start tagged-parses start-pos)]
+    (let [close-delim (flip-delimiter-char (first delim))]
+      (cons [start-pos' end-pos delim-key :inserting-close]
+            (closing-delimiter-for-parse
+             (concat tagged-parses [(str close-delim) end-pos (inc end-pos) (flip-it delim-key)])
+             start-pos'
+             (inc end-pos))))))
+
+(defn delimiter-boundaries
+  ([tagged-parses start-pos end-pos]
+   (delimiter-boundaries tagged-parses start-pos end-pos nil))
+  ([tagged-parses start-pos end-pos fix]
+  (when-let [[delim start-pos' _ delim-key] (find-open-sexp-start tagged-parses start-pos)]
+    (if-let [[end-delim end-pos' _ end-delim-key]
+               (find-open-sexp-end tagged-parses end-pos #(#{(flip-it delim-key)} (last %)))]
+      (cons [start-pos' end-pos' delim-key]
+            (delimiter-boundaries tagged-parses start-pos' (inc end-pos') fix))
+      (when fix
+        (closing-delimiter-for-parse
+         (filter #(< (second %) end-pos) tagged-parses)
+         start-pos
+         end-pos))))))
+
+(defn valid-sexp-from-point [s pos]
+  (let [tagged (tokenize/tag-sexp-traversal s)]
+    (when-let [boundaries (not-empty (delimiter-boundaries tagged pos pos true))]
+      (if (some #(= (last %) :inserting-close) boundaries)
+        (let [closes (filter #(= (last %) :inserting-close) boundaries)
+              res (loop [[[start end open-delim-key] & cs] closes
+                         s (subs s 0 (-> closes first second))]
+                    (if-not start
+                      s
+                      (recur cs (str s (delim-key->delim (flip-it open-delim-key))))))]
+          (subs res (-> closes last first) (count res)))
+        (let [[start end] (last boundaries)]
+          (subs s start (inc end)))))))
+
+#_(valid-sexp-from-point "      ((let [x y] (.asdf sdfsd)    " 17)
+
+

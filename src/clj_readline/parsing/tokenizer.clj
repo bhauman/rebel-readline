@@ -65,7 +65,11 @@
 (def preceeding-paren "(?<=\\(\\s{0,3})")
 
 (def string-literal #"(?<!\\)\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
+
 (def unterm-string-literal #"(?<!\\)\"[^\"\\]*(?:\\.[^\"\\]*)*$")
+
+(def string-literal-without-quotes #"(?<!\\)\"([^\"\\]*(?:\\.[^\"\\]*)*)\"")
+(def unterm-string-literal-without-quotes #"(?<!\\)\"([^\"\\]*(?:\\.[^\"\\]*)*)$")
 
 (def delimiter-exps (map str #{#"\s" #"\{" #"\}" #"\(" #"\)" #"\[" #"\]"
                                #"," #"\"" #"\^" #"\'" #"\#" #"\@"}))
@@ -275,28 +279,35 @@
 
 (def non-interp-word-rexp
   (Pattern/compile
-   (str non-interp-regexp "|"
-        "(" not-delimiter-exp "+)")))
+      (str
+       end-line-comment-regexp "|"
+       string-literal-without-quotes "|"
+       unterm-string-literal-without-quotes "|"
+       character-exp "|"
+       "(" not-delimiter-exp "+)")))
 
 (defn tag-words
-  "This tokenizes a given string into 
+  "This tokenizes a given string ianto 
      :end-of-line-comments
-     :string-literals
+     :string-literals-without-quotes
      :unterm-string-literal
      :charater s
   and the remaining
      :word s  
 
   This allows us to opertate on words that are outside of 
-strings, comments and characters."
+strings, comments and characters. "
   [line]
   (tag-matches line
                non-interp-word-rexp
                :end-line-comment
-               :string-literal 
-               :unterm-string-literal
+               :string-literal-without-quotes 
+               :unterm-string-literal-without-quotes
                :character
                :word))
+
+#_(tag-words "asdfasdf asdfasdfa \"asdfasdfads"
+           )
 
 ;; really fast
 #_(time (tokenize-syntax (apply str (repeat 100 (slurp "project.clj")))))
