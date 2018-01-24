@@ -11,8 +11,7 @@
    [clj-readline.tools.sexp :as sexp]   
    [clj-readline.widgets.base :as base-widgets]
    [clj-readline.utils :refer [log]]
-   [clojure.string :as string]
-   [compliment.core :as compliment])
+   [clojure.string :as string])
   (:import
    [org.jline.keymap KeyMap]
    [org.jline.reader
@@ -150,7 +149,7 @@
                         ns   (str " " ns)) 
                       nil ;; suffix
                       nil ;; key
-                      true]
+                      false]
     ;; apparently this comparator doesn't affect final sorting 
     (compareTo [^Candidate candidate]
       (let [s1 (proxy-super value)
@@ -173,9 +172,7 @@
                             ns'     (assoc :ns ns')
                             context (assoc :context context)))]
             (->> 
-             (compliment/completions
-              (.word line)
-              options)
+             (srv/completions (.word line) options)
              (map #(candidate %))
              (take 10)
              (.addAll candidates))))))))
