@@ -13,3 +13,5 @@ pom.xml.asc
 \#*\#
 .\#*
 debug-log
+
+dev/scratch.clj
