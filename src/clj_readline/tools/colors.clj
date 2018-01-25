@@ -88,8 +88,7 @@
 
 (def color-themes
   {:dark-screen-theme dark-screen-theme
-   :light-screen-theme light-screen-theme
-   :no-color {}})
+   :light-screen-theme light-screen-theme})
 
 (defn register-color-theme [ky color-map]
   (assert (keyword? ky))

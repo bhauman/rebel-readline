@@ -50,16 +50,16 @@
   (let [{:keys [color-theme backup-color-theme]}
         (srv/config)]
     (cond
-      (and (= :no-color color-theme)
+      (and (nil? color-theme)
            (some? backup-color-theme)
            (col/color-themes backup-color-theme))
       (srv/apply-to-config assoc :color-theme backup-color-theme)
-      (= :no-color color-theme)
+      (nil? color-theme)
       (srv/apply-to-config assoc :color-theme :dark-screen-theme)
       (some? color-theme)
       (do
         (srv/apply-to-config assoc :backup-color-theme color-theme)
-        (srv/apply-to-config assoc :color-theme :no-color)))))
+        (srv/apply-to-config dissoc :color-theme)))))
 
 (defmethod command-doc :repl/set-color-theme [_]
   (str "Change the color theme to one of the available themes:"

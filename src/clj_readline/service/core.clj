@@ -92,7 +92,7 @@
 
 (defn color [sk]
   (->
-   (get (config) :color-theme :dark-screen-theme)
+   (get (config) :color-theme)
    colors/color-themes 
    (get sk AttributedStyle/DEFAULT)))
 
