@@ -46,7 +46,7 @@
    :eldoc true
    :highlight true
    :redirect-output true
-   :color-theme colors/dark-screen-theme})
+   :color-theme :dark-screen-theme})
 
 (defn config [] (-get-config *service*))
 
@@ -91,6 +91,10 @@
     (forms/default-accept-line line-str cursor)))
 
 (defn color [sk]
-  (or
-   (-> (config) :color-theme sk)
-   AttributedStyle/DEFAULT))
+  (->
+   (get (config) :color-theme :dark-screen-theme)
+   colors/color-themes 
+   (get sk AttributedStyle/DEFAULT)))
+
+#_(binding [*service* (clj-readline.service.impl.local-clojure-service/create)]
+    (color :line-comment))

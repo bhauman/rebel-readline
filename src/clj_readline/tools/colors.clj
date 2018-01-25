@@ -86,6 +86,17 @@
 
          ))
 
+(def color-themes
+  {:dark-screen-theme dark-screen-theme
+   :light-screen-theme light-screen-theme
+   :no-color {}})
+
+(defn register-color-theme [ky color-map]
+  (assert (keyword? ky))
+  (assert (map? color-map))
+  (alter-var-root #'color-themes assoc ky color-map))
+
+
 #_(println (str (char 27) "[1;38;5;222m" ".asdfasdfasdf" (char 27 ) "0m") )
 
 #_(.toAnsi (AttributedString. "hey" AttributedStyle/DEFAULT #_(.bold (fg-color 85))))

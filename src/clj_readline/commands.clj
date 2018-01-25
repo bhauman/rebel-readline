@@ -42,6 +42,24 @@
     (println "Eldoc on!")
     (println "Eldoc off!")))
 
+(defmethod command-doc :repl/toggle-color [_]
+  "Toggle ANSI text coloration on and off.")
+
+(defmethod command :repl/toggle-color [_]
+  (let [{:keys [color-theme backup-color-theme]}
+        (srv/config)]
+    (cond
+      (and (= :no-color color-theme)
+           (some? backup-color-theme)
+           (col/color-themes backup-color-theme))
+      (srv/apply-to-config assoc :color-theme backup-color-theme)
+      (= :no-color color-theme)
+      (srv/apply-to-config assoc :color-theme :dark-screen-theme)
+      (some? color-theme)
+      (do
+        (srv/apply-to-config assoc :backup-color-theme color-theme)
+        (srv/apply-to-config assoc :color-theme :no-color)))))
+
 ;; TODO this should be here the underlying repl should handle this
 ;; or consider a cross repl solution that works
 ;; maybe something you can put in service core interface
