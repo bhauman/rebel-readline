@@ -1,5 +1,6 @@
 (ns clj-readline.commands
   (:require
+   [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
    [clj-readline.jline-api :refer [attr-str]]
    [clj-readline.tools.syntax-highlight :as syn]
@@ -9,7 +10,7 @@
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
 (defmulti command first)
-(defmulti command-doc first)
+(defmulti command-doc identity)
 
 (defmethod command :default [[com]]
   (println "No command" (pr-str com) "found."))
@@ -60,6 +61,22 @@
         (srv/apply-to-config assoc :backup-color-theme color-theme)
         (srv/apply-to-config assoc :color-theme :no-color)))))
 
+(defmethod command-doc :repl/set-color-theme [_]
+  (str "Change the color theme to one of the available themes:"
+       (System/getProperty "line.separator")
+       (with-out-str
+         (pprint (keys col/color-themes)))))
+
+(defmethod command :repl/set-color-theme [[_ new-theme]]
+  (let [new-theme (keyword new-theme)]
+    (if-not (col/color-themes new-theme)
+      (println
+       (str (pr-str new-theme) " is not a known color theme, please choose one of:"
+            (System/getProperty "line.separator")
+            (with-out-str
+              (pprint (keys col/color-themes)))))
+      (srv/apply-to-config assoc :color-theme new-theme))))
+
 ;; TODO this should be here the underlying repl should handle this
 ;; or consider a cross repl solution that works
 ;; maybe something you can put in service core interface
@@ -96,7 +113,7 @@
      (AttributedString. "Available Commands:" (.bold AttributedStyle/DEFAULT))
      (System/getProperty "line.separator")
      (keep
-      #(when-let [doc (command-doc (list %))]
+      #(when-let [doc (command-doc %)]
          (attr-str
           " "
           (AttributedString. (prn-str %)
