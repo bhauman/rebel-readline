@@ -32,6 +32,11 @@
      (.write s)
      (.cursor (or c (count s))))))
 
+;; helper for development
+(defmacro with-buffer [b & body]
+  `(binding [clj-readline.jline-api/*buffer* ~b]
+     ~@body))
+
 (defn attr-str [& args]
   (AttributedString.
    (reduce #(.append %1 %2) (AttributedStringBuilder.) args)))
@@ -86,6 +91,22 @@
 
 (defn up-to-cursor []
   (.upToCursor *buffer*))
+
+(defn char-at [idx]
+  (char (.atChar *buffer* idx)))
+
+(defn curr-char []
+  (char (.currChar *buffer*)))
+
+(defn prev-char []
+  (char (.prevChar *buffer*)))
+
+(defn next-char []
+  (char (.nextChar *buffer*)))
+
+(defn next-char []
+  (char (.nextChar *buffer*)))
+
 
 ;; --------------------------------------
 ;; Line Reader operations
