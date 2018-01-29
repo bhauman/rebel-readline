@@ -5,6 +5,26 @@
    [compliment.core :as compliment]
    [clojure.repl]))
 
+;; takent from replicant
+;; https://github.com/puredanger/replicant/blob/master/src/replicant/util.clj
+(defn data-eval
+  [form]
+  (let [out-writer (java.io.StringWriter.)
+        err-writer (java.io.StringWriter.)
+        capture-streams (fn []
+                          (.flush *out*)
+                          (.flush *err*)
+                          {:out (.toString out-writer)
+                           :err (.toString err-writer)})]
+    (binding [*out* (java.io.BufferedWriter. out-writer)
+              *err* (java.io.BufferedWriter. err-writer)]
+      (try
+        (let [result (eval form)]
+          (merge (capture-streams) {:result result}))
+        (catch Throwable t
+          (set! *e t)
+          (merge (capture-streams) {:exception (Throwable->map t)}))))))
+
 (defn safe-resolve [s]
   (some-> s
           symbol
@@ -39,7 +59,20 @@
       (-apropos [_ var-str] (clojure.repl/apropos var-str))
       core/Document
       (-doc [_ var-str]
-        (compliment/documentation var-str)))))
+        (compliment/documentation var-str))
+      core/Evaluation
+      (-eval [_ form]
+        (data-eval form))
+      (-eval-str [_ form-str]
+        (try
+          (data-eval (read-string form-str))
+          (catch Throwable e
+            (set! *e e)
+            {:exception (Throwable->map e)})))
+      core/ReadString
+      (-read-string [_ form-str] (read-string form-str)))))
+
+
 
 (defn create
   ([] (create nil))

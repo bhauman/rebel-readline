@@ -34,12 +34,31 @@
 
 ;; helper for development
 (defmacro with-buffer [b & body]
-  `(binding [clj-readline.jline-api/*buffer* ~b]
+  `(binding [clj-readline.jline-api/*buffer* ~b
+             clj-readline.service.core/*service* (clj-readline.service.impl.local-clojure-service/create)]
      ~@body))
 
 (defn attr-str [& args]
   (AttributedString.
    (reduce #(.append %1 %2) (AttributedStringBuilder.) args)))
+
+(defn attr-str-split [^AttributedString at-str regex]
+  (let [s (str at-str)
+        m (.matcher #"\n" s)]
+    (->> (repeatedly #(when (.find m)
+                        [(.start m) (.end m)]))
+         (take-while some?)
+         flatten
+         (cons 0)
+         (partition-all 2)
+         (mapv
+          #(.substring at-str (first %) (or (second %) (count s)))))))
+
+(defn attr-str-split-lines [^AttributedString at-str]
+  (attr-str-split at-str #"\r?\n"))
+
+(defn attr-str-join [sep coll]
+  (apply attr-str (interpose sep coll)))
 
 (defmacro create-widget [& body]
   `(fn [line-reader#]

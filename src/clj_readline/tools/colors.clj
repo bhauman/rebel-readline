@@ -41,6 +41,9 @@
    :apropos-word       AttributedStyle/DEFAULT
    :apropos-highlight  (fg-color 45)
    :apropos-namespace  (.faint (.foreground AttributedStyle/DEFAULT 243))
+
+   :error (fg-color 196)
+   :inline-display-marker (.inverse (fg-color 243))
    })
 
 ;; TODO fix these

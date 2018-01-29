@@ -2,9 +2,11 @@
   (:require
    [clojure.repl]
    [clojure.string :as string]
+   [clojure.pprint]
    [clj-readline.parsing.tokenizer :as tokenize]
    [clj-readline.tools.indent :as indent]
    [clj-readline.tools.sexp :as sexp]
+   [clj-readline.tools.colors :as col]   
    [clj-readline.service.core :as srv]
    [clj-readline.tools.syntax-highlight :as highlight]
    [clj-readline.utils :refer [log]])
@@ -151,16 +153,20 @@
 
 ;; TODO consider columns and wrapping as well
 ;; TODO need to set a default color
-(defn shrink-multiline-to-terminal-size [s]
-  (let [lines  (string/split-lines s)
-        {:keys [rows cols]} (terminal-size)]
-    (if (> (count lines) (+ rows 4))
-      (->> lines 
-           (take (- rows (min 4 rows)))
-           vec
-           (#(conj % (truncated-message cols)))
-           (string/join (System/getProperty "line.separator")))
-      s)))
+(defn shrink-multiline-to-terminal-size
+  ([s] (shrink-multiline-to-terminal-size s 0))
+  ([s adjust]
+   (let [lines  (string/split-lines s)
+         {:keys [rows cols]} (terminal-size)
+         rows (- rows (count (string/split-lines (buffer-as-string))))
+         rows (+ rows adjust)]
+     (if (and (pos? rows) (> (count lines) (+ rows 4)))
+       (->> lines
+            (take (- rows (min 4 rows)))
+            vec
+            (#(conj % (truncated-message cols)))
+            (string/join (System/getProperty "line.separator")))
+       s))))
 
 (defn clojure-docs-url* [ns name]
   (when (.startsWith (str ns) "clojure.")
@@ -325,13 +331,84 @@
        (display-message aprs)))
    true))
 
+
+
 ;; ------------------------------------------
 ;; In place eval widget
 ;; ------------------------------------------
 
+(defn whitespace? [c]
+  (re-matches #"[\s,]+" (str c)))
 
+(defn scan-back-from [pred s pos]
+  (first (filter #(pred (.charAt s %))
+                 (range (min (dec (count s)) pos) -1 -1))))
 
+(defn first-non-whitespace-char-backwards-from [s pos]
+  (scan-back-from (complement whitespace?) s pos))
 
+(defn sexp-ending-at-position [s pos]
+  (let [c (try (.charAt s pos) (catch Exception e nil))]
+    (when (#{ \" \) \} \] } c)
+      (let [sexp-tokens (tokenize/tag-sexp-traversal s)]
+        (or (when-let [res (sexp/in-quote? sexp-tokens pos)]
+              res)
+            (when-let [[_ start] (sexp/find-open-sexp-start sexp-tokens pos)]
+              [(subs s start (inc pos)) start (inc pos) :sexp]))))))
+
+(defn sexp-or-word-ending-at-position [s pos]
+  (or (sexp-ending-at-position s pos)
+      (word-at-position (inc pos))))
+
+(defn in-place-eval []
+  (let [s (buffer-as-string)
+        pos (cursor)
+        fnw-pos (first-non-whitespace-char-backwards-from s (dec pos))
+        [form-str start end typ] (sexp-or-word-ending-at-position s fnw-pos)]
+    (srv/evaluate-str form-str)))
+
+(defn inline-result-marker [^AttributedString at-str]
+  (attr-str
+   (AttributedString. (str "#_=>")
+                      (srv/color :inline-display-marker))
+   " "
+   at-str))
+
+(defn limit-character-size [s]
+  (let [{:keys [rows cols]} (terminal-size)
+        max-char (int (* (- rows (count (string/split-lines (buffer-as-string))))
+                         cols 0.5))]
+    (if (< max-char (count s))
+      (str (subs s 0 max-char) "...")
+      s)))
+
+(defn ensure-newline [s]
+  (str (string/trim-newline s) (System/getProperty "line.separator")))
+
+(defn format-data-eval-result [{:keys [out err result exception]}]
+  (if exception
+    (AttributedString. (str "=>!! " (:cause exception)) (srv/color :error))
+    (cond-> (AttributedStringBuilder.)
+      exception (.styled (srv/color :error) (str "=>!! " (:cause exception)) )
+      (not (string/blank? out)) (.append (ensure-newline out)) ;; ensure newline
+      (not (string/blank? err)) (.styled (srv/color :error) (ensure-newline err))
+      ;; TODO truncate output
+      result (.append
+              (inline-result-marker
+               (.toAttributedString
+                (highlight/highlight-clj-str (binding [*print-length*
+                                                       (min (or *print-length* Integer/MAX_VALUE)
+                                                            100)
+                                                       *print-level*
+                                                       (min (or *print-level* Integer/MAX_VALUE)
+                                                            5)]
+                                               (limit-character-size (pr-str result))))))))))
+
+(def eval-at-point-widget
+  (create-widget
+   (when-let [result (in-place-eval)]
+     (display-message (format-data-eval-result result)))
+   true))
 
 ;; --------------------------------------------
 ;; Base Widget registration and binding helpers
@@ -344,7 +421,9 @@
     (register-widget "self-insert-hook"   self-insert-hook-widget)
     (register-widget "doc-at-point"       document-at-point-widget)
     (register-widget "source-at-point"    source-at-point-widget)
-    (register-widget "apropos-at-point"   apropos-at-point-widget)))
+    (register-widget "apropos-at-point"   apropos-at-point-widget)
+    (register-widget "eval-at-point"      eval-at-point-widget)
+    ))
 
 (defn add-default-bindings [line-reader]
   (binding [*line-reader* line-reader]
@@ -360,7 +439,8 @@
     
     (bind-key "doc-at-point"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)))
     (bind-key "source-at-point"     (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)))
-    (bind-key "apropos-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))))
+    (bind-key "apropos-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
+    (bind-key "eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))))
 
 (defn add-default-widgets-and-bindings [line-reader]
   (-> line-reader

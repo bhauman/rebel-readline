@@ -39,7 +39,8 @@
   (-read-string [_ str-form]))
 
 (defprotocol Evaluation
-  (-eval [_ form]))
+  (-eval [_ form])
+  (-eval-str [_ form-str]))
 
 (def default-config
   {:indent true
@@ -89,6 +90,18 @@
   (if (satisfies? AcceptLine *service*)
     (-accept-line *service* line-str cursor)
     (forms/default-accept-line line-str cursor)))
+
+(defn read-form [form-str]
+  (when (satisfies? ReadString *service*)
+    (-read-string *service* form-str)))
+
+(defn evaluate [form]
+  (when (satisfies? Evaluation *service*)
+    (-eval *service* form)))
+
+(defn evaluate-str [form-str]
+  (when (satisfies? Evaluation *service*)
+   (-eval-str *service* form-str)))
 
 (defn color [sk]
   (->
