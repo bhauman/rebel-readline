@@ -42,6 +42,11 @@
   (-eval [_ form])
   (-eval-str [_ form-str]))
 
+(declare current-ns)
+
+(defn default-prompt-fn []
+  (format "%s=> " (current-ns)))
+
 (def default-config
   {:indent true
    :eldoc true
@@ -111,3 +116,16 @@
 
 #_(binding [*service* (clj-readline.service.impl.local-clojure-service/create)]
     (color :line-comment))
+
+(defn resolve-fn? [f]
+  (cond
+    (nil? f) nil
+    (fn? f) f
+    (or (string? f) (symbol? f))
+    (resolve (symbol f))
+    :else nil))
+
+(defn prompt []
+  ((or (resolve-fn? (:prompt (config)))
+       default-prompt-fn)))
+

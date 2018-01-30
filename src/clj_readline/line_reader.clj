@@ -2,17 +2,20 @@
   (:refer-clojure :exclude [read-line])
   (:require
    [clj-readline.commands :as commands]
+   [clj-readline.io.callback-reader :as cbr]
    [clj-readline.io.line-print-writer :as line-print-writer]
    [clj-readline.jline-api :as api]
    [clj-readline.parsing.tokenizer :as tokenize]
    [clj-readline.service.core :as srv]
-   [clj-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
    [clj-readline.tools.indent :as indent]
    [clj-readline.tools.sexp :as sexp]   
-   [clj-readline.widgets.base :as base-widgets]
+   [clj-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
    [clj-readline.utils :refer [log]]
-   [clojure.string :as string])
+   [clj-readline.widgets.base :as base-widgets]
+   [clojure.string :as string]
+   [clojure.main])
   (:import
+   [java.nio CharBuffer]
    [org.jline.keymap KeyMap]
    [org.jline.reader
     Highlighter
@@ -236,7 +239,7 @@
       (binding [srv/*service* service]
         (api/reader-println line-reader text)))))
 
-(defn read-line [{:keys [service line-reader] :as reader} prompt-fn request-prompt request-exit]
+(defn stream-read-line [{:keys [service line-reader] :as reader}]
   (binding [srv/*service* service
             api/*line-reader* line-reader]
     ;; TODO consider redirecting *err* as well
@@ -247,7 +250,34 @@
                                  :out
                                  (output-handler reader)))))
       (try
-        (let [res' (.readLine line-reader (prompt-fn))]
+        (let [res' (.readLine line-reader (srv/prompt))]
+          (if-not (commands/handle-command res')
+            (str res' (System/getProperty "line.separator"))
+            (System/getProperty "line.separator")))
+        (catch UserInterruptException e
+          (System/getProperty "line.separator"))
+        (catch EndOfFileException e
+          nil)
+        (catch clojure.lang.ExceptionInfo e
+          (if (:request-exit (ex-data e))
+            nil
+            (throw e)))
+        (finally
+          (when (:redirect-output (srv/config))
+            (alter-var-root #'*out* (fn [_] save-out))))))))
+
+(defn read-line [{:keys [service line-reader] :as reader} request-prompt request-exit]
+  (binding [srv/*service* service
+            api/*line-reader* line-reader]
+    ;; TODO consider redirecting *err* as well
+    (let [save-out *out*]
+      (when (:redirect-output (srv/config))
+        (alter-var-root #'*out*
+                        (fn [_] (line-print-writer/print-writer
+                                 :out
+                                 (output-handler reader)))))
+      (try
+        (let [res' (.readLine line-reader (srv/prompt))]
           (if-not (commands/handle-command res')
             res'
             request-prompt))
@@ -262,3 +292,32 @@
         (finally
           (when (:redirect-output (srv/config))
             (alter-var-root #'*out* (fn [_] save-out))))))))
+
+(defn has-remaining? [pbr]
+  (let [x (.read pbr)]
+    (and (not (neg? x))
+         (do (.unread pbr x) true))))
+
+(defn clj-repl-read [line-reader]
+  (let [reader-buffer (atom (clojure.lang.LineNumberingPushbackReader.
+                             (java.io.StringReader. "")))]
+    (fn [request-prompt request-exit]
+      (if (has-remaining? @reader-buffer)
+        (binding [*in* @reader-buffer]
+          (clojure.main/repl-read request-prompt request-exit))
+        (let [possible-forms (read-line line-reader request-prompt request-exit)]
+          (if (#{request-prompt request-exit} possible-forms)
+            possible-forms
+            (if-not (string/blank? possible-forms)
+              (do
+                (reset! reader-buffer (clojure.lang.LineNumberingPushbackReader.
+                                       (java.io.StringReader. (str possible-forms "\n"))))
+                (binding [*in* @reader-buffer]
+                  (clojure.main/repl-read request-prompt request-exit)))
+              request-prompt)))))))
+
+(defmacro with-readline-input-stream [service & body]
+  `(let [lr# (line-reader ~service)]
+    (binding [*in* (clojure.lang.LineNumberingPushbackReader.
+                    (cbr/callback-reader #(stream-read-line lr#)))]
+      ~@body)))

@@ -40,7 +40,7 @@
 (defn repl [reader]
   (clojure.main/repl
    :prompt (fn [])
-   :read (repl-read reader)
+   :read (lr/clj-repl-read reader)
    :caught (fn [e]
              (cond (= (type e) EndOfFileException)
                    (System/exit 0)
@@ -70,7 +70,11 @@
                            (clojure.main/repl-caught e)))))))
 
     )
-)
+  )
+
+(defn new-repl []
+  (lr/with-readline-input-stream (local-clj-service/create)
+    (clojure.main/repl :prompt (fn []))))
 
 #_(def XXXX (line-reader))
 
@@ -86,7 +90,7 @@
   #_(clojure.tools.nrepl.server/start-server :port 7888 :handler cider.nrepl/cider-nrepl-handler)
 
   ;; read all garbage before starting
-  
+  #_(new-repl)
   ;; also include prompt
   (let [reader (line-reader (local-clj-service/create))]
     (repl reader)
