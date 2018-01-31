@@ -5,8 +5,11 @@
    [clj-readline.jline-api :as api]
    [clj-readline.io.line-print-writer :as line-print-writer]
    [clj-readline.service.impl.local-clojure-service :as local-clj-service]
+   [clj-readline.service.impl.cljs-service :as cljs-service]   
    [clj-readline.service.core :as srv]
    [clj-readline.utils :refer [log]]
+   [cljs.repl.nashorn :as nash]
+   [cljs.repl :as cljs-repl]
    [clojure.main]
    [clojure.string :as string])
   (:import
@@ -92,10 +95,16 @@
   ;; read all garbage before starting
   #_(new-repl)
   ;; also include prompt
-  (let [reader (line-reader (local-clj-service/create))]
+  #_(let [reader (line-reader (local-clj-service/create))]
     (repl reader)
     #_(println ":::" (read-eval-loop reader))
     )
+
+  (let [repl-env (nash/repl-env)]
+    (lr/with-readline-input-stream (cljs-service/create {:repl-env repl-env})
+      (cljs-repl/repl repl-env :prompt (fn []))))
+  
+
   
 
   

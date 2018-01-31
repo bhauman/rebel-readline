@@ -149,7 +149,7 @@
                       nil ;; group
                       (cond-> nil
                         type (str (first (name type)))
-                        ns   (str " " ns)) 
+                        ns   (str (when type " ") ns)) 
                       nil ;; suffix
                       nil ;; key
                       false]
@@ -163,16 +163,26 @@
           (compare s1 s2)
           res)))))
 
-(defn repl-command-complete [{:keys [line tokens word]}]
-  (when (and (= 1 (count tokens))
-             (.startsWith (string/triml line) ":r")
-             (.startsWith word ":r"))
-    (->> (commands/all-commands)
-         (map str)
-         (filter #(.startsWith % word))
-         (sort-by (juxt count identity))
-         (map #(hash-map :candidate % :type :repl-command))
-         not-empty)))
+(defn command-token? [{:keys [line tokens word]} starts-with]
+  (and (= 1 (count tokens))
+       (.startsWith (string/triml line) starts-with)
+       (.startsWith word starts-with)))
+
+(defn find-completions [candidates prefix]
+  (->> candidates
+       (map str)
+       (filter #(.startsWith % prefix))
+       (sort-by (juxt count identity))
+       (map #(hash-map :candidate % :type :repl-command))
+       not-empty))
+
+(defn repl-command-complete [{:keys [word] :as parsed-line}]
+  (when (command-token? parsed-line ":r")
+    (find-completions (commands/all-commands) word)))
+
+(defn cljs-quit-complete [{:keys [word] :as parsed-line}]
+  (when (command-token? parsed-line ":c")
+    (find-completions [:cljs/quit] word)))
 
 ;; TODO abstract completion service here
 (defn clojure-completer []
@@ -189,6 +199,7 @@
             (->> 
              (or
               (repl-command-complete (meta line))
+              (cljs-quit-complete (meta line))
               (srv/completions (.word line) options))
              (map #(candidate %))
              (take 10)

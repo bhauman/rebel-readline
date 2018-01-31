@@ -12,7 +12,19 @@
   (-set-config! [_ v]))
 
 (defprotocol Completions
-  (-complete [_ word options]))
+  (-complete [_ prefix options]
+    "Takes a word prefix and an options map}
+The options map can contain 
+  :ns - the current namespace the completion is occuring in
+  :context - a sexp form that contains a marker '__prefix__
+     replacing the given prefix in teh expression where it 
+     is being completed. i.e. '(list __prefix__ 1 2) 
+
+This returns a list of candidates of the form
+{:candidate \"alength\"
+ :ns -> if the candidate is a var this will be the namespace of the var 
+ :type -> a keyword desribing the type of the candidate i.e :function, :macro }
+"))
 
 (defprotocol CurrentNs
   (-current-ns [_]))

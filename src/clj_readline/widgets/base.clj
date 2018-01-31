@@ -168,11 +168,34 @@
             (string/join (System/getProperty "line.separator")))
        s))))
 
+;; taken from cljs-api-gen.encode
+(def cljs-api-encoding
+  {"."  "DOT"
+   ">"  "GT"
+   "<"  "LT"
+   "!"  "BANG"
+   "?"  "QMARK"
+   "*"  "STAR"
+   "+"  "PLUS"
+   "="  "EQ"
+   "/"  "SLASH"})
+
+;; taken from cljs-api-gen.encode
+(defn cljs-api-encode-name [name-]
+  (reduce (fn [s [a b]] (string/replace s a b))
+    (name name-) cljs-api-encoding))
+
 (defn clojure-docs-url* [ns name]
-  (when (.startsWith (str ns) "clojure.")
+  (cond
+    (.startsWith (str ns) "clojure.")
     (cond-> "https://clojuredocs.org/"
       ns (str ns)
-      name (str "/" name))))
+      name (str "/" name))
+    (.startsWith (str ns) "cljs.")
+    (cond-> "http://cljs.github.io/api/"
+      ns (str ns)
+      name (str "/" (cljs-api-encode-name name)))
+    :else nil))
 
 (defn clojure-docs-url [wrd]
   (when-let [{:keys [ns name]} (srv/resolve-var-meta wrd)]
@@ -385,7 +408,7 @@
 (defn ensure-newline [s]
   (str (string/trim-newline s) (System/getProperty "line.separator")))
 
-(defn format-data-eval-result [{:keys [out err result exception]}]
+(defn format-data-eval-result [{:keys [out err result printed-result exception]}]
   (if exception
     (AttributedString. (str "=>!! " (:cause exception)) (srv/color :error))
     (cond-> (AttributedStringBuilder.)
@@ -393,16 +416,19 @@
       (not (string/blank? out)) (.append (ensure-newline out)) ;; ensure newline
       (not (string/blank? err)) (.styled (srv/color :error) (ensure-newline err))
       ;; TODO truncate output
-      result (.append
-              (inline-result-marker
-               (.toAttributedString
-                (highlight/highlight-clj-str (binding [*print-length*
-                                                       (min (or *print-length* Integer/MAX_VALUE)
-                                                            100)
-                                                       *print-level*
-                                                       (min (or *print-level* Integer/MAX_VALUE)
-                                                            5)]
-                                               (limit-character-size (pr-str result))))))))))
+      (or result printed-result)
+      (.append
+       (inline-result-marker
+        (.toAttributedString
+         (highlight/highlight-clj-str (binding [*print-length*
+                                                (min (or *print-length* Integer/MAX_VALUE)
+                                                     100)
+                                                *print-level*
+                                                (min (or *print-level* Integer/MAX_VALUE)
+                                                     5)]
+                                        (limit-character-size (if printed-result
+                                                                printed-result
+                                                                (pr-str result)))))))))))
 
 (def eval-at-point-widget
   (create-widget

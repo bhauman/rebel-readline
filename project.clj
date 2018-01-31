@@ -5,6 +5,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.jline/jline "3.5.1"]
+                 [org.clojure/clojurescript "1.9.946"]
+                 [cljs-tooling "0.2.0"]
                  #_[org.clojure/tools.reader "1.1.1"]
                  [cljfmt "0.5.7"]    ;; depends on tools reader
                  [compliment "0.3.5"] ;; has no dependencies other than clojure

@@ -61,16 +61,20 @@
       (-doc [_ var-str]
         (compliment/documentation var-str))
       core/Evaluation
-      (-eval [_ form]
-        (data-eval form))
-      (-eval-str [_ form-str]
+      (-eval [_ form] (data-eval form))
+      (-eval-str [self form-str]
         (try
-          (data-eval (read-string form-str))
+          ;; TODO fix read-string here
+          (core/-eval self (read-string form-str))
           (catch Throwable e
             (set! *e e)
             {:exception (Throwable->map e)})))
       core/ReadString
-      (-read-string [_ form-str] (read-string form-str)))))
+      (-read-string [_ form-str]
+        (try
+          {:form (read-string form-str)}
+          (catch Throwable e
+            {:exception (Throwable->map e)}))))))
 
 
 
