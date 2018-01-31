@@ -64,19 +64,23 @@
       (-eval [_ form] (data-eval form))
       (-eval-str [self form-str]
         (try
-          ;; TODO fix read-string here
-          (core/-eval self (read-string form-str))
+          (let [res (core/-read-string self form-str)]
+            (if (contains? res :form)
+              (core/-eval self (:form res))
+              res))
           (catch Throwable e
             (set! *e e)
             {:exception (Throwable->map e)})))
       core/ReadString
       (-read-string [_ form-str]
-        (try
-          {:form (read-string form-str)}
-          (catch Throwable e
-            {:exception (Throwable->map e)}))))))
+        (when (string? form-str)
+          (try
+            {:form (with-in-str form-str
+                     (read {:read-cond :allow} *in*))}
+            (catch Throwable e
+              {:exception (Throwable->map e)})))))))
 
-
+(contains? {:A nil} :A)
 
 (defn create
   ([] (create nil))

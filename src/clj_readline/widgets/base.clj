@@ -354,8 +354,6 @@
        (display-message aprs)))
    true))
 
-
-
 ;; ------------------------------------------
 ;; In place eval widget
 ;; ------------------------------------------
@@ -408,27 +406,26 @@
 (defn ensure-newline [s]
   (str (string/trim-newline s) (System/getProperty "line.separator")))
 
-(defn format-data-eval-result [{:keys [out err result printed-result exception]}]
-  (if exception
-    (AttributedString. (str "=>!! " (:cause exception)) (srv/color :error))
-    (cond-> (AttributedStringBuilder.)
-      exception (.styled (srv/color :error) (str "=>!! " (:cause exception)) )
-      (not (string/blank? out)) (.append (ensure-newline out)) ;; ensure newline
-      (not (string/blank? err)) (.styled (srv/color :error) (ensure-newline err))
-      ;; TODO truncate output
-      (or result printed-result)
-      (.append
-       (inline-result-marker
-        (.toAttributedString
-         (highlight/highlight-clj-str (binding [*print-length*
-                                                (min (or *print-length* Integer/MAX_VALUE)
-                                                     100)
-                                                *print-level*
-                                                (min (or *print-level* Integer/MAX_VALUE)
-                                                     5)]
-                                        (limit-character-size (if printed-result
-                                                                printed-result
-                                                                (pr-str result)))))))))))
+(defn format-data-eval-result [{:keys [out err printed-result exception] :as eval-result}]
+  (cond-> (AttributedStringBuilder.)
+    exception (.styled (srv/color :error) (str "=>!! " (:cause exception)) )
+    (not (string/blank? out)) (.append (ensure-newline out)) ;; ensure newline
+    (not (string/blank? err)) (.styled (srv/color :error) (ensure-newline err))
+    ;; TODO truncate output
+    (or (contains? eval-result :result) printed-result)
+    (.append
+     (inline-result-marker
+      (.toAttributedString
+       (highlight/highlight-clj-str (binding [*print-length*
+                                              (min (or *print-length* Integer/MAX_VALUE)
+                                                   100)
+                                              *print-level*
+                                              (min (or *print-level* Integer/MAX_VALUE)
+                                                   5)]
+                                      (limit-character-size (if printed-result
+                                                              printed-result
+                                                              (pr-str (:result eval-result)))))))))))
+
 
 (def eval-at-point-widget
   (create-widget

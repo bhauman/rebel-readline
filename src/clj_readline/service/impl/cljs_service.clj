@@ -121,8 +121,9 @@
           (data-eval #(eval-cljs repl-env @cljs.env/*compiler* form))))
       (-eval-str [self form-str]
         (let [res (core/-read-string self form-str)]
-          (if-let [form (:form res)]
-            (core/-eval self form)
+          (if (contains? res :form)
+              (let [form (:form res)]
+                (core/-eval self form))
             res))))))
 
 (defn create
