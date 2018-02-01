@@ -95,12 +95,12 @@
   ;; read all garbage before starting
   #_(new-repl)
   ;; also include prompt
-  #_(let [reader (line-reader (local-clj-service/create))]
+  (let [reader (line-reader (local-clj-service/create))]
     (repl reader)
     #_(println ":::" (read-eval-loop reader))
     )
 
-  (let [repl-env (nash/repl-env)]
+  #_(let [repl-env (nash/repl-env)]
     (lr/with-readline-input-stream (cljs-service/create {:repl-env repl-env})
       (cljs-repl/repl repl-env :prompt (fn []))))
   

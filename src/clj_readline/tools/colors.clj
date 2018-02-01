@@ -44,6 +44,7 @@
 
    :error (fg-color 196)
    :inline-display-marker (.inverse (fg-color 243))
+   :less-help-message     (.inverse (fg-color 243))
    })
 
 ;; TODO fix these

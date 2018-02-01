@@ -14,9 +14,91 @@
   (:import
    [org.jline.keymap KeyMap]
    [org.jline.reader LineReader]
-   [org.jline.utils AttributedStringBuilder AttributedString 
-    #_InfoCmp$Capability]
+   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
    [java.util.regex Pattern]))
+
+;; less implementation
+
+(defn split-into-wrapped-lines [at-str columns]
+  (mapcat (partial attr-partition-all columns)
+          (attr-str-split-lines at-str)))
+
+(defn window-lines [at-str-lines pos rows]
+  (attr-str-join (System/getProperty "line.separator")
+                 (take rows (drop pos at-str-lines))))
+
+(defn- lines-needed [hdr columns]
+  (if-let [hdr (if (fn? hdr) (hdr) hdr)]
+    (count (split-into-wrapped-lines hdr columns))
+    0))
+
+(defn display-less
+  ([at-str]
+   (display-less at-str {}))
+  ([at-str options]
+   (let [{:keys [header footer]}
+         (merge {:header #(AttributedString. (apply str (repeat (:cols (terminal-size)) \-))
+                                             (.faint AttributedStyle/DEFAULT))
+                 :footer (AttributedString. "-- SCROLL WITH ARROW KEYS --"
+                                            (srv/color :less-help-message))}
+                options)
+         columns     (:cols (terminal-size))
+         at-str-lines (split-into-wrapped-lines at-str columns)
+         rows-needed (count at-str-lines)
+         menu-keys   (get (.getKeyMaps *line-reader*)
+                          LineReader/MENU)]
+     (if (< (+ rows-needed
+               (lines-needed (:header options) columns)
+               (lines-needed (:footer options) columns))
+            (- (rows-available-for-post-display) 3))
+       (display-message (attr-str-join
+                         (System/getProperty "line.separator")
+                         (keep identity
+                               [(when-let [header (:header options)]
+                                  (if (fn? header) (header) header))
+                                at-str
+                                (when-let [footer (:footer options)]
+                                  (if (fn? footer) (footer) header))])))
+       (loop [pos 0]
+         (let [columns             (:cols (terminal-size))
+               at-str-lines        (split-into-wrapped-lines at-str columns)
+               rows-needed         (count at-str-lines)
+               header              (if (fn? header) (header) header)
+               footer              (if (fn? footer) (footer) footer)
+               header-lines-needed (lines-needed header columns)
+               footer-lines-needed (lines-needed footer columns)
+               window-rows (- (rows-available-for-post-display) header-lines-needed footer-lines-needed 3)]
+           (if (< 2 window-rows)
+             (do
+               (display-message (attr-str-join
+                                 (System/getProperty "line.separator")
+                                 (keep identity
+                                  [header
+                                   (window-lines at-str-lines pos window-rows)
+                                   footer])))
+               (redisplay)
+               (let [o (.readBinding *line-reader* (.getKeys ^LineReader *line-reader*) menu-keys)
+                     binding-name (.name ^org.jline.reader.Reference o)]
+                 (condp contains? binding-name
+                   #{LineReader/UP_LINE_OR_HISTORY
+                     LineReader/UP_LINE_OR_SEARCH
+                     LineReader/UP_LINE}
+                   (recur (max 0 (dec pos)))
+                   #{LineReader/DOWN_LINE_OR_HISTORY
+                     LineReader/DOWN_LINE_OR_SEARCH
+                     LineReader/DOWN_LINE
+                     LineReader/ACCEPT_LINE}
+                   (recur (min (- rows-needed
+                                  window-rows) (inc pos)))
+                   ;; otherwise pushback the binding and 
+                   (do
+                     ;; clear the post display
+                     (display-message "  ")
+                     ;; pushback binding
+                     (when-let [s (.getLastBinding *line-reader*)]
+                       (.runMacro *line-reader* s))))))
+             ;; window is too small do nothing
+             nil)))))))
 
 ;; TODO make services like source, document, and apropos abstract
 
@@ -145,7 +227,7 @@
 ;; TODO trucated output should apply to everything that
 ;; displays a message
 ;; TODO need to set a default color
-(defn truncated-message [length]
+#_(defn truncated-message [length]
   (let [trunc-length (+ 2 (count "output truncated"))
         bar-length (/ (- length trunc-length) 2)
         bar (apply str (repeat bar-length \-))]
@@ -153,7 +235,7 @@
 
 ;; TODO consider columns and wrapping as well
 ;; TODO need to set a default color
-(defn shrink-multiline-to-terminal-size
+#_(defn shrink-multiline-to-terminal-size
   ([s] (shrink-multiline-to-terminal-size s 0))
   ([s adjust]
    (let [lines  (string/split-lines s)
@@ -207,19 +289,16 @@
 (defn doc-at-point []
   (when-let [[wrd] (word-at-cursor)]
     (when-let [doc (srv/doc wrd)]
-      (let [doc (shrink-multiline-to-terminal-size doc)
-            sb (AttributedStringBuilder.)]
-        (when-let [url (:url (clojure-docs-url wrd))]
-          (doto sb
-            (.styled (srv/color :light-anchor) url)
-            (.append (System/getProperty "line.separator"))))
-        (doto sb
-          (.styled (srv/color :doc) doc))))))
+      (let [url (:url (clojure-docs-url wrd))]
+        (cond-> {:doc (AttributedString. doc (srv/color :doc))}
+          url (assoc :url (AttributedString. url (srv/color :light-anchor))))))))
 
 (def document-at-point-widget
   (create-widget
-   (when-let [doc (doc-at-point)]
-     (display-message doc))
+   (when-let [doc-options (doc-at-point)]
+     (display-less (:doc doc-options)
+                   (when-let [url (:url doc-options)]
+                     {:header url})))
    true))
 
 ;; -------------------------------------
@@ -231,16 +310,14 @@
     (when-let [{:keys [doc] :as var-meta-data} (srv/resolve-var-meta wrd)]
       (when-let [source (srv/source wrd)]
         (when-let [name-line (name-arglist-display var-meta-data)]
-          (let [source (shrink-multiline-to-terminal-size source)]
-            (when-not (string/blank? source)
-              (doto name-line
-                (.append (System/getProperty "line.separator"))
-                (.append (highlight/highlight-clj-str source))))))))))
+          (when-not (string/blank? source)
+            {:arglist-line name-line
+             :source (highlight/highlight-clj-str source)}))))))
 
 (def source-at-point-widget
   (create-widget
-   (when-let [doc (source-at-point)]
-     (display-message doc))
+   (when-let [{:keys [arglist-line source]} (source-at-point)]
+     (display-less source {:header arglist-line}))
    true))
 
 ;; -------------------------------------
@@ -351,7 +428,9 @@
   (create-widget
    (when-let [[wrd] (word-at-cursor)]
      (when-let [aprs (formatted-apropos wrd)]
-       (display-message aprs)))
+       (display-less aprs {:header (AttributedString.
+                                    (str "Apropos for: " wrd)
+                                    (.faint AttributedStyle/DEFAULT))})))
    true))
 
 ;; ------------------------------------------
@@ -422,15 +501,14 @@
                                               *print-level*
                                               (min (or *print-level* Integer/MAX_VALUE)
                                                    5)]
-                                      (limit-character-size (if printed-result
-                                                              printed-result
-                                                              (pr-str (:result eval-result)))))))))))
-
+                                      (if printed-result
+                                        printed-result
+                                        (pr-str (:result eval-result))))))))))
 
 (def eval-at-point-widget
   (create-widget
    (when-let [result (in-place-eval)]
-     (display-message (format-data-eval-result result)))
+     (display-less (format-data-eval-result result)))
    true))
 
 ;; --------------------------------------------

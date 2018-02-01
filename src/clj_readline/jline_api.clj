@@ -1,5 +1,6 @@
 (ns clj-readline.jline-api
   (:require
+   [clojure.string :as string]
    [clj-readline.utils :refer [log]]
    [clj-readline.service.core :as srv])
   (:import
@@ -40,7 +41,10 @@
 
 (defn attr-str [& args]
   (AttributedString.
-   (reduce #(.append %1 %2) (AttributedStringBuilder.) args)))
+   (reduce #(if %2
+              (.append %1 %2)
+              %1)
+           (AttributedStringBuilder.) args)))
 
 (defn attr-str-split [^AttributedString at-str regex]
   (let [s (str at-str)
@@ -53,6 +57,18 @@
          (partition-all 2)
          (mapv
           #(.substring at-str (first %) (or (second %) (count s)))))))
+
+(defn attr-partition-all [length ^AttributedString at-str]
+  (mapv first
+        (take-while some?
+                    (rest
+                     (iterate (fn [[_ at-str]]
+                                (when at-str
+                                  (if (<= (count at-str) length)
+                                    [at-str nil]
+                                    [(.substring at-str 0 (min length (count at-str)))
+                                     (.substring at-str length (count at-str))])))
+                              [nil at-str])))))
 
 (defn attr-str-split-lines [^AttributedString at-str]
   (attr-str-split at-str #"\r?\n"))
@@ -149,9 +165,17 @@
       {:rows (.getRows sz)
        :cols (.getColumns sz)})))
 
+(defn redisplay []
+  (.redisplay *line-reader*))
+
 (defn display-message [message]
   (let [post-field (get-accessible-field *line-reader* "post")]
     (.set post-field *line-reader* (supplier (fn [] (AttributedString. message))))))
+
+(defn rows-available-for-post-display []
+  (let [rows (:rows (terminal-size))
+        buffer-rows (count (string/split-lines (buffer-as-string)))]
+    (max 0 (- rows buffer-rows))))
 
 (defn reading? []
   (let [reading-field (get-accessible-field *line-reader* "reading")]

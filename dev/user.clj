@@ -15,3 +15,10 @@
       (dotimes [n 10]
         (Thread/sleep 2000)
         (println "Testing!!"))))))
+
+(defn complex [depth]
+  (if (zero? depth)
+    depth
+    (list (complex (dec depth)) (complex (dec depth)))))
+
+#_(complex 10)
