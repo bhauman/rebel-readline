@@ -2,12 +2,13 @@
   (:require
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
-   [rebel-readline.jline-api :refer [attr-str]]
+   [rebel-readline.jline-api :as api :refer [attr-str]]
    [rebel-readline.tools.syntax-highlight :as syn]
    [rebel-readline.tools.colors :as col]
    [rebel-readline.service.core :as srv])
   (:import
-   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
+   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
+   [org.jline.reader LineReader]))
 
 (defmulti command first)
 (defmulti command-doc identity)
@@ -42,6 +43,15 @@
   (if (:eldoc (srv/config))
     (println "Eldoc on!")
     (println "Eldoc off!")))
+
+(defmethod command-doc :repl/toggle-completion [_]
+  "Toggle the completion functionality on and off.")
+
+(defmethod command :repl/toggle-completion [_]
+  (srv/apply-to-config update :completion #(not %))
+  (if (:completion (srv/config))
+    (println "Completion on!")
+    (println "Completion off!")))
 
 (defmethod command-doc :repl/toggle-color [_]
   "Toggle ANSI text coloration on and off.")

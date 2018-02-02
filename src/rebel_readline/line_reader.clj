@@ -189,8 +189,10 @@
   (proxy [Completer] []
     (complete [^LineReader reader ^ParsedLine line ^java.util.List candidates]
       (let [word (.word line)]
-        (when (and (not (string/blank? word))
-                   (pos? (count word)))
+        (when (and
+               (:completion (srv/config))
+               (not (string/blank? word))
+               (pos? (count word)))
           (let [options (let [ns' (srv/current-ns)
                               context (complete-context line)]
                           (cond-> {}
@@ -213,7 +215,7 @@
   (proxy [Highlighter] []
     (highlight [^LineReader reader ^String buffer]
       ;; this gets called on a different thread
-      ;; by the window resize Interupt Handler
+      ;; by the window resize interrupt handler
       ;; so add these bindings here
       (binding [srv/*service* service
                 api/*line-reader* reader]

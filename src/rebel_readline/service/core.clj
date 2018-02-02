@@ -60,7 +60,8 @@ This returns a list of candidates of the form
   (format "%s=> " (current-ns)))
 
 (def default-config
-  {:indent true
+  {:completion true
+   :indent true
    :eldoc true
    :highlight true
    :redirect-output true
