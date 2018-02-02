@@ -80,8 +80,6 @@
             (catch Throwable e
               {:exception (Throwable->map e)})))))))
 
-(contains? {:A nil} :A)
-
 (defn create
   ([] (create nil))
   ([options]
