@@ -1,4 +1,4 @@
-(defproject clj-readline "0.1.0-SNAPSHOT"
+(defproject rebel-readline "0.1.0-SNAPSHOT"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -15,7 +15,7 @@
 
   
   
-  :main clj-readline.main
+  :main rebel-readline.main
 
   :profiles {:dev {:source-paths ["src" "dev"]}}
   

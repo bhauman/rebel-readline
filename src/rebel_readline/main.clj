@@ -1,13 +1,13 @@
-(ns clj-readline.main
+(ns rebel-readline.main
   (:require
-   [clj-readline.tools.read-forms :as forms]
-   [clj-readline.line-reader :refer [line-reader] :as lr]
-   [clj-readline.jline-api :as api]
-   [clj-readline.io.line-print-writer :as line-print-writer]
-   [clj-readline.service.impl.local-clojure-service :as local-clj-service]
-   [clj-readline.service.impl.cljs-service :as cljs-service]   
-   [clj-readline.service.core :as srv]
-   [clj-readline.utils :refer [log]]
+   [rebel-readline.tools.read-forms :as forms]
+   [rebel-readline.line-reader :refer [line-reader] :as lr]
+   [rebel-readline.jline-api :as api]
+   [rebel-readline.io.line-print-writer :as line-print-writer]
+   [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
+   [rebel-readline.service.impl.cljs-service :as cljs-service]   
+   [rebel-readline.service.core :as srv]
+   [rebel-readline.utils :refer [log]]
    [cljs.repl.nashorn :as nash]
    [cljs.repl :as cljs-repl]
    [clojure.main]

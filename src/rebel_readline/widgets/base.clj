@@ -1,16 +1,16 @@
-(ns clj-readline.widgets.base
+(ns rebel-readline.widgets.base
   (:require
    [clojure.repl]
    [clojure.string :as string]
    [clojure.pprint]
-   [clj-readline.parsing.tokenizer :as tokenize]
-   [clj-readline.tools.indent :as indent]
-   [clj-readline.tools.sexp :as sexp]
-   [clj-readline.tools.colors :as col]   
-   [clj-readline.service.core :as srv]
-   [clj-readline.tools.syntax-highlight :as highlight]
-   [clj-readline.utils :refer [log]])
-  (:use clj-readline.jline-api)
+   [rebel-readline.parsing.tokenizer :as tokenize]
+   [rebel-readline.tools.indent :as indent]
+   [rebel-readline.tools.sexp :as sexp]
+   [rebel-readline.tools.colors :as col]   
+   [rebel-readline.service.core :as srv]
+   [rebel-readline.tools.syntax-highlight :as highlight]
+   [rebel-readline.utils :refer [log]])
+  (:use rebel-readline.jline-api)
   (:import
    [org.jline.keymap KeyMap]
    [org.jline.reader LineReader]

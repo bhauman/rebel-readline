@@ -1,8 +1,8 @@
-(ns clj-readline.jline-api
+(ns rebel-readline.jline-api
   (:require
    [clojure.string :as string]
-   [clj-readline.utils :refer [log]]
-   [clj-readline.service.core :as srv])
+   [rebel-readline.utils :refer [log]]
+   [rebel-readline.service.core :as srv])
   (:import
    [org.jline.reader
     Highlighter
@@ -35,8 +35,8 @@
 
 ;; helper for development
 (defmacro with-buffer [b & body]
-  `(binding [clj-readline.jline-api/*buffer* ~b
-             clj-readline.service.core/*service* (clj-readline.service.impl.local-clojure-service/create)]
+  `(binding [rebel-readline.jline-api/*buffer* ~b
+             rebel-readline.service.core/*service* (rebel-readline.service.impl.local-clojure-service/create)]
      ~@body))
 
 (defn attr-str [& args]

@@ -1,8 +1,8 @@
-(ns clj-readline.tools.syntax-highlight
+(ns rebel-readline.tools.syntax-highlight
   (:require
    [clojure.string :as string]
-   [clj-readline.service.core :as srv]
-   [clj-readline.parsing.tokenizer :as tokenize])
+   [rebel-readline.service.core :as srv]
+   [rebel-readline.parsing.tokenizer :as tokenize])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 

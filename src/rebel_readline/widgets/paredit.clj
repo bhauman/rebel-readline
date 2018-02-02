@@ -1,7 +1,7 @@
-(ns clj-readline.widgets.paredit
+(ns rebel-readline.widgets.paredit
   (:require
-   [clj-readline.tools.indent :as ind])
-  (:use clj-readline.jline-api)
+   [rebel-readline.tools.indent :as ind])
+  (:use rebel-readline.jline-api)
   (:import
    [org.jline.keymap KeyMap]
    [org.jline.reader LineReader]

@@ -1,4 +1,4 @@
-(ns clj-readline.io.line-print-writer
+(ns rebel-readline.io.line-print-writer
   (:require
    [clojure.string :as string])
   (:import

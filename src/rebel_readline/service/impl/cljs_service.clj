@@ -1,8 +1,8 @@
-(ns clj-readline.service.impl.cljs-service
+(ns rebel-readline.service.impl.cljs-service
   (:require
-   [clj-readline.service.core :as core]
-   [clj-readline.tools.colors :as colors]
-   [clj-readline.utils :refer [log]]
+   [rebel-readline.service.core :as core]
+   [rebel-readline.tools.colors :as colors]
+   [rebel-readline.utils :refer [log]]
    [cljs-tooling.complete :as cljs-complete]
    [cljs-tooling.info :as cljs-info]   
    [cljs.analyzer.api :as ana-api]

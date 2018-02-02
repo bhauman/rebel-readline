@@ -1,11 +1,11 @@
-(ns clj-readline.commands
+(ns rebel-readline.commands
   (:require
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
-   [clj-readline.jline-api :refer [attr-str]]
-   [clj-readline.tools.syntax-highlight :as syn]
-   [clj-readline.tools.colors :as col]
-   [clj-readline.service.core :as srv])
+   [rebel-readline.jline-api :refer [attr-str]]
+   [rebel-readline.tools.syntax-highlight :as syn]
+   [rebel-readline.tools.colors :as col]
+   [rebel-readline.service.core :as srv])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
@@ -125,8 +125,8 @@
           (System/getProperty "line.separator")))
       (sort (all-commands)))))))
 
-#_ (require 'clj-readline.service.impl.local-clojure-service)
-#_(binding [srv/*service* (clj-readline.service.impl.local-clojure-service/create)]
+#_ (require 'rebel-readline.service.impl.local-clojure-service)
+#_(binding [srv/*service* (rebel-readline.service.impl.local-clojure-service/create)]
     (handle-command ":repl/toggle-ind")
     (handle-command ":repl/toggle-indent")
     (srv/config)

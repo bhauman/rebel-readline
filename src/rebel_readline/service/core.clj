@@ -1,7 +1,7 @@
-(ns clj-readline.service.core
+(ns rebel-readline.service.core
   (:require
-   [clj-readline.tools.colors :as colors]
-   [clj-readline.tools.read-forms :as forms])
+   [rebel-readline.tools.colors :as colors]
+   [rebel-readline.tools.read-forms :as forms])
   (:import
    [org.jline.utils AttributedStyle]))
 
@@ -126,7 +126,7 @@ This returns a list of candidates of the form
    colors/color-themes 
    (get sk AttributedStyle/DEFAULT)))
 
-#_(binding [*service* (clj-readline.service.impl.local-clojure-service/create)]
+#_(binding [*service* (rebel-readline.service.impl.local-clojure-service/create)]
     (color :line-comment))
 
 (defn resolve-fn? [f]

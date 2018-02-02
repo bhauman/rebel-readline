@@ -1,8 +1,8 @@
-(ns clj-readline.tools.indent
+(ns rebel-readline.tools.indent
   (:require
    [clojure.string :as string]
-   [clj-readline.parsing.tokenizer :as tokenize]
-   [clj-readline.tools.sexp :as sexp]
+   [rebel-readline.parsing.tokenizer :as tokenize]
+   [rebel-readline.tools.sexp :as sexp]
    [cljfmt.core :refer [reformat-string]]))
 
 (defn indent-proxy-str [s cursor]

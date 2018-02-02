@@ -1,4 +1,4 @@
-(ns clj-readline.utils
+(ns rebel-readline.utils
   (:require
    [clojure.java.io :as io]
    [clojure.string  :as string]

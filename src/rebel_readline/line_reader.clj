@@ -1,17 +1,17 @@
-(ns clj-readline.line-reader
+(ns rebel-readline.line-reader
   (:refer-clojure :exclude [read-line])
   (:require
-   [clj-readline.commands :as commands]
-   [clj-readline.io.callback-reader :as cbr]
-   [clj-readline.io.line-print-writer :as line-print-writer]
-   [clj-readline.jline-api :as api]
-   [clj-readline.parsing.tokenizer :as tokenize]
-   [clj-readline.service.core :as srv]
-   [clj-readline.tools.indent :as indent]
-   [clj-readline.tools.sexp :as sexp]   
-   [clj-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
-   [clj-readline.utils :refer [log]]
-   [clj-readline.widgets.base :as base-widgets]
+   [rebel-readline.commands :as commands]
+   [rebel-readline.io.callback-reader :as cbr]
+   [rebel-readline.io.line-print-writer :as line-print-writer]
+   [rebel-readline.jline-api :as api]
+   [rebel-readline.parsing.tokenizer :as tokenize]
+   [rebel-readline.service.core :as srv]
+   [rebel-readline.tools.indent :as indent]
+   [rebel-readline.tools.sexp :as sexp]   
+   [rebel-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
+   [rebel-readline.utils :refer [log]]
+   [rebel-readline.widgets.base :as base-widgets]
    [clojure.string :as string]
    [clojure.main])
   (:import

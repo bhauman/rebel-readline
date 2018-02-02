@@ -1,4 +1,4 @@
-(ns clj-readline.tools.read-forms)
+(ns rebel-readline.tools.read-forms)
 
 (defn read-forms
   "Reads all the forms in a given string, if it encounters an EOF

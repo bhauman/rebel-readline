@@ -1,4 +1,4 @@
-(ns clj-readline.tools.colors
+(ns rebel-readline.tools.colors
   (:import
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 

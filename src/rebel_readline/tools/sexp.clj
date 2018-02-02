@@ -1,6 +1,6 @@
-(ns clj-readline.tools.sexp
+(ns rebel-readline.tools.sexp
   (:require
-   [clj-readline.parsing.tokenizer :as tokenize]))
+   [rebel-readline.parsing.tokenizer :as tokenize]))
 
 (defn position-in-range? [s pos]
   (<= 0 pos (dec (count s))))
