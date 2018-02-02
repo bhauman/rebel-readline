@@ -171,7 +171,7 @@
   results.
 
   This function returns `nil` if it is end of the supplied readlines
-  parent input stream. Such is the case when a a exit is requested.
+  parent input stream or if a process exit is requested.
 
   This function was designed to be supplied to a `rebel-readline.io.calback-reader`
 
