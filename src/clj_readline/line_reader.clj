@@ -209,23 +209,28 @@
 ;; Jline highlighter for Clojure code
 ;; ----------------------------------------
 
-(defn highlighter []
+(defn highlighter [service]
   (proxy [Highlighter] []
     (highlight [^LineReader reader ^String buffer]
-      (if (:highlight (srv/config))
-        (.toAttributedString (highlight-clj-str buffer))
-        (AttributedString. buffer)))))
+      ;; this gets called on a different thread
+      ;; by the window resize Interupt Handler
+      ;; so add these bindings here
+      (binding [srv/*service* service
+                api/*line-reader* reader]
+        (if (:highlight (srv/config))
+          (.toAttributedString (highlight-clj-str buffer))
+          (AttributedString. buffer))))))
 
 ;; ----------------------------------------
 ;; Building the line reader
 ;; ----------------------------------------
 
-(defn line-reader* []
+(defn line-reader* [service]
   (doto (-> (LineReaderBuilder/builder)
             (.terminal (-> (TerminalBuilder/builder)
                            (.build)))
             (.completer (clojure-completer))
-            (.highlighter (highlighter))
+            (.highlighter (highlighter service))
             (.parser  (make-parser))
             (.build))
     ;; make sure that we don't have to double escape things
@@ -242,7 +247,7 @@
 
 (defn line-reader [service]
   {:service service
-   :line-reader (line-reader*)})
+   :line-reader (line-reader* service)})
 
 (defn output-handler [{:keys [line-reader service]}]
   (fn [{:keys [text]}]
