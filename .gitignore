@@ -6,7 +6,7 @@ pom.xml.asc
 *.jar
 *.class
 /.lein-*
-/.nrepl-port
+.nrepl-port
 .hgignore
 .hg/
 \#*
@@ -16,5 +16,8 @@ debug-log
 .cljs_nashorn_repl/*
 nashorn_code_cache/*
 dev/scratch.clj
+rebel-readline/target
+rebel-readline/classes
+rebel-readline/checkouts
 
 notes

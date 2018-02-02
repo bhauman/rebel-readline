@@ -8,7 +8,7 @@
    [rebel-readline.service.core :as srv])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
-   [org.jline.reader LineReader]))
+   [org.jline.reader LineReader EndOfFileException]))
 
 (defmulti command first)
 (defmulti command-doc identity)
@@ -96,7 +96,7 @@
 (defmethod command :repl/quit [_]
   (println "Bye!")
   ;; request exit
-  (throw (ex-info "Exit Request" {:request-exit true})))
+  (throw (EndOfFileException.)))
 
 (defn handle-command [command-str]
   (let [cmd? 
