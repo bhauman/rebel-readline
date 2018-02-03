@@ -33,6 +33,7 @@
     Widget]
    [org.jline.reader.impl DefaultParser BufferImpl]
    [org.jline.terminal TerminalBuilder]
+   [org.jline.terminal.impl DumbTerminal]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
 ;; ---------------------------------------
@@ -227,14 +228,24 @@
 ;; Building the line reader
 ;; ----------------------------------------
 
+(defn assert-system-terminal [line-reader]
+  (let [term (.getTerminal line-reader)]
+    (when (instance? DumbTerminal term)
+      (throw (ex-info "Unable to create a system Terminal, you must
+not launch the Rebel readline from an intermediate process i.e if you
+are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
+  line-reader)
+
 (defn line-reader* [service]
   (doto (-> (LineReaderBuilder/builder)
             (.terminal (-> (TerminalBuilder/builder)
+                           (.system true)
                            (.build)))
             (.completer (clojure-completer))
             (.highlighter (highlighter service))
             (.parser  (make-parser))
             (.build))
+    (assert-system-terminal)
     ;; make sure that we don't have to double escape things
     (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
     ;; never insert tabs
