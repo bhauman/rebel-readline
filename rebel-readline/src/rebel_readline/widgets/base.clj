@@ -395,11 +395,12 @@
       (word-at-position (inc pos))))
 
 (defn in-place-eval []
-  (let [s (buffer-as-string)
-        pos (cursor)
-        fnw-pos (first-non-whitespace-char-backwards-from s (dec pos))
-        [form-str start end typ] (sexp-or-word-ending-at-position s fnw-pos)]
-    (srv/evaluate-str form-str)))
+  (let [s (buffer-as-string)]
+    (when (not (string/blank? s))
+      (let [pos (cursor)
+            fnw-pos (first-non-whitespace-char-backwards-from s (dec pos))
+            [form-str start end typ] (sexp-or-word-ending-at-position s fnw-pos)]
+        (srv/evaluate-str form-str)))))
 
 (defn inline-result-marker [^AttributedString at-str]
   (attr-str
