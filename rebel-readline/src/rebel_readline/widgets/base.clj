@@ -422,7 +422,10 @@
 
 (defn format-data-eval-result [{:keys [out err printed-result exception] :as eval-result}]
   (cond-> (AttributedStringBuilder.)
-    exception (.styled (srv/color :error) (str "=>!! " (:cause exception)) )
+    exception (.styled (srv/color :error)
+                       (str "=>!! "
+                            (or (:cause exception)
+                                (some-> exception :via first :type))) )
     (not (string/blank? out)) (.append (ensure-newline out)) ;; ensure newline
     (not (string/blank? err)) (.styled (srv/color :error) (ensure-newline err))
     ;; TODO truncate output
@@ -464,7 +467,7 @@
 (defn add-default-bindings [line-reader]
   (binding [*line-reader* line-reader]
     (bind-key "indent-line"         (str (KeyMap/ctrl \X) (KeyMap/ctrl \I)))
-    (bind-key "indent-or-complete"  (str #_(KeyMap/ctrl \X) (KeyMap/ctrl \I)))
+    (bind-key "indent-or-complete"  (str (KeyMap/ctrl \I)))
     (bind-key "self-insert-hook"    (KeyMap/range " -~"))
     
     ;; the range behavior above overwrites all the bindings in the range
