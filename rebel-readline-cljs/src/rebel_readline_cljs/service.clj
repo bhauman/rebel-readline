@@ -12,6 +12,7 @@
    [clojure.tools.reader.reader-types :as readers]
    [rebel-readline.info.doc-url :as doc-url]
    [rebel-readline.service.core :as core]
+   [rebel-readline.service.impl.local-clojure-service :refer [call-with-timeout]]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.utils :refer [log]])
   (:import
@@ -62,11 +63,12 @@
         {:exception (Throwable->map e)}))))
 
 (defn eval-cljs [repl-env env form]
-  (cljs.repl/evaluate-form repl-env
-                           (assoc env :ns (ana/get-namespace ana/*cljs-ns*))
-                           "<cljs repl>"
-                           form
-                           (fn [x] `(cljs.core.pr-str ~x))))
+  (let [res (cljs.repl/evaluate-form repl-env
+                                     (assoc env :ns (ana/get-namespace ana/*cljs-ns*))
+                                     "<cljs repl>"
+                                     form
+                                     (fn [x] `(cljs.core.pr-str ~x)))]
+    res))
 
 (defn data-eval
   [eval-thunk]
@@ -87,6 +89,9 @@
           (merge (capture-streams) {:exception (Throwable->map t)}))))))
 
 (defn create* [{:keys [repl-env] :as options}]
+  ;; Is this really a warning? b/c things still function without the
+  ;; repl env.  Inline eval is the only thing that will not work.
+  (assert (:repl-env options) "The repl-env option is required.")
   (let [config-atom (atom (dissoc options :repl-env))]
     (reify
       clojure.lang.IDeref
@@ -125,9 +130,12 @@
       (-read-string [_ form-str]
         (read-cljs-string form-str))
       core/Evaluation
-      (-eval [_ form]
+      (-eval [self form]
         (when repl-env
-          (data-eval #(eval-cljs repl-env @cljs.env/*compiler* form))))
+          (call-with-timeout
+           (fn []
+             (data-eval #(eval-cljs repl-env @cljs.env/*compiler* form)))
+           (get @self :eval-timeout 3000))))
       (-eval-str [self form-str]
         (let [res (core/-read-string self form-str)]
           (if (contains? res :form)
@@ -135,9 +143,7 @@
                 (core/-eval self form))
             res))))))
 
-(defn create
-  ([] (create nil))
-  ([options]
-   (create* (merge core/default-config options))))
+(defn create [options]
+  (create* (merge core/default-config options)))
 
 #_(core/-get-config (create {}))
