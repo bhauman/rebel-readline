@@ -1,4 +1,4 @@
-(ns rebel-readline.widgets.paredit
+(ns rebel-readline-paredit.core
   (:require
    [rebel-readline.tools.indent :as ind])
   (:use rebel-readline.jline-api)
@@ -9,11 +9,12 @@
     #_InfoCmp$Capability]
    [java.util.regex Pattern]))
 
+;; ----------------------------------------------
 ;; this is a WIP and is out of date right now
+;; ----------------------------------------------
 
 ;; ------------
 ;; paredit open
-
 
 (defn should-self-insert-open? [code-str cursor]
   #_(log :hey code-str cursor (ind/in-non-interp-bounds? code-str cursor))
@@ -26,8 +27,6 @@
      (not (should-self-insert-open?  " \\a  " 2))
      )
 #_(ind/in-non-interp-bounds? " \\  " (dec 2))
-
-
 
 (defn paredit-insert-pair [open-char buffer]
   (let [cursor (.cursor buffer)]

@@ -128,7 +128,7 @@
     (catch EndOfFileException e
       request-exit)))
 
-(defn- has-remaining?
+(defn has-remaining?
   "Takes a PushbackReader and returns true if the next character is not negative.
    i.e not the end of the readers stream."
   [pbr]
@@ -136,7 +136,24 @@
     (and (not (neg? x))
          (do (.unread pbr x) true))))
 
-(defn clj-repl-read
+(defn create-buffered-repl-reader-fn [create-buffered-reader-fn has-remaining-pred repl-read-fn]
+  (fn [line-reader]
+    (let [reader-buffer (atom (create-buffered-reader-fn ""))]
+      (fn [request-prompt request-exit]
+        (if (has-remaining-pred @reader-buffer)
+          (binding [*in* @reader-buffer]
+            (repl-read-fn request-prompt request-exit))
+          (let [possible-forms (repl-read-line line-reader request-prompt request-exit)]
+            (if (#{request-prompt request-exit} possible-forms)
+              possible-forms
+              (if-not (string/blank? possible-forms)
+                (do
+                  (reset! reader-buffer (create-buffered-reader-fn (str possible-forms "\n")))
+                  (binding [*in* @reader-buffer]
+                    (repl-read-fn request-prompt request-exit)))
+                request-prompt))))))))
+
+(def clj-repl-read
   "A drop in replacement for clojure.main/repl-read, since a readline
   can return multiple Clojure forms this function is stateful and
   buffers the forms and returns the next form on subsequent reads.
@@ -165,23 +182,11 @@
                 (do (println (.getMessage e))
                     clojure.main/repl-read)
                 (throw e)))))"
-  [line-reader]
-  (let [reader-buffer (atom (clojure.lang.LineNumberingPushbackReader.
-                             (java.io.StringReader. "")))]
-    (fn [request-prompt request-exit]
-      (if (has-remaining? @reader-buffer)
-        (binding [*in* @reader-buffer]
-          (clojure.main/repl-read request-prompt request-exit))
-        (let [possible-forms (repl-read-line line-reader request-prompt request-exit)]
-          (if (#{request-prompt request-exit} possible-forms)
-            possible-forms
-            (if-not (string/blank? possible-forms)
-              (do
-                (reset! reader-buffer (clojure.lang.LineNumberingPushbackReader.
-                                       (java.io.StringReader. (str possible-forms "\n"))))
-                (binding [*in* @reader-buffer]
-                  (clojure.main/repl-read request-prompt request-exit)))
-              request-prompt)))))))
+  (create-buffered-repl-reader-fn
+   (fn [s] (clojure.lang.LineNumberingPushbackReader.
+            (java.io.StringReader. s)))
+   has-remaining?
+   clojure.main/repl-read))
 
 (defn stream-read-line
   "This function reads lines and returns them ready to be read by a

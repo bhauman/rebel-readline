@@ -1,19 +1,19 @@
-(ns rebel-readline.service.impl.cljs-service
+(ns rebel-readline-cljs.service
   (:require
-   [rebel-readline.service.core :as core]
-   [rebel-readline.tools.colors :as colors]
-   [rebel-readline.utils :refer [log]]
-   [rebel-readline.info.doc-url :as doc-url]
    [cljs-tooling.complete :as cljs-complete]
    [cljs-tooling.info :as cljs-info]   
-   [cljs.analyzer.api :as ana-api]
    [cljs.analyzer :as ana]
+   [cljs.analyzer.api :as ana-api]
+   [cljs.core]
    [cljs.env]
    [cljs.repl]
-   [cljs.core]
    [clojure.string :as string]
    [clojure.tools.reader :as reader]
-   [clojure.tools.reader.reader-types :as readers])
+   [clojure.tools.reader.reader-types :as readers]
+   [rebel-readline.info.doc-url :as doc-url]
+   [rebel-readline.service.core :as core]
+   [rebel-readline.tools.colors :as colors]
+   [rebel-readline.utils :refer [log]])
   (:import
    [java.util.regex Pattern]))
 
