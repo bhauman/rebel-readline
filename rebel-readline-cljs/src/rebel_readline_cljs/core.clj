@@ -25,25 +25,29 @@
 
   Example Usage:
 
-  (cljs.repl/repl 
-   :prompt (fn []) ;; prompt is handled by line-reader
-   :read (clj-repl-read 
-           (rebel-readline.core/line-reader
-             (rebel-readline-cljs.service/create))))
+  (let [repl-env (nash/repl-env)]
+    (cljs-repl/repl
+     repl-env
+     :prompt (fn [])
+     :read (cljs-repl-read
+             (rebel-readline.core/line-reader
+               (rebel-readline-cljs.service/create {:repl-env repl-env}))])))
 
   Or catch a bad terminal error and fall back to cljs.repl/repl-read:
 
-  (cljs.repl/repl 
-   :prompt (fn [])
-   :read (try
-          (clj-repl-read 
-           (rebel-readline.core/line-reader
-             (rebel-readline-cljs.service/create)))
-          (catch clojure.lang.ExceptionInfo e
-             (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))
-                (do (println (.getMessage e))
-                    cljs.repl/repl-read)
-                (throw e)))))"
+  (let [repl-env (nash/repl-env)]
+    (cljs-repl/repl
+     repl-env
+     :prompt (fn [])
+     :read (try
+             (cljs-repl-read
+               (rebel-readline.core/line-reader
+                 (rebel-readline-cljs.service/create {:repl-env repl-env})))
+             (catch clojure.lang.ExceptionInfo e
+               (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))
+                 (do (println (.getMessage e))
+                     cljs.repl/repl-read)
+                 (throw e))))"
   (rebel/create-buffered-repl-reader-fn
    (fn [s] (rtypes/source-logging-push-back-reader
             (java.io.StringReader. s)))
