@@ -95,6 +95,8 @@
               api/*line-reader* line-reader]
       ;; TODO consider redirecting *err* as well
       (let [save-out *out*]
+        (.flush *out*)
+        (.flush *err*)        
         (when (:redirect-output (srv/config))
           (alter-var-root
            #'*out*
