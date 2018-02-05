@@ -32,6 +32,19 @@ to give you top level usage information.
 The meat of the functionality is in `rebel-readline.line-reader` and
 `rebel-readline.widgets.base` everything else is just support.
 
+# Keybindings
+
+*Interesting bindings*
+
+Ctrl-X_Ctrl-D => Show documentation for word at point
+Ctrl-X_Ctrl-S => Show source for word at point
+Ctrl-X_Ctrl-A => Show source for word at point
+Ctrl-X_Ctrl-E => Inline eval for SEXP before the point
+
+The built in keybindings that are currently in use can be seen here:
+https://github.com/jline/jline3/blob/52d2c894ac8966a84313018302afa1521ea6fec4/reader/src/main/java/org/jline/reader/impl/LineReaderImpl.java#L5075-L5154
+
+
 # CLJS
 
 The rebel readline cljs library can be found in the 
