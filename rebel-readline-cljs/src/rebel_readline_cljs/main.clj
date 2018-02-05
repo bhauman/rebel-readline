@@ -13,7 +13,7 @@
 
 (defn -main [& args]
   (let [repl-env (nash/repl-env)
-        line-reader (line-reader (cljs-service/create))]
+        line-reader (line-reader (cljs-service/create {:repl-env repl-env}))]
     (cljs-repl/repl
      repl-env
      :prompt (fn [])
