@@ -13,14 +13,6 @@ pom.xml.asc
 \#*\#
 .\#*
 debug-log
-.cljs_nashorn_repl/*
-nashorn_code_cache/*
 dev/scratch.clj
-rebel-readline/target
-rebel-readline/classes
-rebel-readline/checkouts
-*/.cljs_nashorn_repl/*
-*/nashorn_code_cache/*
 notes
 
-rebel-readline/target/classes/META-INF/maven/rebel-readline/rebel-readline/pom.properties

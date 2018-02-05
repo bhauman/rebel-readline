@@ -14,3 +14,5 @@ pom.xml.asc
 \#*\#
 .\#*
 debug-log
+nashorn_code_cache
+.cljs_nashorn_repl
