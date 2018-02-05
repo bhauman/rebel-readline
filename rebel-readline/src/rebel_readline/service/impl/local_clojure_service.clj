@@ -27,6 +27,24 @@
           (set! *e t)
           (merge (capture-streams) {:exception (Throwable->map t)}))))))
 
+(defn call-with-timeout [thunk timeout-ms]
+  (let [thread (volatile! nil)
+        ft (future-call
+            (bound-fn []
+              (vreset! thread (Thread/currentThread))
+              (thunk)))
+        timed-out (Object.)]
+    (let [res (deref ft timeout-ms timed-out)]
+      (if (= res timed-out)
+        (do
+          ;; try to gracefully stop the thread if possible
+          (future-cancel ft)
+          (.join @thread 100)
+          (if (.isAlive @thread)
+            (.stop @thread))
+          {:exception (Throwable->map (Exception. "Eval timed out!"))})
+        res))))
+
 (defn safe-resolve [s]
   (some-> s
           symbol
@@ -75,7 +93,10 @@
               (cond-> {:doc doc}
                 url (assoc :url url))))))
       core/Evaluation
-      (-eval [_ form] (data-eval form))
+      (-eval [self form]
+        (call-with-timeout
+         #(data-eval form)
+         (get @self :eval-timeout 3000)))
       (-eval-str [self form-str]
         (try
           (let [res (core/-read-string self form-str)]
