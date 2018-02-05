@@ -89,9 +89,14 @@
 (defn create* [{:keys [repl-env] :as options}]
   (let [config-atom (atom (dissoc options :repl-env))]
     (reify
-      core/Config
-      (-get-config [_] @config-atom)
-      (-set-config! [_ v] (reset! config-atom v))
+      clojure.lang.IDeref
+      (deref [_] @config-atom)
+      clojure.lang.IAtom
+      (swap  [_ f] (swap! config-atom f))
+      (swap  [_ f a] (swap! config-atom f a))
+      (swap  [_ f a b] (swap! config-atom f a b))
+      (swap  [_ f a b args] (swap! config-atom f a b args))
+      (reset [_ a] (reset! config-atom a))      
       core/CurrentNs
       (-current-ns [_] (some-> *ns* str))
       core/Completions

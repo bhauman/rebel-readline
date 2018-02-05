@@ -7,10 +7,6 @@
 
 (def ^:dynamic *service* nil)
 
-(defprotocol Config
-  (-get-config [_])
-  (-set-config! [_ v]))
-
 (defprotocol Completions
   (-complete [_ prefix options]
     "Takes a word prefix and an options map}
@@ -154,11 +150,10 @@
    :redirect-output true
    :color-theme :dark-screen-theme})
 
-(defn config [] (-get-config *service*))
+(defn config [] @*service*)
 
-(defn apply-to-config [f & args]
-  (when-let [res (apply f (config) args)]
-    (-set-config! *service* res)))
+(defn apply-to-config [& args]
+  (apply swap! *service* args))
 
 (defn current-ns []
   (when (satisfies? CurrentNs *service*)
