@@ -21,3 +21,5 @@ rebel-readline/classes
 rebel-readline/checkouts
 
 notes
+
+rebel-readline/target/classes/META-INF/maven/rebel-readline/rebel-readline/pom.properties
