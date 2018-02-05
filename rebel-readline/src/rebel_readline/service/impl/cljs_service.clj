@@ -3,6 +3,7 @@
    [rebel-readline.service.core :as core]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.utils :refer [log]]
+   [rebel-readline.info.doc-url :as doc-url]
    [cljs-tooling.complete :as cljs-complete]
    [cljs-tooling.info :as cljs-info]   
    [cljs.analyzer.api :as ana-api]
@@ -98,18 +99,21 @@
         (let [options (cond-> nil
                         ns (assoc :current-ns ns))]
           (cljs-complete/completions @cljs.env/*compiler* word options)))
-      core/ResolveVarMeta
-      (-resolve-var-meta [self var-str]
+      core/ResolveMeta
+      (-resolve-meta [self var-str]
         (cljs-info/info @cljs.env/*compiler* var-str
                         (core/-current-ns self)))
-      core/ResolveNsMeta
-      (-resolve-ns-meta [self ns-str]
-        (core/-resolve-var-meta self ns-str))
       core/Document
       (-doc [self var-str]
-        (format-document (core/-resolve-var-meta self var-str)))
+        (when-let [{:keys [ns name] :as info} (core/-resolve-meta self var-str)]
+          (when-let [doc (format-document info)]
+            (let [url (doc-url/url-for (str ns) (str name))]
+              (cond-> {:doc doc}
+                url (assoc :url url))))))
       core/Source
-      (-source [_ var-str] (cljs.repl/source-fn @cljs.env/*compiler* (symbol var-str)))
+      (-source [_ var-str]
+        (some->> (cljs.repl/source-fn @cljs.env/*compiler* (symbol var-str))
+                 (hash-map :source)))
       core/Apropos
       (-apropos [_ var-str] (apropos var-str))
       core/ReadString

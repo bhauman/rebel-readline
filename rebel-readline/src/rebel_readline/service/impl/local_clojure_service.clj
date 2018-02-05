@@ -2,11 +2,13 @@
   (:require
    [rebel-readline.service.core :as core]
    [rebel-readline.tools.colors :as colors]
+   [rebel-readline.info.doc-url :as doc-url]
    [compliment.core :as compliment]
    [clojure.repl]))
 
-;; takent from replicant
+;; taken from replicant
 ;; https://github.com/puredanger/replicant/blob/master/src/replicant/util.clj
+;; TODO this eval is naive and should have a timeout at least or be interruptable
 (defn data-eval
   [form]
   (let [out-writer (java.io.StringWriter.)
@@ -32,6 +34,12 @@
 
 (def safe-meta (comp meta safe-resolve))
 
+(defn resolve-meta [var-str]
+  (or (safe-meta var-str)
+      (when-let [ns' (some-> var-str symbol find-ns)]
+        (assoc (meta ns')
+               :ns var-str))))
+
 (defn create* [options]
   (let [config-atom (atom options)]
     (reify
@@ -43,23 +51,24 @@
         (if options
           (compliment/completions word options)
           (compliment/completions word)))
-      core/ResolveVarMeta
-      (-resolve-var-meta [_ var-str]
-        (safe-meta var-str))
-      core/ResolveNsMeta
-      (-resolve-ns-meta [_ ns-str]
-        (when-let [ns' (find-ns (symbol ns-str))]
-          (assoc (meta ns')
-                 :name ns-str)))
+      core/ResolveMeta
+      (-resolve-meta [_ var-str]
+        (resolve-meta var-str))
       core/CurrentNs
       (-current-ns [_] (some-> *ns* str))
       core/Source
-      (-source [_ var-str] (clojure.repl/source-fn (symbol var-str)))
+      (-source [_ var-str]
+        (some->> (clojure.repl/source-fn (symbol var-str))
+                 (hash-map :source)))
       core/Apropos
       (-apropos [_ var-str] (clojure.repl/apropos var-str))
       core/Document
-      (-doc [_ var-str]
-        (compliment/documentation var-str))
+      (-doc [self var-str]
+        (when-let [{:keys [ns name]} (core/-resolve-meta self var-str)]
+          (when-let [doc (compliment/documentation var-str)]
+            (let [url (doc-url/url-for (str ns) (str name))]
+              (cond-> {:doc doc}
+                url (assoc :url url))))))
       core/Evaluation
       (-eval [_ form] (data-eval form))
       (-eval-str [self form-str]

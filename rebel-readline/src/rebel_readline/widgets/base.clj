@@ -17,7 +17,9 @@
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
    [java.util.regex Pattern]))
 
+;; ----------------------------------------------------
 ;; less implementation
+;; ----------------------------------------------------
 
 (defn split-into-wrapped-lines [at-str columns]
   (mapcat (partial attr-partition-all columns)
@@ -100,7 +102,9 @@
              ;; window is too small do nothing
              nil)))))))
 
-;; TODO make services like source, document, and apropos abstract
+;; -----------------------------------------
+;; line indentation widget
+;; -----------------------------------------
 
 (def indent-line-widget
   (create-widget
@@ -167,7 +171,7 @@
              word)))))
 
 (defn name-arglist-display [meta-data]
-  (let [{:keys [ns doc arglists name]} meta-data]
+  (let [{:keys [ns arglists name]} meta-data]
     (when (and ns name)
       (let [x (doto (AttributedStringBuilder.)
                 (.styled (srv/color :eldoc-namespace) (str ns))
@@ -180,7 +184,7 @@
 
 (defn display-argument-help-message []
   (when-let [funcall-str (one-space-after-funcall-word?)]
-    (when-let [fun-meta (srv/resolve-var-meta funcall-str)]
+    (when-let [fun-meta (srv/resolve-meta funcall-str)]
       (name-arglist-display fun-meta))))
 
 ;; TODO this ttd atom doesn't work really
@@ -223,82 +227,13 @@
 ;; Documentation widget
 ;; -------------------------------------
 
-
-;; TODO trucated output should apply to everything that
-;; displays a message
-;; TODO need to set a default color
-#_(defn truncated-message [length]
-  (let [trunc-length (+ 2 (count "output truncated"))
-        bar-length (/ (- length trunc-length) 2)
-        bar (apply str (repeat bar-length \-))]
-    (str bar " OUTPUT TRUNCATED " bar)))
-
-;; TODO consider columns and wrapping as well
-;; TODO need to set a default color
-#_(defn shrink-multiline-to-terminal-size
-  ([s] (shrink-multiline-to-terminal-size s 0))
-  ([s adjust]
-   (let [lines  (string/split-lines s)
-         {:keys [rows cols]} (terminal-size)
-         rows (- rows (count (string/split-lines (buffer-as-string))))
-         rows (+ rows adjust)]
-     (if (and (pos? rows) (> (count lines) (+ rows 4)))
-       (->> lines
-            (take (- rows (min 4 rows)))
-            vec
-            (#(conj % (truncated-message cols)))
-            (string/join (System/getProperty "line.separator")))
-       s))))
-
-;; taken from cljs-api-gen.encode
-(def cljs-api-encoding
-  {"."  "DOT"
-   ">"  "GT"
-   "<"  "LT"
-   "!"  "BANG"
-   "?"  "QMARK"
-   "*"  "STAR"
-   "+"  "PLUS"
-   "="  "EQ"
-   "/"  "SLASH"})
-
-;; taken from cljs-api-gen.encode
-(defn cljs-api-encode-name [name-]
-  (reduce (fn [s [a b]] (string/replace s a b))
-    (name name-) cljs-api-encoding))
-
-(defn clojure-docs-url* [ns name]
-  (cond
-    (.startsWith (str ns) "clojure.")
-    (cond-> "https://clojuredocs.org/"
-      ns (str ns)
-      name (str "/" name))
-    (.startsWith (str ns) "cljs.")
-    (cond-> "http://cljs.github.io/api/"
-      ns (str ns)
-      name (str "/" (cljs-api-encode-name name)))
-    :else nil))
-
-(defn clojure-docs-url [wrd]
-  (when-let [{:keys [ns name]} (srv/resolve-var-meta wrd)]
-    ;; TODO check if one of the available namespaces
-    (when ns {:url (clojure-docs-url* (str ns) (str name))
-              :ns (str ns)
-              :name name})))
-
-(defn doc-at-point []
-  (when-let [[wrd] (word-at-cursor)]
-    (when-let [doc (srv/doc wrd)]
-      (let [url (:url (clojure-docs-url wrd))]
-        (cond-> {:doc (AttributedString. doc (srv/color :doc))}
-          url (assoc :url (AttributedString. url (srv/color :light-anchor))))))))
-
 (def document-at-point-widget
   (create-widget
-   (when-let [doc-options (doc-at-point)]
-     (display-less (:doc doc-options)
-                   (when-let [url (:url doc-options)]
-                     {:header url})))
+   (when-let [[wrd] (word-at-cursor)]
+     (when-let [doc-options (srv/doc wrd)]
+       (display-less (AttributedString. (:doc doc-options) (srv/color :doc))
+                     (when-let [url (:url doc-options)]
+                       {:header (AttributedString. url (srv/color :light-anchor))}))))
    true))
 
 ;; -------------------------------------
@@ -307,8 +242,8 @@
 
 (defn source-at-point []
   (when-let [[wrd] (word-at-cursor)]
-    (when-let [{:keys [doc] :as var-meta-data} (srv/resolve-var-meta wrd)]
-      (when-let [source (srv/source wrd)]
+    (when-let [var-meta-data (srv/resolve-meta wrd)]
+      (when-let [{:keys [source]} (srv/source wrd)]
         (when-let [name-line (name-arglist-display var-meta-data)]
           (when-not (string/blank? source)
             {:arglist-line name-line
@@ -414,8 +349,7 @@
   (let [suggests (sort-by (juxt count identity)
                           (map str (srv/apropos wrd)))]
     (when-let [suggests (not-empty (take 50 suggests))]
-      (let [terminal-width (:cols (terminal-size))
-            max-length (apply max (map count suggests))]
+      (let [terminal-width (:cols (terminal-size))]
         (->> (divide-into-displayable-columns suggests terminal-width)
              (map (partial format-column wrd))
              (apply map vector)

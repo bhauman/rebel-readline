@@ -8,51 +8,138 @@
 (def ^:dynamic *service* nil)
 
 (defprotocol Config
-  (-get-config [_ ])
+  (-get-config [_])
   (-set-config! [_ v]))
 
 (defprotocol Completions
   (-complete [_ prefix options]
     "Takes a word prefix and an options map}
-The options map can contain 
-  :ns - the current namespace the completion is occuring in
-  :context - a sexp form that contains a marker '__prefix__
-     replacing the given prefix in teh expression where it 
-     is being completed. i.e. '(list __prefix__ 1 2) 
+     
+    The options map can contain
+    `:ns`      - the current namespace the completion is occuring in
+    `:context` - a sexp form that contains a marker '__prefix__
+       replacing the given prefix in teh expression where it is being
+       completed. i.e. '(list __prefix__ 1 2)
 
-This returns a list of candidates of the form
-{:candidate \"alength\"
- :ns -> if the candidate is a var this will be the namespace of the var 
- :type -> a keyword desribing the type of the candidate i.e :function, :macro }
-"))
+    Returns a list of candidates of the form
+
+    {:candidate \"alength\"
+     :ns \"clojure.core\"
+     :type :function}"))
 
 (defprotocol CurrentNs
-  (-current-ns [_]))
+  (-current-ns [_]
+    "Returns a string representation of the current ns in the current
+     execution environment."))
 
-(defprotocol ResolveVarMeta
-  (-resolve-var-meta [_ var-str]))
+(defprotocol ResolveMeta
+  (-resolve-meta [_ var-str]
+    "Currently this finds and returns the meta data for the given
+    string currently we are using the :ns, :name, :doc and :arglist
+    meta data that is found on both vars, namespaces
 
-(defprotocol ResolveNsMeta
-  (-resolve-ns-meta [_ var-str]))
+    This function should return the standard or enhanced meta
+    information that is afor a given \"word\" that and editor can
+    focus on.
 
+    `(resolve (symbol var-str))`
+
+    This function shouldn't throw errors but catch them and return nil
+    if the var doesn't exist."))
+
+;; TODO Maybe better to have a :file :line-start :line-end and a :url
 (defprotocol Source
-  (-source [_ var-str]))
+  (-source [_ var-str]
+    "Given a string that represents a var Returns a map with source
+     information for the var or nil if no source is found.
+     
+     A required :source key which will hold a string of the source code 
+     for the given var.
+
+     An optional :url key which will hold a url to the source code in
+     the context of the original file or potentially some other helpful url.
+   
+     DESIGN NOTE the :url isn't currently used
+
+     Example result for `(-source \"some?\")`:
+       
+       {:source \"(defn ^boolean some? [x] \\n(not (nil? x)))\"
+        :url \"https://github.com[...]main/cljs/cljs/core.cljs#L243-L245\" }"))
 
 (defprotocol Apropos
-  (-apropos [_ var-str]))
+  (-apropos [_ var-str]
+    "Given a string returns a list of string repesentions of vars 
+    that match that string. This fn is already implemented on all 
+    the Clojure plaforms."))
 
 (defprotocol Document
-  (-doc [_ var-str]))
+  (-doc [_ var-str]
+    "Given a string that represents a var, returns a map with
+    documentation information for the named var or nil if no
+    documentation is found.
+     
+    A required :doc key which will hold a string of the documentation 
+    for the given var.
+
+    An optional :url key which will hold a url to the online
+    documentation for the given var."))
 
 (defprotocol AcceptLine
-  (-accept-line [_ line cursor]))
+  (-accept-line [_ line cursor]
+    "Takes a string that is represents the current contents of a
+     readline buffer and an integer position into that readline that
+     represents the current position of the cursor.
+
+     Returns a boolean indicating wether the line is complete and
+     should be accepted as input.
+
+     A service is not required to implement this fn, they would do
+     this to override the default accept line behavior"))
 
 (defprotocol ReadString
-  (-read-string [_ str-form]))
+  (-read-string [_ str-form]
+    "Given a string with that contains clojure forms this will read
+    and return a map containing the first form in the string under the 
+    key `:form`
+
+    Example:
+    (-read-string *service* \"1\") => {:form 1}
+    
+    If an exception is thrown this will return a throwable map under
+    the key `:exception` 
+
+    Example:
+    (-read-string *service* \"#asdfasdfas\") => {:exception {:cause ...}}"))
 
 (defprotocol Evaluation
-  (-eval [_ form])
-  (-eval-str [_ form-str]))
+  (-eval [_ form]
+    "Given a clojure form this will evaluate that form and return a
+    map of the outcome.
+
+    The returned map will contain a `:result` key with a clj form that
+    represents the result of it will contain a `:printed-result` key
+    if the form can only be returned as a printed value.
+
+    The returned map will also contain `:out` and `:err` keys
+    containing any captured output that occured during the evaluation
+    of the form.
+
+    Example:
+    (-eval *service* 1) => {:result 1 :out \"\" :err \"\"}
+    
+    If an exception is thrown this will return a throwable map under
+    the key `:exception` 
+
+    Example:
+    (-eval *service* '(defn)) => {:exception {:cause ...}}
+
+    An important thing to remember abou this eval is that it is used
+    internally by the line-reader to implement various
+    capabilities (line inline eval)")
+  
+  (-eval-str [_ form-str]
+    "Just like `-eval` but takes and string and reads it before
+    sending it on to `-eval`"))
 
 (declare current-ns)
 
@@ -96,13 +183,9 @@ This returns a list of candidates of the form
   (when (satisfies? Source *service*)
     (-source *service* wrd)))
 
-(defn resolve-var-meta [wrd]
-  (when (satisfies? ResolveVarMeta *service*)
-    (-resolve-var-meta *service* wrd)))
-
-(defn resolve-ns-meta [wrd]
-  (when (satisfies? ResolveNsMeta *service*)
-    (-resolve-ns-meta *service* wrd)))
+(defn resolve-meta [wrd]
+  (when (satisfies? ResolveMeta *service*)
+    (-resolve-meta *service* wrd)))
 
 (defn accept-line [line-str cursor]
   (if (satisfies? AcceptLine *service*)
@@ -126,9 +209,6 @@ This returns a list of candidates of the form
    (get (config) :color-theme)
    colors/color-themes 
    (get sk AttributedStyle/DEFAULT)))
-
-#_(binding [*service* (rebel-readline.service.impl.local-clojure-service/create)]
-    (color :line-comment))
 
 (defn resolve-fn? [f]
   (cond
