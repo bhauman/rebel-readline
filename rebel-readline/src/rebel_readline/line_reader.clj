@@ -148,24 +148,16 @@
                nil))))))
 
 (defn candidate [{:keys [candidate type ns]}]
-  (proxy [Candidate] [candidate ;; value 
-                      candidate ;; display
-                      nil ;; group
-                      (cond-> nil
-                        type (str (first (name type)))
-                        ns   (str (when type " ") ns)) 
-                      nil ;; suffix
-                      nil ;; key
-                      false]
-    ;; TODO remove
-    ;; apparently this comparator doesn't affect final sorting 
-    (compareTo [^Candidate candidate]
-      (let [s1 (proxy-super value)
-            s2 (.value candidate)
-            res (compare (count s1) (count s2))]
-        (if (zero? res)
-          (compare s1 s2)
-          res)))))
+  (Candidate.
+   candidate ;; value 
+   candidate ;; display
+   nil ;; group
+   (cond-> nil
+     type (str (first (name type)))
+     ns   (str (when type " ") ns)) 
+   nil ;; suffix
+   nil ;; key
+   false))
 
 (defn command-token? [{:keys [line tokens word]} starts-with]
   (and (= 1 (count tokens))
