@@ -5,10 +5,6 @@
    [clojure.main])
   (:gen-class))
 
-(defn new-repl []
-  (with-readline-input-stream (local-clj-service/create)
-    (clojure.main/repl :prompt (fn []))))
-
 (defn -main [& args]
   (let [reader (line-reader (local-clj-service/create))]
     (clojure.main/repl
