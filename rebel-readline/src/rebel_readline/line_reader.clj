@@ -43,7 +43,7 @@
 ;; Jline uses a parser that pulls out the words from a read line
 ;; it mainly uses this for word completion and line acceptance
 ;; I.e. is this line complete or do we need to display a secondary
-;; prompt
+;; prompt?
 
 (defn parse-line [line cursor]
   (let [tokens (tokenize/tag-words line)
@@ -85,9 +85,12 @@
 ;; the functionality implemented here is indenting when you hit return on a line
 (defn indent [line-reader line cursor]
   ;; you could work on the buffer here instead
+  
   ;; TODO this key binding needs to be looked up from the macro if possible
   ;; changing the buffer here is the most stable but the logic is quite different
   ;; than the current indent action
+  
+  ;; a two key macro here adds a slight delay to the indent action I think
   (.runMacro line-reader (str (KeyMap/ctrl \X) (KeyMap/ctrl \I))))
 
 ;; a parser for jline that respects clojurisms
