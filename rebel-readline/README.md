@@ -2,6 +2,8 @@
 
 A terminal readline library for Clojure Dialects
 
+rebel-readline with undoubtedly lead to a "rebel-repl" of some kind ...
+
 WORK IN PRooooooGRESS!!
 
 ## Important note!!! 
