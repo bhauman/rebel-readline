@@ -1,7 +1,9 @@
 (ns rebel-readline.service.core
   (:require
+   [rebel-readline.parsing.tokenizer :as tokenize]
    [rebel-readline.tools.colors :as colors]
-   [rebel-readline.tools.read-forms :as forms])
+   [rebel-readline.tools.read-forms :as forms]
+   [rebel-readline.tools.sexp :as sexp])
   (:import
    [org.jline.utils AttributedStyle]))
 
@@ -182,10 +184,18 @@
   (when (satisfies? ResolveMeta *service*)
     (-resolve-meta *service* wrd)))
 
+(defn default-accept-line [line-str cursor]
+  (let [cursor (min (count line-str) cursor)
+        x (subs line-str 0 cursor)
+        tagged-parses (tokenize/tag-sexp-traversal x)]
+    (not
+     (or (= :unterm-string-literal (last (last tagged-parses))) 
+         (sexp/find-open-sexp-start tagged-parses cursor)))))
+
 (defn accept-line [line-str cursor]
   (if (satisfies? AcceptLine *service*)
     (-accept-line *service* line-str cursor)
-    (forms/default-accept-line line-str cursor)))
+    (default-accept-line line-str cursor)))
 
 (defn read-form [form-str]
   (when (satisfies? ReadString *service*)
