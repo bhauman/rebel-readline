@@ -2,6 +2,8 @@
 
 A terminal readline library for Clojure Dialects
 
+[![asciicast](https://asciinema.org/a/160597.png)](https://asciinema.org/a/160597)
+
 rebel-readline with undoubtedly lead to a "rebel-repl" of some kind ...
 
 WORK IN PRooooooGRESS!!
