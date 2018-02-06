@@ -51,7 +51,7 @@ Jline source code
 
 **I have not yet verified how all of the built-in jline commands behave against Clojure code**
 
-I will porbably initially remove poorly behaving commands and focus on
+I will probably initially remove poorly behaving commands and focus on
 adding Clojure specific commands back as the get properly
 implemented. However, paredit functionality is going to take
 precendence to reimplementing the built-in commands above.
