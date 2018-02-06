@@ -40,7 +40,11 @@ The meat of the functionality is in `rebel-readline.line-reader` and
 
 **Bindings of interest**
 
-* TAB => word completion and indentation in the whitespace at the
+* Ctrl-C => aborts editing the current line
+* Ctrl-D at the start of a line => sends an end of stream message
+  which in most cases should quit the REPL
+
+* TAB => word completion or code indent if the cursor is in the whitespace at the
   start of a line
 * Ctrl-X_Ctrl-D => Show documentation for word at point
 * Ctrl-X_Ctrl-S => Show source for word at point
