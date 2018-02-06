@@ -2,7 +2,8 @@
   (:require
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
-   [rebel-readline.jline-api :as api :refer [attr-str]]
+   [rebel-readline.jline-api :as api]
+   [rebel-readline.jline-api.attributed-string :as astring]   
    [rebel-readline.tools.syntax-highlight :as syn]
    [rebel-readline.tools.colors :as col]
    [rebel-readline.service.core :as srv])
@@ -119,15 +120,14 @@
   (println
    (.toAnsi
     (apply
-     attr-str
-     (AttributedString. "Available Commands:" (.bold AttributedStyle/DEFAULT))
+     astring/astr
+     ["Available Commands:" (.bold AttributedStyle/DEFAULT)]
      (System/getProperty "line.separator")
      (keep
       #(when-let [doc (command-doc %)]
-         (attr-str
+         (astring/astr
           " "
-          (AttributedString. (prn-str %)
-                             (.underline (col/fg-color AttributedStyle/CYAN)))
+          [(prn-str %) (.underline (col/fg-color AttributedStyle/CYAN))]
           (string/join
            (System/getProperty "line.separator")
            (map (fn [x] (str "     " x))

@@ -1,6 +1,7 @@
 (ns rebel-readline.jline-api
   (:require
    [clojure.string :as string]
+   [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.utils :refer [log]]
    [rebel-readline.service.core :as srv])
   (:import
@@ -38,43 +39,6 @@
   `(binding [rebel-readline.jline-api/*buffer* ~b
              rebel-readline.service.core/*service* (rebel-readline.service.impl.local-clojure-service/create)]
      ~@body))
-
-(defn attr-str [& args]
-  (AttributedString.
-   (reduce #(if %2
-              (.append %1 %2)
-              %1)
-           (AttributedStringBuilder.) args)))
-
-(defn attr-str-split [^AttributedString at-str regex]
-  (let [s (str at-str)
-        m (.matcher #"\n" s)]
-    (->> (repeatedly #(when (.find m)
-                        [(.start m) (.end m)]))
-         (take-while some?)
-         flatten
-         (cons 0)
-         (partition-all 2)
-         (mapv
-          #(.substring at-str (first %) (or (second %) (count s)))))))
-
-(defn attr-partition-all [length ^AttributedString at-str]
-  (mapv first
-        (take-while some?
-                    (rest
-                     (iterate (fn [[_ at-str]]
-                                (when at-str
-                                  (if (<= (count at-str) length)
-                                    [at-str nil]
-                                    [(.substring at-str 0 (min length (count at-str)))
-                                     (.substring at-str length (count at-str))])))
-                              [nil at-str])))))
-
-(defn attr-str-split-lines [^AttributedString at-str]
-  (attr-str-split at-str #"\r?\n"))
-
-(defn attr-str-join [sep coll]
-  (apply attr-str (interpose sep coll)))
 
 (defmacro create-widget [& body]
   `(fn [line-reader#]

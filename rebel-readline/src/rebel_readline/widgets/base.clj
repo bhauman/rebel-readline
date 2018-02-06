@@ -1,33 +1,34 @@
 (ns rebel-readline.widgets.base
   (:require
+   [clojure.pprint]
    [clojure.repl]
    [clojure.string :as string]
-   [clojure.pprint]
+   [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.parsing.tokenizer :as tokenize]
+   [rebel-readline.service.core :as srv]
+   [rebel-readline.tools.colors :as col]   
    [rebel-readline.tools.indent :as indent]
    [rebel-readline.tools.sexp :as sexp]
-   [rebel-readline.tools.colors :as col]   
-   [rebel-readline.service.core :as srv]
    [rebel-readline.tools.syntax-highlight :as highlight]
    [rebel-readline.utils :refer [log]])
   (:use rebel-readline.jline-api)
   (:import
+   [java.util.regex Pattern]
    [org.jline.keymap KeyMap]
    [org.jline.reader LineReader]
-   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
-   [java.util.regex Pattern]))
+   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
 ;; ----------------------------------------------------
 ;; less implementation
 ;; ----------------------------------------------------
 
 (defn split-into-wrapped-lines [at-str columns]
-  (mapcat (partial attr-partition-all columns)
-          (attr-str-split-lines at-str)))
+  (mapcat (partial astring/partition-all columns)
+          (astring/split-lines at-str)))
 
 (defn window-lines [at-str-lines pos rows]
-  (attr-str-join (System/getProperty "line.separator")
-                 (take rows (drop pos at-str-lines))))
+  (astring/join (System/getProperty "line.separator")
+                (take rows (drop pos at-str-lines))))
 
 (defn- lines-needed [hdr columns]
   (if-let [hdr (if (fn? hdr) (hdr) hdr)]
@@ -39,10 +40,10 @@
    (display-less at-str {}))
   ([at-str options]
    (let [{:keys [header footer]}
-         (merge {:header #(AttributedString. (apply str (repeat (:cols (terminal-size)) \-))
-                                             (.faint AttributedStyle/DEFAULT))
-                 :footer (AttributedString. "-- SCROLL WITH ARROW KEYS --"
-                                            (srv/color :less-help-message))}
+         (merge {:header #(astring/astr [(apply str (repeat (:cols (terminal-size)) \-))
+                                         (.faint AttributedStyle/DEFAULT)])
+                 :footer (astring/astr ["-- SCROLL WITH ARROW KEYS --"
+                                        (srv/color :less-help-message)])}
                 options)
          columns     (:cols (terminal-size))
          at-str-lines (split-into-wrapped-lines at-str columns)
@@ -53,7 +54,7 @@
                (lines-needed (:header options) columns)
                (lines-needed (:footer options) columns))
             (- (rows-available-for-post-display) 3))
-       (display-message (attr-str-join
+       (display-message (astring/join
                          (System/getProperty "line.separator")
                          (keep identity
                                [(when-let [header (:header options)]
@@ -72,7 +73,7 @@
                window-rows (- (rows-available-for-post-display) header-lines-needed footer-lines-needed 3)]
            (if (< 2 window-rows)
              (do
-               (display-message (attr-str-join
+               (display-message (astring/join
                                  (System/getProperty "line.separator")
                                  (keep identity
                                   [header
@@ -173,14 +174,12 @@
 (defn name-arglist-display [meta-data]
   (let [{:keys [ns arglists name]} meta-data]
     (when (and ns name)
-      (let [x (doto (AttributedStringBuilder.)
-                (.styled (srv/color :eldoc-namespace) (str ns))
-                (.styled (srv/color :eldoc-separator) "/")
-                (.styled (srv/color :eldoc-varname) (str name)))]
-        (when arglists
-          (doto x
-            (.styled (srv/color :eldoc-arglists)
-                     (str ": " (pr-str arglists)))))))))
+      (astring/astr
+       [(str ns)   (srv/color :eldoc-namespace)]
+       ["/"        (srv/color :eldoc-separator)]
+       [(str name) (srv/color :eldoc-varname)]
+       (when arglists
+         [(str ": " (pr-str arglists)) (srv/color :eldoc-arglists)])))))
 
 (defn display-argument-help-message []
   (when-let [funcall-str (one-space-after-funcall-word?)]
@@ -270,13 +269,12 @@
 (defn format-pair-to-width [wrd width [ns' name']]
   (let [sep (apply str (repeat (- width (count ns') (count name')) \space))
         idx (.indexOf name' wrd)]
-    (doto (AttributedStringBuilder.)
-      (.styled (srv/color :apropos-word) (subs name' 0 idx))
-      (.styled (srv/color :apropos-highlight)
-               (subs name' idx (+ idx (count wrd))))
-      (.styled (srv/color :apropos-word) (subs name' (+ idx (count wrd))))
-      (.append sep)
-      (.styled (srv/color :apropos-namespace) ns'))))
+    (astring/astr
+     [(subs name' 0 idx)                   (srv/color :apropos-word)]
+     [(subs name' idx (+ idx (count wrd))) (srv/color :apropos-highlight)]
+     [(subs name' (+ idx (count wrd)))     (srv/color :apropos-word)]
+     sep
+     [ns'                                  (srv/color :apropos-namespace)])))
 
 (defn format-column [wrd column]
   (let [max-width (apply max (map count column))]
@@ -354,9 +352,9 @@
              (map (partial format-column wrd))
              (apply map vector)
              (map #(interpose "   " %))
-             (map #(apply attr-str %))
+             (map #(apply astring/astr %))
              (interpose (apply str (System/getProperty "line.separator")))
-             (apply attr-str))))))
+             (apply astring/astr))))))
 
 (def apropos-at-point-widget
   (create-widget
@@ -403,9 +401,8 @@
         (srv/evaluate-str form-str)))))
 
 (defn inline-result-marker [^AttributedString at-str]
-  (attr-str
-   (AttributedString. (str "#_=>")
-                      (srv/color :inline-display-marker))
+  (astring/astr
+   ["#_=>" (srv/color :inline-display-marker)]
    " "
    at-str))
 
@@ -426,9 +423,8 @@
                        (str "=>!! "
                             (or (:cause exception)
                                 (some-> exception :via first :type))) )
-    (not (string/blank? out)) (.append (ensure-newline out)) ;; ensure newline
+    (not (string/blank? out)) (.append (ensure-newline out))
     (not (string/blank? err)) (.styled (srv/color :error) (ensure-newline err))
-    ;; TODO truncate output
     (or (contains? eval-result :result) printed-result)
     (.append
      (inline-result-marker
