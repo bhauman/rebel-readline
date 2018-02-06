@@ -15,20 +15,19 @@
                "\n1" (sexp/flip-delimiter-char (first delim))))))))
 
 (defn indent-amount [s cursor]
-  ;; TODO handle case where parse fails
   (if (zero? cursor)
     0
     (if-let [prx (indent-proxy-str s cursor)]
-      (->> (try (reformat-string prx {:remove-trailing-whitespace? false
-                                      :insert-missing-whitespace? false
-                                      :remove-surrounding-whitespace? false
-                                      :remove-consecutive-blank-lines? false})
-                (catch Exception e
-                  ;; this is the fallback for indenting 
-                  #_(count-leading-white-space prx)
-                  ;; TODO this is temporary so that we can keep track of bad parses
-                  (throw (ex-info "bad indenting parse" {:s s :cursor cursor :prx prx} e))))
-           string/split-lines
-           last
-           sexp/count-leading-white-space)
+      (try (->>
+            (reformat-string prx {:remove-trailing-whitespace? false
+                                  :insert-missing-whitespace? false
+                                  :remove-surrounding-whitespace? false
+                                  :remove-consecutive-blank-lines? false})
+            string/split-lines
+            last
+            sexp/count-leading-white-space)
+           (catch clojure.lang.ExceptionInfo e
+             (if (-> e ex-data :type (= :reader-exception))
+               (+ 2 (sexp/count-leading-white-space prx))
+               (throw e))))
       0)))
