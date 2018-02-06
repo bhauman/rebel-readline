@@ -2,6 +2,10 @@
 
 A terminal readline library for Clojure Dialects
 
+[![asciicast](https://asciinema.org/a/160597.png)](https://asciinema.org/a/160597)
+
+rebel-readline with undoubtedly lead to a "rebel-repl" of some kind ...
+
 WORK IN PRooooooGRESS!!
 
 ## Important note!!! 
@@ -36,19 +40,35 @@ The meat of the functionality is in `rebel-readline.line-reader` and
 
 **Bindings of interest**
 
+* TAB => word completion and indentation in the whitespace at the
+  start of a line
 * Ctrl-X_Ctrl-D => Show documentation for word at point
 * Ctrl-X_Ctrl-S => Show source for word at point
 * Ctrl-X_Ctrl-A => Show apropos for word at point
 * Ctrl-X_Ctrl-E => Inline eval for SEXP before the point
 
-The built in keybindings that are currently in use can be seen in the
+The built-in keybindings that are currently in use can be seen in the
 Jline source code
 [here](https://github.com/jline/jline3/blob/52d2c894ac8966a84313018302afa1521ea6fec4/reader/src/main/java/org/jline/reader/impl/LineReaderImpl.java#L5075-L5154)
 
-# CLJS
+**I have not yet verified how all of the built-in jline commands behave against Clojure code**
 
-The rebel readline cljs library can be found in the 
-`rebel-readline-cljs` directory.
+I will probably initially remove poorly behaving commands and focus on
+adding Clojure specific commands back as the get properly
+implemented. However, paredit functionality is going to take
+precendence to reimplementing the built-in commands above.
+
+## Commands
+
+There is a command system. If the line starts with a "repl" namespaced
+keyword then the line-reader will attempt to interpret it as a command.
+
+Type `:repl/help` or `:repl` TAB to see a list of available commands.
+
+You can add new commands by adding methods to the
+`rebel-readline.commands/command` multimethod. You can add
+documentation for the command by adding a method to the
+`rebel-readline.commands/command-doc` multimethod.
 
 ## License
 
