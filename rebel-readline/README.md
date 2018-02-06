@@ -41,9 +41,17 @@ The meat of the functionality is in `rebel-readline.line-reader` and
 * Ctrl-X_Ctrl-A => Show apropos for word at point
 * Ctrl-X_Ctrl-E => Inline eval for SEXP before the point
 
-The built in keybindings that are currently in use can be seen in the
+The built-in keybindings that are currently in use can be seen in the
 Jline source code
 [here](https://github.com/jline/jline3/blob/52d2c894ac8966a84313018302afa1521ea6fec4/reader/src/main/java/org/jline/reader/impl/LineReaderImpl.java#L5075-L5154)
+
+** I have not yet verified how all of the built-in jline commands behave against Clojure code **
+
+I will porbably initially remove poorly behaving commands and focus on
+adding Clojure specific commands back as the get properly
+implemented. However, paredit functionality is going to take
+precendence to reimplementing the built-in commands above.
+
 
 ## License
 
