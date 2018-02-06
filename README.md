@@ -4,7 +4,7 @@ A terminal readline library for Clojure Dialects
 
 WORK IN PRooooooGRESS!!
 
-# Important note!!! 
+## Important note!!! 
 
 The rebel line reader will attempt to manipulate the terminal
 that initiated the JVM process. For this reason it is important
@@ -20,11 +20,11 @@ That means launching your java process using the
 Launching from a process initiated by lein will not work and
 launching from a boot pod will not cut it either.
 
-# Quick start
+## Quick start
 
 `lein trampoline run` will get you into a clojure repl with the readline working.
 
-# Quick Lay of the land
+## Quick Lay of the land
 
 You should look at `rebel-readline.main` and `rebel-readline.core`
 to give you top level usage information.
@@ -32,13 +32,13 @@ to give you top level usage information.
 The meat of the functionality is in `rebel-readline.line-reader` and
 `rebel-readline.widgets.base` everything else is just support.
 
-# Keybindings
+## Keybindings
 
-*Interesting bindings*
+**Bindings of interest**
 
 * Ctrl-X_Ctrl-D => Show documentation for word at point
 * Ctrl-X_Ctrl-S => Show source for word at point
-* Ctrl-X_Ctrl-A => Show source for word at point
+* Ctrl-X_Ctrl-A => Show apropos for word at point
 * Ctrl-X_Ctrl-E => Inline eval for SEXP before the point
 
 The built in keybindings that are currently in use can be seen in the
