@@ -38,6 +38,8 @@ The meat of the functionality is in `rebel-readline.line-reader` and
 
 **Bindings of interest**
 
+* TAB => word completion and indentation in the whitespace at the
+  start of a line
 * Ctrl-X_Ctrl-D => Show documentation for word at point
 * Ctrl-X_Ctrl-S => Show source for word at point
 * Ctrl-X_Ctrl-A => Show apropos for word at point
@@ -54,6 +56,17 @@ adding Clojure specific commands back as the get properly
 implemented. However, paredit functionality is going to take
 precendence to reimplementing the built-in commands above.
 
+## Commands
+
+There is a command system. If the line starts with a "repl" namespaced
+keyword then the line-reader will attempt to interpret it as a command.
+
+Type `:repl/help` or `:repl` TAB to see a list of available commands.
+
+You can add new commands by adding methods to the
+`rebel-readline.commands/command` multimethod. You can add
+documentation for the command by adding a method to the
+`rebel-readline.commands/command-doc` multimethod.
 
 ## License
 
