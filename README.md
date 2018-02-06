@@ -21,8 +21,7 @@ That means launching your java process using the
  * lein trampoline 
  * boot - would need to run in boot's worker pod
 
-Launching from a process initiated by lein will not work and
-launching from a boot pod will not cut it either.
+Launching the terminal readline process from another java process will not work.
 
 ## Quick start
 
