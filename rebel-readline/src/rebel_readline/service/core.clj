@@ -2,7 +2,6 @@
   (:require
    [rebel-readline.parsing.tokenizer :as tokenize]
    [rebel-readline.tools.colors :as colors]
-   [rebel-readline.tools.read-forms :as forms]
    [rebel-readline.tools.sexp :as sexp])
   (:import
    [org.jline.utils AttributedStyle]))
