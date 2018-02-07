@@ -8,7 +8,7 @@
 ;; we need to quickly tokenize partial clojure expressions
 ;; for syntax highlighting and sexp text manipulation
 
-;; this is a regexp based tokenizer for clojure that meets these needs quite well enough
+;; this is a regexp based tokenizer for clojure that meets these needs well enough
 
 (defn tag-matches [x regexp & group-styles]
   (let [m (.matcher regexp x)]
@@ -321,13 +321,14 @@ strings, comments and characters. "
                :character
                :word))
 
-#_(tag-words "asdfasdf asdfasdfa \"asdfasdfads"
-           )
-
 ;; really fast
-#_(time (tokenize-syntax (apply str (repeat 100 (slurp "project.clj")))))
 
-#_(time (mapv read-string (repeat 100 (slurp "project.clj"))))
+#_(time (do
+          (tag-syntax (apply str (repeat 3000 (slurp "project.clj"))))
+          nil))
 
-;; TODO add colors for light background
+#_(time (do
+          (read-string (str "[" (apply str (repeat 3000 (slurp "project.clj"))) "]"))
+          nil))
+
 
