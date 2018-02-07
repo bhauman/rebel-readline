@@ -4,17 +4,17 @@ A terminal readline library for Clojure Dialects
 
 [![asciicast](https://asciinema.org/a/160597.png)](https://asciinema.org/a/160597)
 
-rebel-readline with undoubtedly lead to a "rebel-repl" of some kind ...
+rebel-readline will undoubtedly lead to a "rebel-repl" of some kind ...
 
-WORK IN PRooooooGRESS!!
+**WARNING: UNDER ACTIVE INITIAL DEVELOPMENT!!**
 
 ## Important note!!! 
 
-The rebel line reader will attempt to manipulate the terminal
-that initiated the JVM process. For this reason it is important
-to start your JVM in a terminal.
+The line reader will attempt to manipulate the terminal that initiates
+the JVM process. For this reason it is important to start your JVM in
+a terminal.
 
-That means launching your java process using the
+That means you launch your java process using the
 
  * the java command
  * the Clojure clj tool
