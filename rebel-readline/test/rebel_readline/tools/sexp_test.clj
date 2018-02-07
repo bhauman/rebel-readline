@@ -153,4 +153,29 @@
   
   )
 
+(deftest word-at-position-test
+  (is (not (word-at-position " 1234 " 0)))
+  (is (= ["1234" 1 5 :word]
+         (word-at-position " 1234 " 1)))
+  (is (= ["1234" 1 5 :word]
+         (word-at-position " 1234 " 4)))
+  (is (= ["1234" 1 5 :word]
+         (word-at-position " 1234 " 5)))
+  (is (not (word-at-position " 1234 " 6)))
 
+  )
+
+(deftest sexp-ending-at-position-test
+  (is (= ["(34)" 2 6 :sexp]
+         (sexp-ending-at-position "01(34)" 5)))
+  (is (= ["\"34\"" 2 6 :sexp]
+         (sexp-ending-at-position "01\"34\"" 5)))
+  (is (not (sexp-ending-at-position "01(34)" 4)))  
+  (is (not (sexp-ending-at-position "01\"34\"" 4)))
+  (is (not (sexp-ending-at-position "01(34)" 1)))  
+  (is (not (sexp-ending-at-position "01\"34\"" 1)))
+
+  (is (not (sexp-ending-at-position "01(34)" 6)))  
+  (is (not (sexp-ending-at-position "01\"34\"" 6)))
+  
+  )

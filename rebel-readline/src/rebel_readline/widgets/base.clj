@@ -146,19 +146,6 @@
 ;; Display argument docs on keypress functionality
 ;; ------------------------------------------------
 
-(defn funcall-word [code-str open-paren-pos]
-  (some->>
-   (tokenize/tag-matches (subs code-str open-paren-pos)
-                         ;; matches first word after paren
-                         (Pattern/compile (str "(\\()\\s*(" tokenize/not-delimiter-exp "+)"))
-                         :open-paren
-                         :word)
-   not-empty
-   (take 2)
-   ((fn [[a b]]
-      (when (= a ["(" 0 1 :open-paren])
-        b)))))
-
 (defn one-space-after-funcall-word? []
   (let [s (buffer-as-string)
         curs (cursor)
@@ -167,7 +154,7 @@
     (when start
       (when-let [[word word-start word-end _]
                  (and start (= (.charAt s start) \()
-                      (funcall-word s start))]
+                      (sexp/funcall-word s start))]
         (and (= (+ start word-end) curs)
              word)))))
 
@@ -213,14 +200,8 @@
 ;; helpful partial tokenizer
 ;; --------------------------------
 
-(defn word-at-position [p]
-  (->> (tokenize/tag-words (str *buffer*))
-       (filter #(= :word (last %)))
-       (filter #(<= (second %) p (inc (nth % 2))))
-       first))
-
 (defn word-at-cursor []
-  (word-at-position (cursor)))
+  (sexp/word-at-position (buffer-as-string) (cursor)))
 
 ;; -------------------------------------
 ;; Documentation widget
@@ -369,46 +350,16 @@
 ;; In place eval widget
 ;; ------------------------------------------
 
-(defn whitespace? [c]
-  (re-matches #"[\s,]+" (str c)))
-
-(defn scan-back-from [pred s pos]
-  (first (filter #(pred (.charAt s %))
-                 (range (min (dec (count s)) pos) -1 -1))))
-
-(defn first-non-whitespace-char-backwards-from [s pos]
-  (scan-back-from (complement whitespace?) s pos))
-
-(defn sexp-ending-at-position [s pos]
-  (let [c (try (.charAt s pos) (catch Exception e nil))]
-    (when (#{ \" \) \} \] } c)
-      (let [sexp-tokens (tokenize/tag-sexp-traversal s)]
-        (when-let [[_ start] (sexp/find-open-sexp-start sexp-tokens pos)]
-          [(subs s start (inc pos)) start (inc pos) :sexp])))))
-
-(comment
-  (sexp-ending-at-position "01(34)" 5)
-  (sexp-ending-at-position "01\"34\"" 5)
-
-  )
-
-(defn sexp-or-word-ending-at-position [s pos]
-  (or (sexp-ending-at-position s pos)
-      (word-at-position (inc pos))))
-
 (defn in-place-eval []
   (let [s (buffer-as-string)]
     (when (not (string/blank? s))
       (let [pos (cursor)
-            fnw-pos (first-non-whitespace-char-backwards-from s (dec pos))
-            [form-str start end typ] (sexp-or-word-ending-at-position s fnw-pos)]
+            fnw-pos (sexp/first-non-whitespace-char-backwards-from s (dec pos))
+            [form-str start end typ] (sexp/sexp-or-word-ending-at-position s fnw-pos)]
         (srv/evaluate-str form-str)))))
 
 (defn inline-result-marker [^AttributedString at-str]
-  (astring/astr
-   ["#_=>" (srv/color :inline-display-marker)]
-   " "
-   at-str))
+  (astring/astr ["#_=>" (srv/color :inline-display-marker)] " " at-str))
 
 (defn limit-character-size [s]
   (let [{:keys [rows cols]} (terminal-size)

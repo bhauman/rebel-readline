@@ -1,7 +1,9 @@
 (ns rebel-readline.tools.sexp
   (:require
    [clojure.string :as string]
-   [rebel-readline.parsing.tokenizer :as tokenize]))
+   [rebel-readline.parsing.tokenizer :as tokenize])
+  (:import
+   [java.util.regex Pattern]))
 
 (defn position-in-range? [s pos]
   (<= 0 pos (dec (count s))))
@@ -160,3 +162,46 @@
            (map (comp delim-key->delim flip-it last first))
            (apply str (subs s start end))))))
 
+(defn word-at-position [s pos]
+  (->> (tokenize/tag-words s)
+       (filter #(= :word (last %)))
+       (filter #(<= (second %) pos (nth % 2)))
+       first))
+
+(defn whitespace? [c]
+  (re-matches #"[\s,]+" (str c)))
+
+(defn scan-back-from [pred s pos]
+  (first (filter #(pred (.charAt s %))
+                 (range (min (dec (count s)) pos) -1 -1))))
+
+(defn first-non-whitespace-char-backwards-from [s pos]
+  (scan-back-from (complement whitespace?) s pos))
+
+(defn sexp-ending-at-position [s pos]
+  (let [c (try (.charAt s pos) (catch Exception e nil))]
+    (when (#{ \" \) \} \] } c)
+      (let [sexp-tokens (tokenize/tag-sexp-traversal s)]
+        (when-let [[_ start] (find-open-sexp-start sexp-tokens pos)]
+          [(subs s start (inc pos)) start (inc pos) :sexp])))))
+
+(defn sexp-or-word-ending-at-position [s pos]
+  (or (sexp-ending-at-position s pos)
+      (word-at-position s (inc pos))))
+
+(defn funcall-word
+  "Given a string with sexps an a position into that string that
+  points to an open paren, return the first token that is the function
+  call word"
+  [code-str open-paren-pos]
+  (some->>
+   (tokenize/tag-matches (subs code-str open-paren-pos)
+                         ;; matches first word after paren
+                         (Pattern/compile (str "(\\()\\s*(" tokenize/not-delimiter-exp "+)"))
+                         :open-paren
+                         :word)
+   not-empty
+   (take 2)
+   ((fn [[a b]]
+      (when (= a ["(" 0 1 :open-paren])
+        b)))))
