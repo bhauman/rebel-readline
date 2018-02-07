@@ -1,5 +1,6 @@
 (ns rebel-readline.tools.sexp
   (:require
+   [clojure.string :as string]
    [rebel-readline.parsing.tokenizer :as tokenize]))
 
 (defn position-in-range? [s pos]
@@ -20,14 +21,21 @@
            (= (.charAt code-str pos) \\)
            [pos (inc pos) :character])))
 
-#_(tag-for-sexp-traversal " \"\" \\ ")
+(def delims #{:bracket :brace :paren :quote})
+(def openers (set (map #(->> % name (str "open-") keyword) delims)))
+(def closers (set (map #(->> % name (str "close-") keyword) delims)))
 
-(def flip-it {:open-paren :close-paren
-              :close-paren :open-paren
-              :open-brace :close-brace
-              :close-brace :open-brace
-              :open-bracket :close-bracket
-              :close-bracket :open-bracket})
+(def flip-it
+  (->> openers
+       (map
+        (juxt identity #(as-> % x
+                          (name x)
+                          (string/split x #"-")
+                          (str "close-" (second x))
+                          (keyword x))))
+       ((juxt identity (partial map (comp vec reverse))))
+       (apply concat)
+       (into {})))
 
 (def delim-key->delim
   {:open-paren \(
@@ -35,10 +43,12 @@
    :open-brace \{
    :close-brace \}
    :open-bracket \[
-   :close-bracket \]})
+   :close-bracket \]
+   :open-quote  \"
+   :close-quote \"})
 
-(def delim->delim-key
-  (zipmap (keys delim-key->delim) (vals delim-key->delim)))
+(def flip-delimiter-char
+  (into {} (map (partial mapv delim-key->delim)) flip-it))
 
 (defn scan-builder [open-test close-test]
   (fn [specific-test stack x]
@@ -56,51 +66,66 @@
         :else (reduced [:finished nil]))
       :else stack)))
 
-;; not used yet
+(def end-scan   (scan-builder (comp openers last) (comp closers last)))
+(def start-scan (scan-builder (comp closers last) (comp openers last)))
+
+(declare in-quote?)
+
 (defn find-open-sexp-end
-  ([tagged-parses pos]
-   (find-open-sexp-end tagged-parses pos identity))
-  ([tagged-parses pos final-delim-pred]
+  ([tokens pos]
+   (find-open-sexp-end tokens pos nil))
+  ([tokens pos final-delim-pred]
    (let [res (reduce
-              (partial
-               (scan-builder
-                #(#{:open-bracket :open-brace :open-paren} (last %))
-                #(#{:close-bracket :close-brace :close-paren} (last %)))
-               final-delim-pred)
+              (partial end-scan (or final-delim-pred identity))
               nil
               (drop-while
                #(<= (nth % 2) pos)
-               tagged-parses))]
+               tokens))]
      (when (= :finished (first res))
        (second res)))))
 
+(defn find-open-sexp-ends [tokens pos]
+  (when-let [[_ _ end _ :as res] (find-open-sexp-end tokens pos)]
+    (cons res
+          (lazy-seq
+           (find-open-sexp-ends tokens end)))))
+
 (defn find-open-sexp-start
-  ([tagged-parses pos]
-   (find-open-sexp-start tagged-parses pos identity))
-  ([tagged-parses pos final-delim-pred]
+  ([tokens pos]
+   (find-open-sexp-start tokens pos nil))
+  ([tokens pos final-delim-pred]
    (let [res (reduce
-              (partial
-               (scan-builder
-                #(#{:close-bracket :close-brace :close-paren} (last %))
-                #(#{:open-bracket :open-brace :open-paren} (last %)))
-               final-delim-pred)
+              (partial start-scan (or final-delim-pred identity))
               nil
               (reverse (take-while
                         #(<= (nth % 2) pos)
-                        tagged-parses)))]
+                        tokens)))]
      (when (= :finished (first res))
        (second res)))))
 
-#_(time (find-open-sexp-start (tag-for-sexp-traversal xxx) (dec (count xxx))))
+(defn find-open-sexp-starts [tokens pos]
+  (when-let [[_ start _ :as res] (find-open-sexp-start tokens pos)]
+    (cons res
+          (lazy-seq
+           (find-open-sexp-starts tokens start)))))
 
-(defn in-quote? [tagged-parses pos]
-  (->> tagged-parses
-       (filter #(#{:string-literal
-                   :unterm-string-literal
-                   :character
-                   :end-line-comment} (last %)))
+;; TODO :character should not be in in-quote?
+(defn in-quote? [tokens pos]
+  (->> tokens
+       (filter #(#{:string-literal-body
+                   :unterm-string-literal-body
+                   :character} (last %)))
+       (filter (fn [[_ start end typ]]
+                 (if (= :character typ)
+                   (< start pos (inc end))
+                   (<= start pos end))))
+       first))
+
+(defn in-line-comment? [tokens pos]
+  (->> tokens
+       (filter #(#{:end-line-comment} (last %)))
        (filter (fn [[_ start end _]]
-                 (<= start pos (dec end))))
+                 (< start pos (inc end))))
        first))
 
 (defn search-for-line-start [s pos]
@@ -111,49 +136,27 @@
       (inc p)
       :else (recur (dec p)))))
 
-(def flip-delimiter-char {\} \{ \] \[ \) \(
-                          \{ \} \[ \] \( \) \" \"})
-
 (defn count-leading-white-space [s] (count (re-find #"^[^\S\n]+" s)))
 
-(defn closing-delimiter-for-parse [tagged-parses start-pos end-pos]
-  (when-let [[delim start-pos' _ delim-key] (find-open-sexp-start tagged-parses start-pos)]
-    (let [close-delim (flip-delimiter-char (first delim))]
-      (cons [start-pos' end-pos delim-key :inserting-close]
-            (closing-delimiter-for-parse
-             (concat tagged-parses [(str close-delim) end-pos (inc end-pos) (flip-it delim-key)])
-             start-pos'
-             (inc end-pos))))))
-
-(defn delimiter-boundaries
-  ([tagged-parses start-pos end-pos]
-   (delimiter-boundaries tagged-parses start-pos end-pos nil))
-  ([tagged-parses start-pos end-pos fix]
-  (when-let [[delim start-pos' _ delim-key] (find-open-sexp-start tagged-parses start-pos)]
-    (if-let [[end-delim end-pos' _ end-delim-key]
-               (find-open-sexp-end tagged-parses end-pos #(#{(flip-it delim-key)} (last %)))]
-      (cons [start-pos' end-pos' delim-key]
-            (delimiter-boundaries tagged-parses start-pos' (inc end-pos') fix))
-      (when fix
-        (closing-delimiter-for-parse
-         (filter #(< (second %) end-pos) tagged-parses)
-         start-pos
-         end-pos))))))
+(defn delims-outward-from-pos [tokens pos]
+  (map vector
+       (find-open-sexp-starts tokens pos)
+       (concat (find-open-sexp-ends tokens pos)
+               (repeat nil))))
 
 (defn valid-sexp-from-point [s pos]
-  (let [tagged (tokenize/tag-sexp-traversal s)]
-    (when-let [boundaries (not-empty (delimiter-boundaries tagged pos pos true))]
-      (if (some #(= (last %) :inserting-close) boundaries)
-        (let [closes (filter #(= (last %) :inserting-close) boundaries)
-              res (loop [[[start end open-delim-key] & cs] closes
-                         s (subs s 0 (-> closes first second))]
-                    (if-not start
-                      s
-                      (recur cs (str s (delim-key->delim (flip-it open-delim-key))))))]
-          (subs res (-> closes last first) (count res)))
-        (let [[start end] (last boundaries)]
-          (subs s start (inc end)))))))
-
-#_(valid-sexp-from-point "      ((let [x y] (.asdf sdfsd)    " 17)
-
+  (let [tokens (tokenize/tag-sexp-traversal s)
+        delims (take-while
+                (fn [[a b]]
+                  (or (= (last a) (flip-it (last b)))
+                      (nil? (last b))))
+                (delims-outward-from-pos tokens pos))
+        max-exist     (last (take-while some? (map second delims)))
+        end           (max (nth max-exist 2 0) pos)
+        need-repairs  (filter (complement second) delims)
+        [_ start _ _] (first (last delims))]
+    (when (not-empty delims)
+      (->> need-repairs
+           (map (comp delim-key->delim flip-it last first))
+           (apply str (subs s start end))))))
 
