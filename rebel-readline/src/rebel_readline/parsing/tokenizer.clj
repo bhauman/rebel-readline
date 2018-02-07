@@ -178,7 +178,7 @@
        not-delimiter-or-period-exp "+)"))
 
 (def character-exp
-  (str preceeded-by-delimiter
+  (str #_preceeded-by-delimiter
        #"(\\[^\s]|\\\w+|\\o\d+|\\u\d+)"
        followed-by-delimiter))
 
