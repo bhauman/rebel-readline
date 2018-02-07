@@ -24,11 +24,12 @@
              (doall
               (keep-indexed
                (fn [i style]
-                 (when-let [g (.group m (inc i))]
-                   [g
-                    (.start m (inc i))
-                    (.end m (inc i))
-                    style]))
+                 (when style
+                   (when-let [g (.group m (inc i))]
+                     [g
+                      (.start m (inc i))
+                      (.end m (inc i))
+                      style])))
                group-styles))))
         nil))))))
 
@@ -70,6 +71,9 @@
 
 (def string-literal-without-quotes #"(?<!\\)\"([^\"\\]*(?:\\.[^\"\\]*)*)\"")
 (def unterm-string-literal-without-quotes #"(?<!\\)\"([^\"\\]*(?:\\.[^\"\\]*)*)$")
+
+(def string-literal-capture-quotes-body #"(?<!\\)((\")([^\"\\]*(?:\\.[^\"\\]*)*)(\"))")
+(def unterm-string-literal-capture-quote-body #"(?<!\\)((\")([^\"\\]*(?:\\.[^\"\\]*)*))$")
 
 (def delimiter-exps (map str #{#"\s" #"\{" #"\}" #"\(" #"\)" #"\[" #"\]"
                                #"," #"\"" #"\^" #"\'" #"\#" #"\@"}))
@@ -252,23 +256,34 @@
                :unterm-string-literal
                :character))
 
+
+
 (def sexp-traversal-rexp
   (Pattern/compile
-   (str non-interp-regexp "|"
-        #"(\()" "|" ; open paren
-        #"(\))" "|" ; close paren
-        #"(\{)" "|" ; open brace
-        #"(\})" "|" ; close brace
-        #"(\[)" "|" ; open bracket
-        #"(\])"     ; close bracket
-       )))
+   (str
+    end-line-comment-regexp "|"
+    string-literal-capture-quotes-body "|"
+    unterm-string-literal-capture-quote-body "|"
+    character-exp "|"
+    #"(\()" "|" ; open paren
+    #"(\))" "|" ; close paren
+    #"(\{)" "|" ; open brace
+    #"(\})" "|" ; close brace
+    #"(\[)" "|" ; open bracket
+    #"(\])"     ; close bracket
+    )))
 
 (defn tag-sexp-traversal [code-str]
   (tag-matches code-str
                sexp-traversal-rexp
                :end-line-comment
-               :string-literal
-               :unterm-string-literal
+               nil
+               :open-quote
+               :string-literal-body
+               :close-quote
+               nil
+               :open-quote
+               :unterm-string-literal-body
                :character
                :open-paren
                :close-paren
@@ -287,7 +302,7 @@
        "(" not-delimiter-exp "+)")))
 
 (defn tag-words
-  "This tokenizes a given string ianto 
+  "This tokenizes a given string into 
      :end-of-line-comments
      :string-literals-without-quotes
      :unterm-string-literal
