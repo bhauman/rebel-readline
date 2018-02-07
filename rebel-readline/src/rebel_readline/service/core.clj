@@ -186,10 +186,8 @@
 (defn default-accept-line [line-str cursor]
   (let [cursor (min (count line-str) cursor)
         x (subs line-str 0 cursor)
-        tagged-parses (tokenize/tag-sexp-traversal x)]
-    (not
-     (or (= :unterm-string-literal (last (last tagged-parses))) 
-         (sexp/find-open-sexp-start tagged-parses cursor)))))
+        tokens (tokenize/tag-sexp-traversal x)]
+    (not (sexp/find-open-sexp-start tokens cursor))))
 
 (defn accept-line [line-str cursor]
   (if (satisfies? AcceptLine *service*)

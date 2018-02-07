@@ -114,7 +114,7 @@
              s (buffer-as-string) ;; up-to-cursor better here?
              begin-of-line-pos   (sexp/search-for-line-start s (dec curs))
              leading-white-space (sexp/count-leading-white-space (subs s begin-of-line-pos))
-         indent-amount       (#'indent/indent-amount s begin-of-line-pos)
+         indent-amount       (indent/indent-amount s begin-of-line-pos)
          cursor-in-leading-white-space? (< curs
                                            (+ leading-white-space begin-of-line-pos))]
          
@@ -383,10 +383,14 @@
   (let [c (try (.charAt s pos) (catch Exception e nil))]
     (when (#{ \" \) \} \] } c)
       (let [sexp-tokens (tokenize/tag-sexp-traversal s)]
-        (or (when-let [res (sexp/in-quote? sexp-tokens pos)]
-              res)
-            (when-let [[_ start] (sexp/find-open-sexp-start sexp-tokens pos)]
-              [(subs s start (inc pos)) start (inc pos) :sexp]))))))
+        (when-let [[_ start] (sexp/find-open-sexp-start sexp-tokens pos)]
+          [(subs s start (inc pos)) start (inc pos) :sexp])))))
+
+(comment
+  (sexp-ending-at-position "01(34)" 5)
+  (sexp-ending-at-position "01\"34\"" 5)
+
+  )
 
 (defn sexp-or-word-ending-at-position [s pos]
   (or (sexp-ending-at-position s pos)

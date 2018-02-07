@@ -7,8 +7,10 @@
 
 (defn indent-proxy-str [s cursor]
   (let [tagged-parses (tokenize/tag-sexp-traversal s)]
+    ;; never indent in quotes
+    ;; this is an optimization, the code should work fine without this
     (when-not (sexp/in-quote? tagged-parses cursor)
-      (when-let [[delim sexp-start] (sexp/find-open-sexp-start tagged-parses (dec cursor))]
+      (when-let [[delim sexp-start] (sexp/find-open-sexp-start tagged-parses cursor)]
         (let [line-start (sexp/search-for-line-start s sexp-start)]
           (str (apply str (repeat (- sexp-start line-start) \space))
                (subs s sexp-start cursor)
