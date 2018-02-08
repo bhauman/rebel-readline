@@ -406,19 +406,19 @@
 
 (defn add-all-widgets [line-reader]
   (binding [*line-reader* line-reader]
-    (register-widget "indent-line"        indent-line-widget)
-    (register-widget "indent-or-complete" indent-or-complete-widget)
+    (register-widget "clojure-indent-line"        indent-line-widget)
+    (register-widget "clojure-indent-or-complete" indent-or-complete-widget)
     (register-widget "self-insert-hook"   self-insert-hook-widget)
-    (register-widget "doc-at-point"       document-at-point-widget)
-    (register-widget "source-at-point"    source-at-point-widget)
-    (register-widget "apropos-at-point"   apropos-at-point-widget)
-    (register-widget "eval-at-point"      eval-at-point-widget)
+    (register-widget "clojure-doc-at-point"       document-at-point-widget)
+    (register-widget "clojure-source-at-point"    source-at-point-widget)
+    (register-widget "clojure-apropos-at-point"   apropos-at-point-widget)
+    (register-widget "clojure-eval-at-point"      eval-at-point-widget)
     ))
 
 (defn add-default-bindings [line-reader]
   (binding [*line-reader* line-reader]
-    (bind-key "indent-line"         (str (KeyMap/ctrl \X) (KeyMap/ctrl \I)))
-    (bind-key "indent-or-complete"  (str (KeyMap/ctrl \I)))
+    (bind-key "clojure-indent-line"         (str (KeyMap/ctrl \X) (KeyMap/ctrl \I)))
+    (bind-key "clojure-indent-or-complete"  (str (KeyMap/ctrl \I)))
     (bind-key "self-insert-hook"    (KeyMap/range " -~"))
     
     ;; the range behavior above overwrites all the bindings in the range
@@ -427,10 +427,10 @@
     (bind-key LineReader/INSERT_CLOSE_SQUARE "]")
     (bind-key LineReader/INSERT_CLOSE_CURLY "}")
     
-    (bind-key "doc-at-point"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)))
-    (bind-key "source-at-point"     (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)))
-    (bind-key "apropos-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
-    (bind-key "eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))))
+    (bind-key "clojure-doc-at-point"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)))
+    (bind-key "clojure-source-at-point"     (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)))
+    (bind-key "clojure-apropos-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
+    (bind-key "clojure-eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))))
 
 (defn add-default-widgets-and-bindings [line-reader]
   (-> line-reader
