@@ -207,7 +207,7 @@
 ;; Jline highlighter for Clojure code
 ;; ----------------------------------------
 
-(defn highlighter [service]
+(defn clojure-highlighter [service]
   (proxy [Highlighter] []
     (highlight [^LineReader reader ^String buffer]
       ;; this gets called on a different thread
@@ -220,27 +220,40 @@
           (AttributedString. buffer))))))
 
 ;; ----------------------------------------
+;; Create a terminal
+;; ----------------------------------------
+
+(defn assert-system-terminal [terminal]
+  (when (instance? DumbTerminal terminal)
+    (throw (ex-info "Unable to create a system Terminal, you must
+not launch the Rebel readline from an intermediate process i.e if you
+are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
+
+(defn create-terminal [& [assert-system-terminal']]
+  (let [terminal (-> (TerminalBuilder/builder)
+                     (.system true)
+                     (.build))]
+    (when (not (false? assert-system-terminal'))
+      (assert-system-terminal terminal))
+    terminal))
+
+;; ----------------------------------------
 ;; Building the line reader
 ;; ----------------------------------------
 
-(defn assert-system-terminal [line-reader]
-  (let [term (.getTerminal line-reader)]
-    (when (instance? DumbTerminal term)
-      (throw (ex-info "Unable to create a system Terminal, you must
-not launch the Rebel readline from an intermediate process i.e if you
-are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
-  line-reader)
-
-(defn line-reader* [service]
+(defn line-reader* [service & [{:keys [terminal
+                                       completer
+                                       highlighter
+                                       parser
+                                       assert-system-terminal]
+                                :as options}]]
   (doto (-> (LineReaderBuilder/builder)
-            (.terminal (-> (TerminalBuilder/builder)
-                           (.system true)
-                           (.build)))
-            (.completer (clojure-completer))
-            (.highlighter (highlighter service))
-            (.parser  (make-parser))
+            (.terminal (or terminal
+                           (create-terminal assert-system-terminal)))
+            (.completer (or completer (clojure-completer)))
+            (.highlighter (or highlighter (clojure-highlighter service)))
+            (.parser  (or parser (make-parser)))
             (.build))
-    (assert-system-terminal)
     ;; make sure that we don't have to double escape things
     (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
     ;; never insert tabs

@@ -34,7 +34,23 @@
 
   A service implements the protocols found in `rebel-readline.service.core`
  
+  Example:
+    (line-reader (rebel-readline.service.impl.local-clojure-service/create))
+
+  This function also takes an optional options map.
+
+  The available options are:
+
+  :terminal - to give the line reader and existing terminal
+  :completer - to override the clojure based completer
+  :highlighter - to override the clojure based systax highlighter
+  :parser - to override the clojure base word parser
+  :assert-system-terminal - wether to throw an exception when we can't
+                            connect to a system terminal
+
+  --------------------------------------------------------------------
   IMPORTANT NOTE:
+  --------------------------------------------------------------------
 
   This function will attempt to manipulate the terminal that initiated
   the JVM process. For this reason it is important to start your JVM
@@ -52,13 +68,10 @@
 
   The underlying Terminal manipulation code is Jline3 and it makes
   every effort to be compatible with a wide array of terminals. It is
-  entirely possible that your terminal is not well supported.
-  
-  Example:
-    (line-reader (rebel-readline.service.impl.local-clojure-service/create))"
-  [service]
+  entirely possible that your terminal is not well supported."
+  [service & [options]]
   {:service service
-   :line-reader (lr/line-reader* service)})
+   :line-reader (lr/line-reader* service options)})
 
 (defn- output-handler
   "Creates a function that takes output to be redirected \"above\" a
