@@ -88,6 +88,27 @@
               (pprint (keys col/color-themes)))))
       (srv/apply-to-config assoc :color-theme new-theme))))
 
+(defmethod command-doc :repl/key-bindings [_]
+  "With an argument displays a search of the current key bindings
+Without any arguments displays all the current key bindings")
+
+(defmethod command :repl/key-bindings [[_ search]]
+  (let [km (get (.getKeyMaps api/*line-reader*) "main")
+        key-data (filter
+                  (if search
+                    (fn [[k v]]
+                      (or (.contains k (name search))
+                          (.contains v (name search))))
+                    identity)
+                  (api/key-map->display-data km))]
+    (if (and search (empty? key-data))
+      (println "Binding search: No bindings found that match " (pr-str search))
+      (println
+       (string/join (System/getProperty "line.separator")
+                    (map (fn [[k v]]
+                           (format "  %-12s%s" k v))
+                         key-data))))))
+
 ;; TODO this should be here the underlying repl should handle this
 ;; or consider a cross repl solution that works
 ;; maybe something you can put in service core interface
