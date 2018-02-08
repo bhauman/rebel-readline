@@ -2,9 +2,10 @@
   (:require
    [clojure.string :as string]
    [rebel-readline.jline-api.attributed-string :as astring]
-   [rebel-readline.utils :refer [log]]
-   [rebel-readline.service.core :as srv])
+   [rebel-readline.service.core :as srv]
+   [rebel-readline.utils :refer [log]])
   (:import
+   [org.jline.keymap KeyMap]
    [org.jline.reader
     Highlighter
     Completer
@@ -19,9 +20,10 @@
     EndOfFileException
     EOFError
     Widget]
+   [org.jline.reader.impl DefaultParser BufferImpl]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
     #_InfoCmp$Capability]
-   [org.jline.reader.impl DefaultParser BufferImpl]))
+   ))
 
 (def ^:dynamic *line-reader* nil)
 (def ^:dynamic *buffer* nil)
@@ -58,6 +60,29 @@
 (defn supplier [f]
   (proxy [java.util.function.Supplier] []
     (get [] (f))))
+
+;; --------------------------------------
+;; Key maps
+;; --------------------------------------
+
+(defn key-map->clj [key-map]
+  (mapv (juxt key val)
+        (.getBoundKeys key-map)))
+
+(defn key-map->display-data [key-map]
+  (->> (key-map->clj key-map)
+       (map (fn [[k v]] [(KeyMap/display k) (.name v)]))
+       (filter
+        (fn [[k v]]
+          (not
+           (#{;; these don't exist for some reason
+              "character-search"
+              "character-search-backward"
+              "infer-next-history"
+              ;; these are too numerous
+              "self-insert-hook"
+              "digit-argument"
+              "do-lowercase-version"} v))))))
 
 ;; --------------------------------------
 ;; Buffer operations
