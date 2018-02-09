@@ -13,24 +13,8 @@
     UserInterruptException
     EndOfFileException]))
 
-;; IMPORTANT NOTE:
-
-;; The rebel line reader will attempt to manipulate the terminal
-;; that initiated the JVM process. For this reason it is important
-;; to start your JVM in a terminal.
-
-;; That means launching your process using the
-
-;; - the java command
-;; - the Clojure clj tool
-;; - lein trampoline
-;; - boot - would need to run in boot's worker pod
-
-;; Launching from a process initiated by lein will not work and
-;; launching from a boot pod will not cut it either.
-
 (defn line-reader
-  "Creates a rebel line reader takes a service as an argument.
+  "Creates a line reader takes a service as an argument.
 
   A service implements the protocols found in `rebel-readline.service.core`
  
