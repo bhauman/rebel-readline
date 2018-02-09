@@ -138,7 +138,7 @@
           cursor-in-leading-white-space? (<= curs
                                              (+ leading-white-space begin-of-line-pos))]
       (if cursor-in-leading-white-space?
-        (call-widget "indent-line")
+        (call-widget "clojure-indent-line")
         (call-widget LineReader/MENU_COMPLETE))
       true)))
 
