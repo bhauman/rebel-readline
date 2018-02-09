@@ -102,6 +102,15 @@
    (when-let [km (key-map key-map-name)]
      (.put (key-maps) "main" km))))
 
+(defn key-map-name [key-map]
+  (when-let [res (first (filter #(and (= (val %) key-map)
+                            (not= (key %) "main"))
+                                (key-maps)))]
+    (key res)))
+
+(defn main-key-map-name []
+  (key-map-name (key-map "main")))
+
 (defn orig-key-map-clone [key-map-name]
   (get (.defaultKeyMaps *line-reader*) key-map-name))
 

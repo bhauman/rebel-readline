@@ -101,6 +101,8 @@ Without any arguments displays all the current key bindings")
                           (.contains v (name search))))
                     identity)
                   (api/key-map->display-data km))]
+    (when-let [map-name (api/main-key-map-name)]
+      (println "Current key map:" (keyword map-name)))
     (if (and search (empty? key-data))
       (println "Binding search: No bindings found that match" (pr-str (name search)))
       (println
