@@ -169,6 +169,11 @@
 ;; Line Reader operations
 ;; --------------------------------------
 
+(defn set-right-prompt! [att-str]
+  (let [right-prompt-field (get-accessible-field *line-reader* "rightPrompt")]
+    (when att-str
+      (.set right-prompt-field *line-reader* att-str))))
+
 (defn register-widget [widget-id widget]
   (doto *line-reader*
     (-> (.getWidgets)

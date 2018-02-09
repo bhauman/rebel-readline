@@ -18,6 +18,21 @@
    [org.jline.reader LineReader]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
+;; Right prompt help
+
+(defn right-prompt [& [map-name]]
+  (when-let [map-name (or map-name (main-key-map-name))]
+    (when-not (= map-name "emacs")
+      (astring/astr
+       [(format "<%s>" map-name)
+        (.inverse (if (= map-name "vicmd")
+                    (srv/color :def-call)
+                    AttributedStyle/DEFAULT))]))))
+
+(defn right-prompt-str []
+  (when-let [p (right-prompt)]
+    (.toAnsi p)))
+
 ;; ----------------------------------------------------
 ;; less implementation
 ;; ----------------------------------------------------
@@ -401,6 +416,37 @@
    true))
 
 ;; --------------------------------------------
+;; Vi mode switching hooks 
+;; --------------------------------------------
+
+;; we want to set the right prompt for visual feedback when switching vi modes
+
+;; vi-cmd-mode
+
+(def vi-cmd-mode
+  (create-widget
+   (call-widget LineReader/VI_CMD_MODE)
+   (set-right-prompt! (right-prompt "vicmd"))
+   true))
+
+;; vi-insert
+
+(def vi-insert
+  (create-widget
+   (call-widget LineReader/VI_INSERT)
+   (set-right-prompt! (right-prompt "viins"))
+   true))
+
+;; emacs-editing-mode
+
+(def emacs-editing
+  (create-widget
+   (call-widget LineReader/EMACS_EDITING_MODE)
+   (set-right-prompt! (right-prompt "[emacs]"))
+   true))
+
+
+;; --------------------------------------------
 ;; Base Widget registration and binding helpers
 ;; --------------------------------------------
 
@@ -414,6 +460,11 @@
     (register-widget "clojure-source-at-point"    source-at-point-widget)
     (register-widget "clojure-apropos-at-point"   apropos-at-point-widget)
     (register-widget "clojure-eval-at-point"      eval-at-point-widget)
+
+    ;; vi
+    (register-widget "clojure-vi-cmd-mode"         vi-cmd-mode)
+    (register-widget "clojure-vi-insert"           vi-insert)
+    (register-widget "clojure-emacs-editing-mode"  emacs-editing)    
     ))
 
 (defn bind-indents [key-map]
@@ -423,7 +474,7 @@
 
 (defn bind-inserts [key-map]
   (doto key-map
-    (bind-key "clojure-self-insert"    (KeyMap/range " -~"))
+    (bind-key "clojure-self-insert" (KeyMap/range " -~"))
     ;; the range behavior above overwrites all the bindings in the range
     ;; so this keeps the oringinal bracket matching behavior
     (bind-key LineReader/INSERT_CLOSE_PAREN ")")
@@ -440,10 +491,16 @@
 (defn clojure-emacs-mode [key-map]
   (doto key-map bind-indents bind-inserts bind-clojure-widgets))
 
-(def clojure-vi-insert-mode clojure-emacs-mode)
+(defn clojure-vi-insert-mode [key-map]
+  (doto key-map
+    clojure-emacs-mode
+    (bind-key "clojure-vi-cmd-mode" (KeyMap/esc))))
 
 (defn clojure-vi-cmd-mode [key-map]
-  (doto key-map bind-indents bind-clojure-widgets))
+  (doto key-map
+    bind-indents
+    bind-clojure-widgets
+    (bind-key "clojure-vi-insert" (str "i"))))
 
 (defn add-clojure-emacs-key-map [line-reader]
   (binding [*line-reader* line-reader]
@@ -456,7 +513,7 @@
     (let [clojure-viins (orig-key-map-clone "viins")
           clojure-vicmd (orig-key-map-clone "vicmd")]
       (clojure-vi-insert-mode clojure-viins)
-      (clojure-vi-cmd-mode clojure-vicmd)      
+      (clojure-vi-cmd-mode clojure-vicmd)
       ;; TODO make this a clojure-viins and clojure-vicmd
       (set-key-map! "viins" clojure-viins)
       (set-key-map! "vicmd" clojure-vicmd))))
