@@ -1,6 +1,8 @@
 (ns rebel-dev.main
   (:require
    [rebel-readline.core :refer [line-reader clj-repl-read with-readline-input-stream]]
+   [rebel-readline.service.core :as srv]
+   [rebel-readline.jline-api :as api]
    [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
    [clojure.main])
   (:gen-class))
@@ -8,9 +10,11 @@
 (defn -main [& args]
   (prn :repl-dev-main)
   (let [reader (line-reader (local-clj-service/create))]
-    (clojure.main/repl
-     :prompt (fn [])
-     :read (clj-repl-read reader))))
+    (binding [api/*line-reader* (:line-reader reader)
+              srv/*service* (:service reader)]
+      (clojure.main/repl
+       :prompt (fn [])
+       :read (clj-repl-read reader)))))
 
 #_(defn -main [& args]
   (let [repl-env (nash/repl-env)]
