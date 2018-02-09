@@ -8,6 +8,22 @@
 
 (def ^:dynamic *service* nil)
 
+;; Why not just have an Evaluate Protocol an be done???
+
+;; Firstly this is a readline and being able to eval shouldn't be a
+;; hard requirement when the local clojure process can provide a lot
+;; of functionality (think completion) in the absense of eval
+
+;; It gives flexibility for situations where folks want to handle some
+;; of these tasks in the local process
+
+;; This is inspired by clojurescripts special needs, where some things
+;; are much more elegantly handled in the Clojure process that is
+;; hosting the repl. It's nice to not have to depend on the browser be
+;; an identity function to ack a value that is local.
+
+;; it also allows capability introspection using `satisfies?`
+
 (defprotocol Completions
   (-complete [_ prefix options]
     "Takes a word prefix and an options map}
@@ -141,7 +157,7 @@
 (declare current-ns)
 
 (defn default-prompt-fn []
-  (format "%s=> " (current-ns)))
+  (format "%s=> " (or (current-ns) "")))
 
 (def default-config
   {:completion true
