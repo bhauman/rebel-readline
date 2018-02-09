@@ -457,7 +457,6 @@
           clojure-vicmd (orig-key-map-clone "vicmd")]
       (clojure-vi-insert-mode clojure-viins)
       (clojure-vi-cmd-mode clojure-vicmd)      
-      ;; TODO make this a clojure-viins and clojure-vicmd
       (set-key-map! "viins" clojure-viins)
       (set-key-map! "vicmd" clojure-vicmd))))
 
