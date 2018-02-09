@@ -1,12 +1,12 @@
 # rebel-readline
 
+**WARNING: UNDER ACTIVE INITIAL DEVELOPMENT!!**
+
 A terminal readline library for Clojure Dialects
 
 [![asciicast](https://asciinema.org/a/160597.png)](https://asciinema.org/a/160597)
 
 rebel-readline will undoubtedly lead to a "rebel-repl" of some kind ...
-
-**WARNING: UNDER ACTIVE INITIAL DEVELOPMENT!!**
 
 ## Important note!!! 
 
