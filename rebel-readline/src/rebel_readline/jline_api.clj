@@ -80,9 +80,33 @@
               "character-search-backward"
               "infer-next-history"
               ;; these are too numerous
-              "self-insert-hook"
+              ;; TODO would be nice to display
+              ;; rolled up abbreviations
+              "clojure-self-insert"
+              "self-insert"              
               "digit-argument"
               "do-lowercase-version"} v))))))
+
+(defn key-maps []
+  (-> *line-reader* (.getKeyMaps)))
+
+(defn key-map [key-map-name]
+  (get (key-maps) key-map-name))
+
+(defn set-key-map! [key-map-name key-map]
+  (-> (key-maps)
+      (.put (name key-map-name) key-map)))
+
+(defn set-main-key-map! [key-map-name]
+  (boolean
+   (when-let [km (key-map key-map-name)]
+     (.put (key-maps) "main" km))))
+
+(defn orig-key-map-clone [key-map-name]
+  (get (.defaultKeyMaps *line-reader*) key-map-name))
+
+(defn bind-key [key-map widget-id key-str]
+  (.bind key-map (org.jline.reader.Reference. widget-id) key-str))
 
 ;; --------------------------------------
 ;; Buffer operations
@@ -140,13 +164,6 @@
   (doto *line-reader*
     (-> (.getWidgets)
         (.put widget-id (if (fn? widget) (widget *line-reader*) widget)))))
-
-(defn bind-key [widget-id key-str]
-  (doto *line-reader*
-    (-> (.getKeyMaps)
-        ;; TODO which map are we modifying here?
-        (get "emacs")
-        (.bind (org.jline.reader.Reference. widget-id) key-str))))
 
 (defn terminal-size []
   (let [size-field (get-accessible-field *line-reader* "size")]

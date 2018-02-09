@@ -102,12 +102,31 @@ Without any arguments displays all the current key bindings")
                     identity)
                   (api/key-map->display-data km))]
     (if (and search (empty? key-data))
-      (println "Binding search: No bindings found that match " (pr-str search))
+      (println "Binding search: No bindings found that match" (pr-str (name search)))
       (println
        (string/join (System/getProperty "line.separator")
                     (map (fn [[k v]]
                            (format "  %-12s%s" k v))
                          key-data))))))
+
+(defmethod command-doc :repl/set-key-map [_]
+  (let [map-names (->> (api/key-maps)
+                       keys
+                       (filter (complement #{".safe"
+                                             "visual"
+                                             "main"
+                                             "menu"
+                                             "viopp"}))
+                       sort
+                       (map keyword)
+                       pr-str)]
+    (str "Changes the key bindings to the given key-map. Choose from: "
+         map-names)))
+
+(defmethod command :repl/set-key-map [[_ key-map-name]]
+  (if (and key-map-name (api/set-main-key-map! (name key-map-name)))
+    (println "Changed key map to" (pr-str key-map-name))
+    (println "Failed to change key map!")))
 
 ;; TODO this should be here the underlying repl should handle this
 ;; or consider a cross repl solution that works

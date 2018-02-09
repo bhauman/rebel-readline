@@ -406,33 +406,67 @@
 
 (defn add-all-widgets [line-reader]
   (binding [*line-reader* line-reader]
+    (register-widget "clojure-self-insert"        self-insert-hook-widget)
     (register-widget "clojure-indent-line"        indent-line-widget)
     (register-widget "clojure-indent-or-complete" indent-or-complete-widget)
-    (register-widget "self-insert-hook"   self-insert-hook-widget)
+
     (register-widget "clojure-doc-at-point"       document-at-point-widget)
     (register-widget "clojure-source-at-point"    source-at-point-widget)
     (register-widget "clojure-apropos-at-point"   apropos-at-point-widget)
     (register-widget "clojure-eval-at-point"      eval-at-point-widget)
     ))
 
-(defn add-default-bindings [line-reader]
-  (binding [*line-reader* line-reader]
+(defn bind-indents [key-map]
+  (doto key-map
     (bind-key "clojure-indent-line"         (str (KeyMap/ctrl \X) (KeyMap/ctrl \I)))
-    (bind-key "clojure-indent-or-complete"  (str (KeyMap/ctrl \I)))
-    (bind-key "self-insert-hook"    (KeyMap/range " -~"))
-    
+    (bind-key "clojure-indent-or-complete"  (str (KeyMap/ctrl \I)))))
+
+(defn bind-inserts [key-map]
+  (doto key-map
+    (bind-key "clojure-self-insert"    (KeyMap/range " -~"))
     ;; the range behavior above overwrites all the bindings in the range
     ;; so this keeps the oringinal bracket matching behavior
     (bind-key LineReader/INSERT_CLOSE_PAREN ")")
     (bind-key LineReader/INSERT_CLOSE_SQUARE "]")
-    (bind-key LineReader/INSERT_CLOSE_CURLY "}")
-    
+    (bind-key LineReader/INSERT_CLOSE_CURLY "}")))
+
+(defn bind-clojure-widgets [key-map]
+  (doto key-map
     (bind-key "clojure-doc-at-point"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)))
     (bind-key "clojure-source-at-point"     (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)))
     (bind-key "clojure-apropos-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
     (bind-key "clojure-eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))))
 
+(defn clojure-emacs-mode [key-map]
+  (doto key-map bind-indents bind-inserts bind-clojure-widgets))
+
+(def clojure-vi-insert-mode clojure-emacs-mode)
+
+(defn clojure-vi-cmd-mode [key-map]
+  (doto key-map bind-indents bind-clojure-widgets))
+
+(defn add-clojure-emacs-key-map [line-reader]
+  (binding [*line-reader* line-reader]
+    (let [clojure-emacs (orig-key-map-clone "emacs")]
+      (clojure-emacs-mode clojure-emacs)
+      (set-key-map! "emacs" clojure-emacs))))
+
+(defn add-clojure-vi-key-maps [line-reader]
+  (binding [*line-reader* line-reader]
+    (let [clojure-viins (orig-key-map-clone "viins")
+          clojure-vicmd (orig-key-map-clone "vicmd")]
+      (clojure-vi-insert-mode clojure-viins)
+      (clojure-vi-cmd-mode clojure-vicmd)      
+      ;; TODO make this a clojure-viins and clojure-vicmd
+      (set-key-map! "viins" clojure-viins)
+      (set-key-map! "vicmd" clojure-vicmd))))
+
 (defn add-default-widgets-and-bindings [line-reader]
-  (-> line-reader
+  (binding [*line-reader* line-reader]
+    (doto line-reader
       add-all-widgets
-      add-default-bindings))
+      add-clojure-emacs-key-map
+      add-clojure-vi-key-maps)
+    ;; TODO grab this value from a config
+    (set-main-key-map! "emacs"))
+  line-reader)
