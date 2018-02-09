@@ -2,6 +2,8 @@
 
 **WARNING: UNDER ACTIVE INITIAL DEVELOPMENT!!**
 
+**NO JARS HAVE BEEN DEPLOYED YET**
+
 A terminal readline library for Clojure Dialects
 
 [![asciicast](https://asciinema.org/a/160597.png)](https://asciinema.org/a/160597)
