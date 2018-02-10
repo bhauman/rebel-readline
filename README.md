@@ -88,21 +88,34 @@ to an input-stream that is supplied by the line reader.
 
 ## Services
 
-When you create a line reader with `rebel-readline.core/line-reader`
-you need to supply a Service.
+The line reader provides functionality like completion, documentation,
+source, apropos, eval and more. The line reader needs a Service to
+provide this functionality.
 
-Services provide the link to the environment that does the work of
-providing completion, documentation, source, apropos, eval and more
-while the readline is actively reading.
+When you create a line reader `rebel-readline.core/line-reader`
+you need to supply this service.
 
-You can see an example Service here:
+The mose common service is the
+`rebel-readline.services.impl.local-clojure-service` that uses the
+local clojure process to provide this functionality and its a good
+example of how a service works.
+
 https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/src/rebel_readline/service/impl/local_clojure_service.clj
 
-This environment doesn't strictly have to be the environment that the
-readline results are being sent to for evaluation. Of course this
-means readline functions like apropos, etc. will provide different results
-than the actual evaluation env. But there are cases where this might
-not be a problem at all.
+In general its better if the service is querying the Clojure process
+where the eventual repl eval takes place.
+
+This service doesn't necessarily have to query the environment that
+the readline results are being sent to for evaluation as a great deal
+of functionality can be supplied locally if necessary. This could be
+helpful when you have a Clojurey repl process and you don't have a
+Service for it. In this case you can just use a
+`local-clojure-service` or perhaps a simpler service. If you do this
+you can expect less than optimal results.
+
+If your service doesn't at least have an accurate
+`rebel-readline.service.core/CurrentNs` implementation the readline
+prompt will not be displaying the correct namespace.
 
 ## Keybindings
 
