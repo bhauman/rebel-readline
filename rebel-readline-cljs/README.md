@@ -21,8 +21,7 @@ Or:
 
 ```
 (rebel-readline.core/with-readline-input-stream (rebel-readline-cljs.service/create 
-                                                 {:repl-env 
-												  (cljs.repl.nashorn/repl-env)})
+                                                 {:repl-env (cljs.repl.nashorn/repl-env)})
   (cljs.repl/repl repl-env :prompt (fn [])))
 ```
 
