@@ -11,15 +11,13 @@ A terminal readline library for Clojure Dialects
 
 [![asciicast](https://asciinema.org/a/160597.png)](https://asciinema.org/a/160597)
 
-rebel-readline will undoubtedly lead to a "rebel-repl" of some kind ...
-
 ## Important note!!! 
 
 The line reader will attempt to manipulate the terminal that initiates
 the JVM process. For this reason it is important to start your JVM in
 a terminal.
 
-That means you launch your java process using the
+That means you should launch your java process using the
 
  * the java command
  * the Clojure clj tool
@@ -30,26 +28,29 @@ Launching the terminal readline process from another java process will not work.
 
 ## Quick try
 
-`lein trampoline run` will get you into a clojure repl with the readline working.
+`lein trampoline run` will get you into a Clojure REPL with the readline working.
+
+Note that `lein run` will not work! See above.
 
 ## Quick Lay of the land
 
 You should look at `rebel-readline.main` and `rebel-readline.core`
 to give you top level usage information.
 
-The meat of the functionality is in `rebel-readline.line-reader` and
+The core of the functionality is in `rebel-readline.line-reader` and
 `rebel-readline.widgets.base` everything else is just support.
 
 ## Quick Usage
 
 The main way to use this library is to replace the
-`clojure.main/repl-read` behavior in `clojure.main/repl`. the
-advantage of doing this is that it won't interfere with the input
+`clojure.main/repl-read` behavior in `clojure.main/repl`. 
+
+The advantage of doing this is that it won't interfere with the input
 stream if you are working on something that needs to read from
 `*in*`. This is because the line-reader will only be engaged when the
-repl loop is reading.
+REPL loop is reading.
 
-Example One:
+Example:
 
 ```clojure
 (clojure.main/repl
@@ -59,11 +60,11 @@ Example One:
             (rebel-readline.service.impl.local-clojure-service/create))))
 ```
 
-Example catching a bad terminal error and fall back to clojure.main/repl-read:
+Example catching a bad terminal error and fall back to `clojure.main/repl-read`:
 
 ```clojure
 (clojure.main/repl
-  :prompt (fn [])
+  :prompt (fn []) ;; prompt is handled by line-reader
   :read (try
           (rebel-readline.core/clj-repl-read
            (rebel-readline.core/line-reader
@@ -75,7 +76,7 @@ Example catching a bad terminal error and fall back to clojure.main/repl-read:
                 (throw e)))))
 ```
 
-Another option is to just wrap a call you your repl with
+Another option is to just wrap a call you your REPL with
 `rebel-readline.core/with-readline-input-stream` this will bind `*in*`
 to an input-stream that is supplied by the line reader.
 
@@ -138,9 +139,10 @@ See https://github.com/bhauman/rebel-readline/tree/master/rebel-readline-cljs
 
 ## nREPL, SocketREPL, pREPL?
 
-Services have not been written for these REPLs yet!! Things may change after intitial feedback.
+Services have not been written for these REPLs yet!!
 
-But you can quickly implement a partial service in a fairly straight forward manner.
+But you can quickly implement a partial service in a fairly straight
+forward manner.
 
 ## Contributing
 
