@@ -13,7 +13,6 @@
     UserInterruptException
     EndOfFileException]))
 
-
 (defn line-reader
   "Creates a line reader takes a service as an argument.
 
@@ -231,7 +230,7 @@
   Examples:
 
   (with-readline-input-stream (rebel-readline.service.impl.local-clojure-service/create)
-   (clojure.main :prompt (fn[])))"
+   (clojure.main/repl :prompt (fn[])))"
   [service & body]
   `(let [lr# (line-reader ~service)]
     (binding [*in* (clojure.lang.LineNumberingPushbackReader.
