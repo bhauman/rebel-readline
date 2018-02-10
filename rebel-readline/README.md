@@ -17,34 +17,37 @@ The line reader will attempt to manipulate the terminal that initiates
 the JVM process. For this reason it is important to start your JVM in
 a terminal.
 
-That means you should launch your java process using the
+That means you should launch your Java process using the
 
  * the java command
  * the Clojure `clojure` tool (without readline support)
  * lein trampoline 
  * boot - would need to run in boot's worker pod
 
-Launching the terminal readline process from another java process will not work.
+Launching the terminal readline process from another Java process will not work.
+
+It's best to not launch this readline behind other readline tools like `rlwrap`.
 
 ## Quick try
 
 #### Clojure tools
 
 If you want to try this really quickly
-[install](https://clojure.org/guides/getting_started) the clojure
-tools and then invoke this:
+[install the Clojure CLI tools](https://clojure.org/guides/getting_started) 
+and then invoke this:
 
 `clojure -Sdeps "{:deps {rebel-readline {:mvn/version \"0.1.0-SNAPSHOT\"}}}" -m rebel-readline.main`
 
-That will start a Clojure REPL that takes its input from the rebel readline library.
+That should start a Clojure REPL that takes its input from the Rebel readline editor.
 
-Note that I am prefering the `clojure` tool as it doesn't wrap the
-repl with another readline.
+Note that I am using the `clojure` command and not the `clj` command
+because the latter wraps the process with another readline program (rlwrap).
 
 #### Clone repo
 
-Clone this repo and then from the `rebel-readline` sub-directory typing 
-`lein trampoline run` will get you into a Clojure REPL with the readline working.
+Clone this repo and then from the `rebel-readline` sub-directory
+typing `lein trampoline run` will get you into a Clojure REPL with the
+readline editor working.
 
 Note that `lein run` will not work! See above.
 
@@ -58,7 +61,7 @@ The core of the functionality is in `rebel-readline.line-reader` and
 
 ## Quick Usage
 
-The main way to use this library is to replace the
+The main way to utililize this readline editor is to replace the
 `clojure.main/repl-read` behavior in `clojure.main/repl`. 
 
 The advantage of doing this is that it won't interfere with the input
@@ -110,20 +113,20 @@ When you create a `rebel-readline.core/line-reader`
 you need to supply this service.
 
 The mose common service is the
-`rebel-readline.services.impl.local-clojure-service` that uses the
+`rebel-readline.services.impl.local-clojure-service` which uses the
 local clojure process to provide this functionality and its a good
 example of how a service works.
 
 https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/src/rebel_readline/service/impl/local_clojure_service.clj
 
-In general its better if the service is querying the Clojure process
+In general, it's much better if the service is querying the Clojure process
 where the eventual repl eval takes place.
 
-This service doesn't necessarily have to query the environment that
-the readline results are being sent to for evaluation. A great deal of
-functionality can be supplied by the local clojure process if
-necessary. This could be helpful when you have a Clojurey repl process
-and you don't have a Service for it. In this case you can just use a
+However, the service doesn't necessarily have to query the same environment
+that the REPL is using for evaluation. A great deal of functionality
+can be supplied by the local clojure process if necessary. This could
+be helpful when you have a Clojurey repl process and you don't have a
+Service for it. In this case you can just use a
 `local-clojure-service` or perhaps a simpler service. If you do this
 you can expect less than optimal results but multiline editing, syntax
 highlighting, auto indenting will all work.
