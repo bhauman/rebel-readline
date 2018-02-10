@@ -16,7 +16,9 @@
    [java.util.regex Pattern]
    [org.jline.keymap KeyMap]
    [org.jline.reader LineReader]
-   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
+   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
+    InfoCmp$Capability]))
+
 
 ;; ----------------------------------------------------
 ;; less implementation
@@ -401,6 +403,20 @@
    true))
 
 ;; --------------------------------------------
+;; Buffer position
+;; --------------------------------------------
+
+(def end-of-buffer
+  (create-widget
+   (cursor (.length *buffer*))
+   true))
+
+(def beginning-of-buffer
+  (create-widget
+   (cursor 0)
+   true))
+
+;; --------------------------------------------
 ;; Base Widget registration and binding helpers
 ;; --------------------------------------------
 
@@ -414,7 +430,8 @@
     (register-widget "clojure-source-at-point"    source-at-point-widget)
     (register-widget "clojure-apropos-at-point"   apropos-at-point-widget)
     (register-widget "clojure-eval-at-point"      eval-at-point-widget)
-    ))
+    (register-widget "end-of-buffer"              end-of-buffer)
+    (register-widget "beginning-of-buffer"        beginning-of-buffer)))
 
 (defn bind-indents [key-map]
   (doto key-map
@@ -438,7 +455,18 @@
     (bind-key "clojure-eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))))
 
 (defn clojure-emacs-mode [key-map]
-  (doto key-map bind-indents bind-inserts bind-clojure-widgets))
+  (doto key-map
+    bind-indents
+    bind-inserts
+    bind-clojure-widgets
+    (bind-key "end-of-buffer"
+              (KeyMap/key
+               (.getTerminal *line-reader*)
+               InfoCmp$Capability/key_end))
+    (bind-key "beginning-of-buffer"
+              (KeyMap/key
+               (.getTerminal *line-reader*)
+               InfoCmp$Capability/key_home))))
 
 (def clojure-vi-insert-mode clojure-emacs-mode)
 
