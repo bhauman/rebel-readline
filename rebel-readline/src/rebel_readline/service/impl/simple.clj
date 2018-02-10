@@ -1,11 +1,12 @@
-(ns rebel-readline.service.impl.simple-service
+(ns rebel-readline.service.impl.simple
   (:require
    [rebel-readline.service.core :as core]))
 
 ;; The simplest possible service that you can use to get
 ;; rebel readline working
 
-;; overide the :prompt with a fn that returns the current namespace
+;; overide the :prompt option with a fn returns a proper
+;; prompt with the current namespace
 
 (defn create* [options]
   (let [config-atom

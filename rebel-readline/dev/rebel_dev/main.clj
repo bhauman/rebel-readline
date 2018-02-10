@@ -5,7 +5,7 @@
    [rebel-readline.jline-api :as api]
    [rebel-readline.utils :refer [*debug-log*]]
    [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
-   [rebel-readline.service.impl.simple-service :as simple-service]
+   [rebel-readline.service.impl.simple :as simple-service]
    [clojure.main])
   (:gen-class))
 
