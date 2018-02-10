@@ -20,7 +20,7 @@ a terminal.
 That means you should launch your java process using the
 
  * the java command
- * the Clojure clj tool
+ * the Clojure `clojure` tool (without readline support)
  * lein trampoline 
  * boot - would need to run in boot's worker pod
 
@@ -28,6 +28,22 @@ Launching the terminal readline process from another java process will not work.
 
 ## Quick try
 
+#### Clojure tools
+
+If you want to try this really quickly
+[install](https://clojure.org/guides/getting_started) the clojure
+tools and then invoke this:
+
+`clojure -Sdeps "{:deps {rebel-readline {:mvn/version \"0.1.0-SNAPSHOT\"}}}" -m rebel-readline.main`
+
+That will start a Clojure REPL that takes its input from the rebel readline library.
+
+Note that I am prefering the `clojure` tool as it doesn't wrap the
+repl with another readline.
+
+#### Clone repo
+
+Clone this repo and then from the `rebel-readline` sub-directory typing 
 `lein trampoline run` will get you into a Clojure REPL with the readline working.
 
 Note that `lein run` will not work! See above.

@@ -43,7 +43,7 @@
   That means launching your process using the
 
   - the java command
-  - the Clojure clj tool
+  - the Clojure `clojure` tool
   - lein trampoline
   - boot - would need to run in boot's worker pod
 
