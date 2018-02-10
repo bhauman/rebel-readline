@@ -76,22 +76,6 @@ Example:
             (rebel-readline.service.impl.local-clojure-service/create))))
 ```
 
-Example catching a bad terminal error and fall back to `clojure.main/repl-read`:
-
-```clojure
-(clojure.main/repl
-  :prompt (fn []) ;; prompt is handled by line-reader
-  :read (try
-          (rebel-readline.core/clj-repl-read
-           (rebel-readline.core/line-reader
-             (rebel-readline.service.impl.local-clojure-service/create)))
-          (catch clojure.lang.ExceptionInfo e
-             (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))
-                (do (println (.getMessage e))
-                    clojure.main/repl-read)
-                (throw e)))))
-```
-
 Another option is to just wrap a call you your REPL with
 `rebel-readline.core/with-readline-input-stream` this will bind `*in*`
 to an input-stream that is supplied by the line reader.
@@ -102,13 +86,27 @@ to an input-stream that is supplied by the line reader.
     (clojure.main/repl :prompt (fn[])))
 ```
 
+Or with a fallback:
+
+```clojure
+(try
+  (rebel-readline.core/with-readline-input-stream 
+    (rebel-readline.service.impl.local-clojure-service/create)
+      (clojure.main/repl :prompt (fn[])))
+  (catch clojure.lang.ExceptionInfo e
+    (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))
+      (do (println (.getMessage e))
+          (clojure.main/repl))
+      (throw e))))
+```
+
 ## Services
 
-The line reader provides functionality like completion, documentation,
+The line reader provides features like completion, documentation,
 source, apropos, eval and more. The line reader needs a Service to
 provide this functionality.
 
-When you create a line reader `rebel-readline.core/line-reader`
+When you create a `rebel-readline.core/line-reader`
 you need to supply this service.
 
 The mose common service is the
@@ -122,16 +120,17 @@ In general its better if the service is querying the Clojure process
 where the eventual repl eval takes place.
 
 This service doesn't necessarily have to query the environment that
-the readline results are being sent to for evaluation as a great deal
-of functionality can be supplied locally if necessary. This could be
-helpful when you have a Clojurey repl process and you don't have a
-Service for it. In this case you can just use a
+the readline results are being sent to for evaluation. A great deal of
+functionality can be supplied by the local clojure process if
+necessary. This could be helpful when you have a Clojurey repl process
+and you don't have a Service for it. In this case you can just use a
 `local-clojure-service` or perhaps a simpler service. If you do this
-you can expect less than optimal results.
+you can expect less than optimal results but multiline editing, syntax
+highlighting, auto indenting will all work.
 
 If your service doesn't at least have an accurate
 `rebel-readline.service.core/CurrentNs` implementation the readline
-prompt will not be displaying the correct namespace.
+prompt will not correctly display the namespace.
 
 ## Keybindings
 
