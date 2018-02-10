@@ -6,7 +6,7 @@
    [clojure.tools.reader.reader-types :as rtypes]))
 
 (defn has-remaining?
-  "Takes a clojure.tools.reader.reader-types/SourceLoggingPushbackReader 
+  "Takes a clojure.tools.reader.reader-types/SourceLoggingPushbackReader
    and returns true if there is another character in the stream.
    i.e not the end of the readers stream."
   [pbr]
@@ -19,8 +19,8 @@
  "A drop in replacement for cljs.repl/repl-read, since a readline
   can return multiple Clojure forms this function is stateful and
   buffers the forms and returns the next form on subsequent reads.
-  
-  This function is a constructor that takes a line-reader and returns 
+
+  This function is a constructor that takes a line-reader and returns
   a function that can replace `cljs.repl/repl-read`.
 
   Example Usage:

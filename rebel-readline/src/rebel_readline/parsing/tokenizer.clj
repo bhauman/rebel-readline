@@ -117,7 +117,7 @@
 (def def-with-doc
   (str preceeding-paren
        "(defn\\-|defn|defmacro|defprotocol|defmulti)"  ;;defn
-       metadata-name-docs-exp)) 
+       metadata-name-docs-exp))
 
 (def other-def
   (str preceeding-paren
@@ -147,12 +147,12 @@
                         followed-by-delimiter))
 
 (def keyword-exp (str preceeded-by-delimiter
-                      "(:)(?:(" not-delimiter-or-fslash-exp "+)\\/)?(" 
+                      "(:)(?:(" not-delimiter-or-fslash-exp "+)\\/)?("
                       not-delimiter-or-fslash-exp "+)"))
 
 (def namespaced-symbol-exp
   (str preceeded-by-delimiter
-       "(" not-delimiter-or-fslash-exp "+)\\/(" 
+       "(" not-delimiter-or-fslash-exp "+)\\/("
        not-delimiter-or-fslash-exp "+)"))
 
 (def classname-exp
@@ -302,33 +302,21 @@
        "(" not-delimiter-exp "+)")))
 
 (defn tag-words
-  "This tokenizes a given string into 
+  "This tokenizes a given string into
      :end-of-line-comments
      :string-literals-without-quotes
      :unterm-string-literal
      :charater s
   and the remaining
-     :word s  
+     :word s
 
-  This allows us to opertate on words that are outside of 
+  This allows us to opertate on words that are outside of
 strings, comments and characters. "
   [line]
   (tag-matches line
                non-interp-word-rexp
                :end-line-comment
-               :string-literal-without-quotes 
+               :string-literal-without-quotes
                :unterm-string-literal-without-quotes
                :character
                :word))
-
-;; really fast
-
-#_(time (do
-          (tag-syntax (apply str (repeat 3000 (slurp "project.clj"))))
-          nil))
-
-#_(time (do
-          (read-string (str "[" (apply str (repeat 3000 (slurp "project.clj"))) "]"))
-          nil))
-
-

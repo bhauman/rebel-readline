@@ -3,7 +3,7 @@
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.jline-api.attributed-string :as astring]   
+   [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.tools.syntax-highlight :as syn]
    [rebel-readline.tools.colors :as col]
    [rebel-readline.service.core :as srv])
@@ -142,7 +142,7 @@ Without any arguments displays all the current key bindings")
   (throw (EndOfFileException.)))
 
 (defn handle-command [command-str]
-  (let [cmd? 
+  (let [cmd?
         (try (read-string (str "[" command-str "]"))
              (catch Throwable e
                []))]
@@ -182,5 +182,5 @@ Without any arguments displays all the current key bindings")
     (handle-command ":repl/toggle-ind")
     (handle-command ":repl/toggle-indent")
     (srv/config)
-    
+
   )

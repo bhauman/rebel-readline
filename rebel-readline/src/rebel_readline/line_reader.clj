@@ -8,7 +8,7 @@
    [rebel-readline.parsing.tokenizer :as tokenize]
    [rebel-readline.service.core :as srv]
    [rebel-readline.tools.indent :as indent]
-   [rebel-readline.tools.sexp :as sexp]   
+   [rebel-readline.tools.sexp :as sexp]
    [rebel-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
    [rebel-readline.utils :refer [log]]
    [rebel-readline.widgets.base :as base-widgets]
@@ -85,11 +85,11 @@
 ;; the functionality implemented here is indenting when you hit return on a line
 (defn indent [line-reader line cursor]
   ;; you could work on the buffer here instead
-  
+
   ;; TODO this key binding needs to be looked up from the macro if possible
   ;; changing the buffer here is the most stable but the logic is quite different
   ;; than the current indent action
-  
+
   ;; a two key macro here adds a slight delay to the indent action I think
   (.runMacro line-reader (str (KeyMap/ctrl \X) (KeyMap/ctrl \I))))
 
@@ -126,7 +126,7 @@
     [word-start word-end]))
 
 ;; TODO this has string hacks in it that wouldn't be needed
-;; with better sexp parsing 
+;; with better sexp parsing
 (defn replace-word-with-prefix [parsed-line]
   (let [[start end] (parsed-line-word-coords parsed-line)
         [_ _ _ typ] (:word-token (meta parsed-line))
@@ -149,12 +149,12 @@
 
 (defn candidate [{:keys [candidate type ns]}]
   (Candidate.
-   candidate ;; value 
+   candidate ;; value
    candidate ;; display
    nil ;; group
    (cond-> nil
      type (str (first (name type)))
-     ns   (str (when type " ") ns)) 
+     ns   (str (when type " ") ns))
    nil ;; suffix
    nil ;; key
    false))
@@ -194,7 +194,7 @@
                           (cond-> {}
                             ns'     (assoc :ns ns')
                             context (assoc :context context)))]
-            (->> 
+            (->>
              (or
               (repl-command-complete (meta line))
               (cljs-quit-complete (meta line))

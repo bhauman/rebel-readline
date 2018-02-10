@@ -8,7 +8,6 @@
 
 ;; taken from replicant
 ;; https://github.com/puredanger/replicant/blob/master/src/replicant/util.clj
-;; TODO this eval is naive and should have a timeout at least or be interruptable
 (defn data-eval
   [form]
   (let [out-writer (java.io.StringWriter.)
@@ -119,13 +118,3 @@
   ([] (create nil))
   ([options]
    (create* (merge core/default-config options))))
-
-#_(core/-get-config (create {}))
-
-
-
-
-
-
-
-

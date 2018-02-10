@@ -1,6 +1,7 @@
 (ns rebel-readline.main
   (:require
-   [rebel-readline.core :refer [line-reader clj-repl-read with-readline-input-stream]]
+   [rebel-readline.core
+    :refer [line-reader clj-repl-read with-readline-input-stream]]
    [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
    [clojure.main])
   (:gen-class))

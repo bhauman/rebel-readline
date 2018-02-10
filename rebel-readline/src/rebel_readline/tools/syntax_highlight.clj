@@ -20,7 +20,7 @@
             (recur end (rest hd)))
           ;; TODO this could be faster if we append whole sections
           ;; instead of advancing one char at a time
-          ;; but its pretty fast now 
+          ;; but its pretty fast now
           :else
           (do (.append sb (.charAt syntax-str pos))
               (recur (inc pos) hd)))))))

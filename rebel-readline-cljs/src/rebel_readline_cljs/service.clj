@@ -1,7 +1,7 @@
 (ns rebel-readline-cljs.service
   (:require
    [cljs-tooling.complete :as cljs-complete]
-   [cljs-tooling.info :as cljs-info]   
+   [cljs-tooling.info :as cljs-info]
    [cljs.analyzer :as ana]
    [cljs.analyzer.api :as ana-api]
    [cljs.core]
@@ -12,7 +12,8 @@
    [clojure.tools.reader.reader-types :as readers]
    [rebel-readline.info.doc-url :as doc-url]
    [rebel-readline.service.core :as core]
-   [rebel-readline.service.impl.local-clojure-service :refer [call-with-timeout]]
+   [rebel-readline.service.impl.local-clojure-service
+    :refer [call-with-timeout]]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.utils :refer [log]])
   (:import
@@ -101,7 +102,7 @@
       (swap  [_ f a] (swap! config-atom f a))
       (swap  [_ f a b] (swap! config-atom f a b))
       (swap  [_ f a b args] (swap! config-atom f a b args))
-      (reset [_ a] (reset! config-atom a))      
+      (reset [_ a] (reset! config-atom a))
       core/CurrentNs
       (-current-ns [_] (some-> *ns* str))
       core/Completions

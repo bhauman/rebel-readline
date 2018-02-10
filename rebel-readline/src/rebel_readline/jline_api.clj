@@ -21,9 +21,7 @@
     EOFError
     Widget]
    [org.jline.reader.impl DefaultParser BufferImpl]
-   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
-    #_InfoCmp$Capability]
-   ))
+   [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
 (def ^:dynamic *line-reader* nil)
 (def ^:dynamic *buffer* nil)
@@ -50,7 +48,7 @@
                    *buffer* (.getBuffer line-reader#)]
            ~@body)))))
 
-;; very naive 
+;; very naive
 (def get-accessible-field
   (memoize (fn [obj field-name]
              (when-let [field (-> obj .getClass (.getDeclaredField field-name))]
@@ -83,7 +81,7 @@
               ;; TODO would be nice to display
               ;; rolled up abbreviations
               "clojure-self-insert"
-              "self-insert"              
+              "self-insert"
               "digit-argument"
               "do-lowercase-version"} v))))))
 

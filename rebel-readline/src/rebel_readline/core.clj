@@ -5,7 +5,7 @@
    [rebel-readline.service.core :as srv]
    [rebel-readline.jline-api :as api]
    [rebel-readline.io.line-print-writer :as line-print-writer]
-   [rebel-readline.io.callback-reader]   
+   [rebel-readline.io.callback-reader]
    [rebel-readline.commands :as commands]
    [rebel-readline.line-reader :as lr])
   (:import
@@ -13,11 +13,12 @@
     UserInterruptException
     EndOfFileException]))
 
+
 (defn line-reader
   "Creates a line reader takes a service as an argument.
 
   A service implements the protocols found in `rebel-readline.service.core`
- 
+
   Example:
     (line-reader (rebel-readline.service.impl.local-clojure-service/create))
 
@@ -75,15 +76,15 @@
   This function activates the rebel line reader which, in turn, will put
   the terminal that launched the jvm process into \"raw mode\" during the
   readline operation.
-  
+
   You can think of the readline opertaion as a launching of an editor
   for the breif period that the line is read.
- 
+
   If :redirect-output is truthy (the default value) in the supplied
   rebel line reader service config this function will alter the root
   binding of the *out* var to prevent extraneous output from
   corrupting the read line editors output.
- 
+
   Once the reading is done it returns the terminal to its original
   settings."
   [{:keys [service line-reader] :as reader} & [command-executed]]
@@ -96,7 +97,7 @@
             redirect-print-writer
             (line-print-writer/print-writer :out (output-handler reader))]
         (.flush *out*)
-        (.flush *err*)        
+        (.flush *err*)
         (when redirect-output?
           (alter-var-root
            #'*out*
@@ -160,24 +161,24 @@
   "A drop in replacement for clojure.main/repl-read, since a readline
   can return multiple Clojure forms this function is stateful and
   buffers the forms and returns the next form on subsequent reads.
-  
-  This function is a constructor that takes a line-reader and returns 
+
+  This function is a constructor that takes a line-reader and returns
   a function that can replace `clojure.main/repl-read`.
 
   Example Usage:
 
-  (clojure.main/repl 
+  (clojure.main/repl
    :prompt (fn []) ;; prompt is handled by line-reader
-   :read (clj-repl-read 
+   :read (clj-repl-read
            (line-reader
              (rebel-readline.service.impl.local-clojure-service/create))))
 
   Or catch a bad terminal error and fall back to clojure.main/repl-read:
 
-  (clojure.main/repl 
+  (clojure.main/repl
    :prompt (fn [])
    :read (try
-          (clj-repl-read 
+          (clj-repl-read
            (line-reader
              (rebel-readline.service.impl.local-clojure-service/create)))
           (catch clojure.lang.ExceptionInfo e
@@ -236,4 +237,3 @@
     (binding [*in* (clojure.lang.LineNumberingPushbackReader.
                     (rebel-readline.io.callback-reader/callback-reader #(stream-read-line lr#)))]
       ~@body)))
-

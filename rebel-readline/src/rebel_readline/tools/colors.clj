@@ -62,19 +62,19 @@
          :eldoc-varname     (.faint (fg-color 21))
          :def-varname       (.bold  (fg-color 21))
          :core-macro        (.bold  (fg-color 21))
-         
-         
+
+
          :def-val-varname   (.bold (fg-color 130))
          :function-arg      (.bold (fg-color 130))
          :dynamic-var       (.bold (fg-color 130))
-         
+
          :def-call          (.bold (fg-color 127))
          :core-fn           (.bold (fg-color 127))
          :special-form      (.bold (fg-color 127))
          :string-literal        (.bold (fg-color 127))
          :unterm-string-literal (.bold (fg-color 127))
          :character         (.bold (fg-color 127))
-         
+
          :interop-call      (.bold (fg-color 97))
          :protocol-def-name (.bold (fg-color 97))
          :def-doc-string    (.bold (fg-color 132))
@@ -83,7 +83,7 @@
 
          :doc             (.bold (fg-color 127))
          :light-anchor    (.underline (.faint (fg-color 26)))
-         
+
          :apropos-word       AttributedStyle/DEFAULT
          :apropos-highlight  (fg-color 27)
          :apropos-namespace  (.faint (.foreground AttributedStyle/DEFAULT 243))
@@ -103,4 +103,3 @@
 #_(println (str (char 27) "[1;38;5;222m" ".asdfasdfasdf" (char 27 ) "0m") )
 
 #_(.toAnsi (AttributedString. "hey" AttributedStyle/DEFAULT #_(.bold (fg-color 85))))
-

@@ -30,4 +30,3 @@
       ns (str ns)
       name (str "/" (cljs-api-encode-name name)))
     :else nil))
-

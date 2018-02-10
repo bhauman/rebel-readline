@@ -6,7 +6,7 @@
    [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.parsing.tokenizer :as tokenize]
    [rebel-readline.service.core :as srv]
-   [rebel-readline.tools.colors :as col]   
+   [rebel-readline.tools.colors :as col]
    [rebel-readline.tools.indent :as indent]
    [rebel-readline.tools.sexp :as sexp]
    [rebel-readline.tools.syntax-highlight :as highlight]
@@ -18,7 +18,6 @@
    [org.jline.reader LineReader]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
     InfoCmp$Capability]))
-
 
 ;; ----------------------------------------------------
 ;; less implementation
@@ -95,7 +94,7 @@
                      LineReader/ACCEPT_LINE}
                    (recur (min (- rows-needed
                                   window-rows) (inc pos)))
-                   ;; otherwise pushback the binding and 
+                   ;; otherwise pushback the binding and
                    (do
                      ;; clear the post display
                      (display-message "  ")
@@ -119,18 +118,18 @@
          indent-amount       (indent/indent-amount s begin-of-line-pos)
          cursor-in-leading-white-space? (< curs
                                            (+ leading-white-space begin-of-line-pos))]
-         
+
      (cursor begin-of-line-pos)
      (delete leading-white-space)
      (write  (apply str (repeat indent-amount \space)))
-     
+
      ;; rectify cursor
      (when-not cursor-in-leading-white-space?
        (cursor (+ indent-amount (- curs leading-white-space))))))
    ;; return true to re-render
    true))
 
-(def indent-or-complete-widget 
+(def indent-or-complete-widget
   (create-widget
     (let [curs (cursor)
           s (buffer-as-string) ;; up-to-cursor better here?
@@ -484,7 +483,7 @@
     (let [clojure-viins (orig-key-map-clone "viins")
           clojure-vicmd (orig-key-map-clone "vicmd")]
       (clojure-vi-insert-mode clojure-viins)
-      (clojure-vi-cmd-mode clojure-vicmd)      
+      (clojure-vi-cmd-mode clojure-vicmd)
       (set-key-map! "viins" clojure-viins)
       (set-key-map! "vicmd" clojure-vicmd))))
 

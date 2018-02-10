@@ -2,7 +2,7 @@
   (:require
    [cljs.repl :as cljs-repl]
    [cljs.repl.nashorn :as nash]
-   [rebel-readline-cljs.service :as cljs-service]   
+   [rebel-readline-cljs.service :as cljs-service]
    [rebel-readline.core :refer [line-reader with-readline-input-stream]]
    [rebel-readline-cljs.core :refer [cljs-repl-read]])
   (:gen-class))
