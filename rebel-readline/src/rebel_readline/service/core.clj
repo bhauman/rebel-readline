@@ -2,7 +2,8 @@
   (:require
    [rebel-readline.parsing.tokenizer :as tokenize]
    [rebel-readline.tools.colors :as colors]
-   [rebel-readline.tools.sexp :as sexp])
+   [rebel-readline.tools.sexp :as sexp]
+   [rebel-readline.utils :as utils])
   (:import
    [org.jline.utils AttributedStyle]))
 
@@ -165,7 +166,10 @@
    :eldoc true
    :highlight true
    :redirect-output true
-   :color-theme :dark-screen-theme})
+   :color-theme
+   (if (= :light (utils/terminal-background-color?))
+     :light-screen-theme
+     :dark-screen-theme)})
 
 (defn config [] @*service*)
 

@@ -94,7 +94,7 @@
   {:dark-screen-theme dark-screen-theme
    :light-screen-theme light-screen-theme})
 
-(defn register-color-theme [ky color-map]
+(defn register-color-theme! [ky color-map]
   (assert (keyword? ky))
   (assert (map? color-map))
   (alter-var-root #'color-themes assoc ky color-map))
