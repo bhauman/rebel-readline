@@ -6,7 +6,7 @@
     (bound-fn []
       (dotimes [n 10]
         (Thread/sleep 2000)
-        (println "Testing!!"))))))
+        (println "Testing Bound!!"))))))
 
 (defn test-output []
   (.start

@@ -91,21 +91,27 @@
     (binding [srv/*service* service
               api/*line-reader* line-reader]
       ;; TODO consider redirecting *err* as well
-      (let [save-out *out*]
+      (let [redirect-output? (:redirect-output (srv/config))
+            save-out (volatile! *out*)
+            redirect-print-writer
+            (line-print-writer/print-writer :out (output-handler reader))]
         (.flush *out*)
         (.flush *err*)        
-        (when (:redirect-output (srv/config))
+        (when redirect-output?
           (alter-var-root
            #'*out*
-           (fn [_] (line-print-writer/print-writer :out (output-handler reader)))))
+           (fn [root-out]
+             (vreset! save-out root-out)
+             redirect-print-writer)))
         (try
-          (let [res' (.readLine line-reader (srv/prompt))]
-            (if-not (commands/handle-command res')
-              res'
-              command-executed))
+          (binding [*out* redirect-print-writer]
+            (let [res' (.readLine line-reader (srv/prompt))]
+              (if-not (commands/handle-command res')
+                res'
+                command-executed)))
           (finally
-            (when (:redirect-output (srv/config))
-              (alter-var-root #'*out* (fn [_] save-out)))))))))
+            (when redirect-output?
+              (alter-var-root #'*out* (fn [_] @save-out)))))))))
 
 (defn repl-read-line
   "A readline function that converts the Exceptions normally thrown by
