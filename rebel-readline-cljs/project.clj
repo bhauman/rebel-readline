@@ -1,13 +1,18 @@
 (defproject rebel-readline-cljs "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "A rebel readline service for ClojureScript"
+  :url "https://github.com/bhauman/rebel-readline"
   :license {:name "Eclipse Public License"
+            :distribution :repo
             :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :scm {:name "git"
+        :url "https://github.com/bhauman/rebel-readline"
+        :dir ".."}
+
   :dependencies [[rebel-readline "0.1.0-SNAPSHOT"]
                  [org.clojure/clojurescript "1.9.946"]
                  [cljs-tooling "0.2.0"]]
 
   :main rebel-readline-cljs.main
 
-  :profiles {:dev {:source-paths ["src" "../rebel-readline/src"]}})
+  :profiles {:dev {:source-paths ["src" "dev"]}})
 
