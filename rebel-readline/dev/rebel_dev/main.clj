@@ -5,12 +5,15 @@
    [rebel-readline.jline-api :as api]
    [rebel-readline.utils :refer [*debug-log*]]
    [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
+   [rebel-readline.service.impl.simple-service :as simple-service]
    [clojure.main])
   (:gen-class))
 
 (defn -main [& args]
   (prn :repl-dev-main)
-  (let [reader (line-reader (local-clj-service/create))]
+  (let [reader (line-reader
+                #_(simple-service/create)
+                (local-clj-service/create))]
     (binding [api/*line-reader* (:line-reader reader)
               srv/*service* (:service reader)
               *debug-log* true]
