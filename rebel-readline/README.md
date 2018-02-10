@@ -2,6 +2,9 @@
 
 **WARNING: UNDER ACTIVE INITIAL DEVELOPMENT!!**
 
+[![Clojars Project](https://img.shields.io/clojars/v/rebel-readline.svg)](https://clojars.org/rebel-readline)
+[![Clojars Project](https://img.shields.io/clojars/v/rebel-readline.svg)](https://clojars.org/rebel-readline-cljs)
+
 A terminal readline library for Clojure Dialects
 
 [![asciicast](https://asciinema.org/a/160597.png)](https://asciinema.org/a/160597)
@@ -23,7 +26,7 @@ That means you launch your java process using the
 
 Launching the terminal readline process from another java process will not work.
 
-## Quick start
+## Quick try
 
 `lein trampoline run` will get you into a clojure repl with the readline working.
 
@@ -63,6 +66,10 @@ You can add new commands by adding methods to the
 `rebel-readline.commands/command` multimethod. You can add
 documentation for the command by adding a method to the
 `rebel-readline.commands/command-doc` multimethod.
+
+## CLJS
+
+See https://github.com/bhauman/rebel-readline/tree/master/rebel-readline-cljs
 
 ## License
 

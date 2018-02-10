@@ -2,7 +2,8 @@
 
 **WARNING: UNDER ACTIVE INITIAL DEVELOPMENT!!**
 
-**NO JARS HAVE BEEN DEPLOYED YET**
+[![Clojars Project](https://img.shields.io/clojars/v/rebel-readline.svg)](https://clojars.org/rebel-readline)
+[![Clojars Project](https://img.shields.io/clojars/v/rebel-readline.svg)](https://clojars.org/rebel-readline-cljs)
 
 A terminal readline library for Clojure Dialects
 
