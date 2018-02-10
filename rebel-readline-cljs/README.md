@@ -7,10 +7,10 @@ clojurescript repl and a `cljs.repl/repl-read` replacement.
 
 A simple usage example:
 
-```
+```clojure
 (let [repl-env (cljs.repl.nashorn/repl-env)
       line-reader (rebel-readline.core/line-reader 
-	               (rebel-readline-cljs.service/create {:repl-env repl-env}))]
+                   (rebel-readline-cljs.service/create {:repl-env repl-env}))]
   (cljs.repl/repl repl-env
    ;; the prompt is supplied by the readline program
    :prompt (fn [])
@@ -19,7 +19,7 @@ A simple usage example:
 
 Or:
 
-```
+```clojure
 (let [repl-env (cljs.repl.nashorn/repl-env)]
   (rebel-readline.core/with-readline-input-stream (rebel-readline-cljs.service/create 
                                                    {:repl-env repl-env})
