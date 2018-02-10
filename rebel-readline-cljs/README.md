@@ -3,6 +3,10 @@
 A library that supplies a rebel readline service for the default
 clojurescript repl and a `cljs.repl/repl-read` replacement.
 
+## Quick try
+
+`lein trampoline run` will get you into a Nashorn backed CLJS repl with the readline working.
+
 ## Usage
 
 A simple usage example:
