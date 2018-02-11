@@ -176,8 +176,7 @@ See https://github.com/bhauman/rebel-readline/tree/master/rebel-readline-cljs
 
 Services have not been written for these REPLs yet!!
 
-But you can quickly implement a partial service in a fairly straight
-forward manner.
+But you can use the `rebel-readline.service.impl.simple` service in the meantime.
 
 ## Contributing
 
