@@ -10,10 +10,10 @@ evaluated in a REPL.
 While this is true, it doesn't hurt to make the REPL experience more
 helpful and pleasurable when we are forced to interact with it
 directly at the terminal. These rare situations do pop up, and when
-they do the anomolous situation is normally associated with some kind
+they do the anomalous situation is sometimes associated with some kind
 of urgency. In cases where we are trying to debug a live system, and
 our tools aren't available, there is no need to make the situation
-harder.
+harder with a spartan terminal UX.
 
 So you when you do have to use the REPL it would be nice for it to
 work better.
@@ -22,16 +22,16 @@ However, the main reason for this library is for the newcomers to
 Clojure. The path for newcomers to create an effective Clojure
 programming environment, is varied, difficult and confusing. It
 requires a level of investment and discernment that is too high for
-the casual language explorer who has never used a LISP before. As a
-result when newcomers come to Clojure the most intelligent decision
-they can make, is to not try and negotiate the tooling needed for an
-editor REPL connection but rather just use the `clojure.main/repl` or
-`lein repl` and/or a edit a file with a familiar editor and constantly
-rerun a script or a `-main` function. Thus they experience a stunted
+the language explorer who has never used a LISP before. As a result
+when newcomers come to Clojure the most intelligent decision they can
+make, is to not try and negotiate the tooling needed for an editor
+REPL connection but rather just use the `clojure.main/repl` or `lein
+repl` and/or a edit a file with a familiar editor and constantly rerun
+a script or a `-main` function. Thus they experience a stunted
 workflow that is all too familiar in other languages and it is easy to
 miss-construe this as the Clojure experience.
 
-A fluid interactive programming workflow is fundamental difference
+A fluid interactive programming workflow is a fundamental difference
 that Clojure offers yet many newcomers will often never see or
 experience it.
 
@@ -43,16 +43,15 @@ and demonstrate it to them until you're blue in the face and they
 won't get it.
 
 It is not until a programmer actually experiences inline-eval as a
-tool of discovery that the light goes on. SEXPs start to make more
+programming tool that the light goes on. SEXPs start to make more
 sense, and the why of LISP starts to dawn.
 
 The idea here is to provide the opportunity to experience inline-eval
 at the first REPL a newcomer tries. The idea here is to provide a tool
-that newcomers that is sharp enough to elegantly solve 4Clojure
-problems and participate in Advent Of Code without having to make a
-steep investment in a foreign toolchain. The idea is to give newcomers
-the opportunity to experience Clojure the way that the more seasoned
-Clojure programmers experience it.
+that newcomers that is sharp enough to elegantly solve
+[4Clojure](http://www.4clojure.com/) problems and participate in
+[Advent Of Code](http://adventofcode.com/) without having to make a
+steep investment in a foreign toolchain.
 
 As a bonus, when we provide this experience at the very first REPL
 newcomers will have a base of experience from which they can now draw
@@ -61,7 +60,7 @@ from to choose their tooling.
 They will understand the availability of online docs, source code, and
 apropos. They will understand the capabilities of inline eval and
 structural editing. IMHO this experience needs to be communicated as
-urgently as the syntax.
+urgently as the other Clojure features.
 
 # Design priorities
 

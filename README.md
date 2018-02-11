@@ -11,6 +11,10 @@ A terminal readline library for Clojure Dialects
 
 [![asciicast](https://asciinema.org/a/160597.png)](https://asciinema.org/a/160597)
 
+## Why create a terminal readline library?
+
+https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/doc/intro.md
+
 ## Important note!!! 
 
 The line reader will attempt to manipulate the terminal that initiates
@@ -122,18 +126,18 @@ https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/src/rebel_r
 In general, it's much better if the service is querying the Clojure process
 where the eventual repl eval takes place.
 
-However, the service doesn't necessarily have to query the same environment
-that the REPL is using for evaluation. A great deal of functionality
-can be supplied by the local clojure process if necessary. This could
-be helpful when you have a Clojurey repl process and you don't have a
-Service for it. In this case you can just use a
-`local-clojure-service` or perhaps a simpler service. If you do this
-you can expect less than optimal results but multiline editing, syntax
-highlighting, auto indenting will all work.
+However, the service doesn't necessarily have to query the same
+environment that the REPL is using for evaluation. All the editing
+functionality that rebel readline provides works without an
+environment to query. And the apropos, doc and completion functionality is
+still sensible when you provide those abilities from the local clojure process.
 
-If your service doesn't at least have an accurate
-`rebel-readline.service.core/CurrentNs` implementation the readline
-prompt will not correctly display the namespace.
+This could be helpful when you have a Clojurey repl process
+and you don't have a Service for it. In this case you can just use a
+`local-clojure-service` or a `rebel-readline.service.impl.simple`
+service. If you do this you can expect less than optimal results but
+multiline editing, syntax highlighting, auto indenting will all work
+just fine.
 
 ## Keybindings
 
