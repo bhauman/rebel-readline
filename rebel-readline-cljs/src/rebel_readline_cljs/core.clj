@@ -31,23 +31,7 @@
      :prompt (fn [])
      :read (cljs-repl-read
              (rebel-readline.core/line-reader
-               (rebel-readline-cljs.service/create {:repl-env repl-env}))])))
-
-  Or catch a bad terminal error and fall back to cljs.repl/repl-read:
-
-  (let [repl-env (nash/repl-env)]
-    (cljs-repl/repl
-     repl-env
-     :prompt (fn [])
-     :read (try
-             (cljs-repl-read
-               (rebel-readline.core/line-reader
-                 (rebel-readline-cljs.service/create {:repl-env repl-env})))
-             (catch clojure.lang.ExceptionInfo e
-               (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))
-                 (do (println (.getMessage e))
-                     cljs.repl/repl-read)
-                 (throw e))))"
+               (rebel-readline-cljs.service/create {:repl-env repl-env}))])))"
   (rebel/create-buffered-repl-reader-fn
    (fn [s] (rtypes/source-logging-push-back-reader
             (java.io.StringReader. s)))
