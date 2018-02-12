@@ -2,6 +2,8 @@
   (:require
    [rebel-readline.core
     :refer [line-reader clj-repl-read with-readline-input-stream help-message]]
+   [rebel-readline.service.core :as srv]
+   [rebel-readline.tools.syntax-highlight :as highlight]
    [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
    [clojure.main])
   (:gen-class))
@@ -11,4 +13,7 @@
     (println (help-message))
     (clojure.main/repl
      :prompt (fn [])
+     :print (fn [x]
+              (binding [srv/*service* (:service reader)]
+                (println (.toAnsi (highlight/highlight-clj-str (pr-str x))))))
      :read (clj-repl-read reader))))
