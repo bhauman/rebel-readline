@@ -1,6 +1,7 @@
 (ns rebel-dev.main
   (:require
-   [rebel-readline.core :refer [line-reader clj-repl-read with-readline-input-stream]]
+   [rebel-readline.core :refer [line-reader clj-repl-read with-readline-input-stream
+                                help-message]]
    [rebel-readline.service.core :as srv]
    [rebel-readline.jline-api :as api]
    [rebel-readline.utils :refer [*debug-log*]]
@@ -17,6 +18,7 @@
     (binding [api/*line-reader* (:line-reader reader)
               srv/*service* (:service reader)
               *debug-log* true]
+      (println (help-message))
       (clojure.main/repl
        :prompt (fn [])
        :read (clj-repl-read reader)))))
