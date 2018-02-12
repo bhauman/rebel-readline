@@ -47,8 +47,8 @@ programming tool that the light goes on. SEXPs start to make more
 sense, and the why of LISP starts to dawn.
 
 The idea here is to provide the opportunity to experience inline-eval
-at the first REPL a newcomer tries. The idea here is to provide a tool
-that is sharp enough for newcomers to elegantly solve
+at the first REPL a newcomer tries. The idea is to provide a tool that
+is sharp enough for newcomers to elegantly solve
 [4Clojure](http://www.4clojure.com/) problems and participate in
 [Advent Of Code](http://adventofcode.com/) without having to make a
 steep investment in an unfamiliar toolchain.
