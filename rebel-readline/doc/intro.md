@@ -26,10 +26,10 @@ the language explorer who has never used a LISP before. As a result
 when newcomers come to Clojure the most intelligent decision they can
 make, is to not try and negotiate the tooling needed for an editor
 REPL connection but rather just use the `clojure.main/repl` or `lein
-repl` and/or a edit a file with a familiar editor and constantly rerun
-a script or a `-main` function. Thus they experience a stunted
-workflow that is all too familiar in other languages and it is easy to
-miss-construe this as the Clojure experience.
+repl` and/or a edit a file with a familiar editor and constantly
+re-run/load a script or a `-main` function. Thus they experience a
+stunted workflow that is all too familiar in other languages and it is
+easy to miss-construe this as the Clojure development experience.
 
 A fluid interactive programming workflow is a fundamental difference
 that Clojure offers yet many newcomers will often never see or
@@ -48,10 +48,10 @@ sense, and the why of LISP starts to dawn.
 
 The idea here is to provide the opportunity to experience inline-eval
 at the first REPL a newcomer tries. The idea here is to provide a tool
-that newcomers that is sharp enough to elegantly solve
+that is sharp enough for newcomers to elegantly solve
 [4Clojure](http://www.4clojure.com/) problems and participate in
 [Advent Of Code](http://adventofcode.com/) without having to make a
-steep investment in a foreign toolchain.
+steep investment in an unfamiliar toolchain.
 
 As a bonus, when we provide this experience at the very first REPL
 newcomers will have a base of experience from which they can now draw
