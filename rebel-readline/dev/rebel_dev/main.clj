@@ -1,26 +1,26 @@
 (ns rebel-dev.main
   (:require
-   [rebel-readline.core :refer [line-reader clj-repl-read with-readline-input-stream
-                                help-message]]
-   [rebel-readline.service.core :as srv]
+   [rebel-readline.core
+    :refer [line-reader clj-repl-read with-readline-input-stream help-message
+            syntax-highlight-prn]]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.utils :refer [*debug-log*]]
+   [rebel-readline.service.core :as srv]
    [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
    [rebel-readline.service.impl.simple :as simple-service]
+   [rebel-readline.utils :refer [*debug-log*]]
    [clojure.main])
   (:gen-class))
 
 (defn -main [& args]
-  (prn :repl-dev-main)
-  (let [reader (line-reader
-                #_(simple-service/create)
-                (local-clj-service/create))]
+  (prn "This is the DEVELOMENT repl in rebel-dev.main")
+  (let [reader (line-reader (local-clj-service/create))]
+    (println (help-message))
     (binding [api/*line-reader* (:line-reader reader)
               srv/*service* (:service reader)
               *debug-log* true]
-      (println (help-message))
       (clojure.main/repl
        :prompt (fn [])
+       :print syntax-highlight-prn
        :read (clj-repl-read reader)))))
 
 #_(defn -main [& args]

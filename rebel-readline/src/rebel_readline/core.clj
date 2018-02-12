@@ -2,12 +2,13 @@
   (:refer-clojure :exclude [read-line])
   (:require
    [clojure.string :as string]
-   [rebel-readline.service.core :as srv]
-   [rebel-readline.jline-api :as api]
-   [rebel-readline.io.line-print-writer :as line-print-writer]
-   [rebel-readline.io.callback-reader]
    [rebel-readline.commands :as commands]
-   [rebel-readline.line-reader :as lr])
+   [rebel-readline.io.callback-reader]
+   [rebel-readline.io.line-print-writer :as line-print-writer]
+   [rebel-readline.jline-api :as api]
+   [rebel-readline.line-reader :as lr]
+   [rebel-readline.service.core :as srv]
+   [rebel-readline.tools.syntax-highlight :as highlight])
   (:import
    [org.jline.reader
     UserInterruptException
@@ -239,3 +240,17 @@
     (binding [*in* (clojure.lang.LineNumberingPushbackReader.
                     (rebel-readline.io.callback-reader/callback-reader #(stream-read-line lr#)))]
       ~@body)))
+
+(defn syntax-highlight-prn
+  "Print a syntax highlighted clojure value.
+
+  This printer respects the current color settings set in the
+  service.
+
+  The `rebel-readline.jline-api/*line-reader*` and
+  `rebel-readline.jline-api/*service*` dynamic vars have to be set for
+  this to work.
+
+  See `rebel-readline.main` for an example of how this function is normally used"
+  [x]
+  (println (api/->ansi (highlight/highlight-clj-str (pr-str x)))))
