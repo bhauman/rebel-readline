@@ -18,7 +18,7 @@
   (println "No command" (pr-str com) "found."))
 
 (defmethod command-doc :repl/toggle-indent [_]
-  "Toggle auto indenting on and off.")
+  "Toggle the automatic indenting of Clojure code on and off.")
 
 (defmethod command :repl/toggle-indent [_]
   (srv/apply-to-config update :indent #(not %))
@@ -128,12 +128,18 @@ Without any arguments displays all the current key bindings")
                          (select-keys binding-groups groups)
                          binding-groups)]
     (when-let [map-name (api/main-key-map-name)]
-      (println "Current key map:" (keyword map-name)))
+      (println "Current key map:" (.toAnsi (astring/astr
+                                            [(pr-str (keyword map-name))
+                                             (col/fg-color AttributedStyle/CYAN)]))))
     (if (and search (empty? key-data))
       (println "Binding search: No bindings found that match" (pr-str (name search)))
       (doseq [[k data] binding-groups]
         (when (not-empty data)
-          (println (format "%s key bindings:" (string/capitalize (name k))))
+          (println
+           (.toAnsi
+            (astring/astr
+             [(format "%s key bindings:" (string/capitalize (name k)))
+              (.bold AttributedStyle/DEFAULT)])))
           (println
            (string/join (System/getProperty "line.separator")
                         (map (fn [[k v]]
