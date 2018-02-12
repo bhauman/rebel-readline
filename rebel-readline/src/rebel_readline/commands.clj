@@ -92,7 +92,29 @@
   "With an argument displays a search of the current key bindings
 Without any arguments displays all the current key bindings")
 
-(defmethod command :repl/key-bindings [[_ search]]
+(defn readable-key-bindings [km]
+  (map
+   (fn [[k v]] [(if (= k (pr-str "^I"))
+                  (pr-str "TAB")
+                  k) v])
+   km))
+
+(defn classify-keybindings [km]
+  (let [res (group-by
+             (fn [[k v]] (boolean
+                          (#{"clojure-apropos-at-point"
+                             "clojure-doc-at-point"
+                             "clojure-eval-at-point"
+                             "clojure-source-at-point"
+                             "clojure-indent-or-complete"}
+                           v)))
+             km)]
+    (-> res
+        (assoc :clojure (get res true))
+        (assoc :other (get res false))
+        (dissoc true false))))
+
+(defn display-key-bindings [search & groups]
   (let [km (get (.getKeyMaps api/*line-reader*) "main")
         key-data (filter
                   (if search
@@ -100,16 +122,26 @@ Without any arguments displays all the current key bindings")
                       (or (.contains k (name search))
                           (.contains v (name search))))
                     identity)
-                  (api/key-map->display-data km))]
+                  (api/key-map->display-data km))
+        binding-groups (classify-keybindings (readable-key-bindings key-data))
+        binding-groups (if (not-empty groups)
+                         (select-keys binding-groups groups)
+                         binding-groups)]
     (when-let [map-name (api/main-key-map-name)]
       (println "Current key map:" (keyword map-name)))
     (if (and search (empty? key-data))
       (println "Binding search: No bindings found that match" (pr-str (name search)))
-      (println
-       (string/join (System/getProperty "line.separator")
-                    (map (fn [[k v]]
-                           (format "  %-12s%s" k v))
-                         key-data))))))
+      (doseq [[k data] binding-groups]
+        (when (not-empty data)
+          (println (format "%s key bindings:" (string/capitalize (name k))))
+          (println
+           (string/join (System/getProperty "line.separator")
+                        (map (fn [[k v]]
+                               (format "  %-12s%s" k v))
+                             data))))))))
+
+(defmethod command :repl/key-bindings [[_ search]]
+  (display-key-bindings search))
 
 (defmethod command-doc :repl/set-key-map [_]
   (let [map-names (->> (api/key-maps)
