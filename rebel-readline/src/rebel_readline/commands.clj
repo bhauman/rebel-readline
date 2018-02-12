@@ -191,6 +191,7 @@ Without any arguments displays all the current key bindings")
   "Prints the documentation for all available commands.")
 
 (defmethod command :repl/help [_]
+  (display-key-bindings nil :clojure)
   (println
    (.toAnsi
     (apply
