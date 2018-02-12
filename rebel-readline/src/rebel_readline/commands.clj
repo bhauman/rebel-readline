@@ -128,15 +128,15 @@ Without any arguments displays all the current key bindings")
                          (select-keys binding-groups groups)
                          binding-groups)]
     (when-let [map-name (api/main-key-map-name)]
-      (println "Current key map:" (.toAnsi (astring/astr
-                                            [(pr-str (keyword map-name))
-                                             (col/fg-color AttributedStyle/CYAN)]))))
+      (println "Current key map:" (api/->ansi (astring/astr
+                                               [(pr-str (keyword map-name))
+                                                (srv/color :def-call)]))))
     (if (and search (empty? key-data))
       (println "Binding search: No bindings found that match" (pr-str (name search)))
       (doseq [[k data] binding-groups]
         (when (not-empty data)
           (println
-           (.toAnsi
+           (api/->ansi
             (astring/astr
              [(format "%s key bindings:" (string/capitalize (name k)))
               (.bold AttributedStyle/DEFAULT)])))
@@ -199,7 +199,7 @@ Without any arguments displays all the current key bindings")
 (defmethod command :repl/help [_]
   (display-key-bindings nil :clojure)
   (println
-   (.toAnsi
+   (api/->ansi
     (apply
      astring/astr
      ["Available Commands:" (.bold AttributedStyle/DEFAULT)]
@@ -208,7 +208,7 @@ Without any arguments displays all the current key bindings")
       #(when-let [doc (command-doc %)]
          (astring/astr
           " "
-          [(prn-str %) (.underline (col/fg-color AttributedStyle/CYAN))]
+          [(prn-str %) (.underline (srv/color :def-call))]
           (string/join
            (System/getProperty "line.separator")
            (map (fn [x] (str "     " x))

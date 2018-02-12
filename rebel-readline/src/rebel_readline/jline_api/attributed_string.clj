@@ -42,3 +42,9 @@
 
 (defn join [sep coll]
   (apply astr (interpose sep coll)))
+
+(defn ->ansi [at-str terminal]
+  (.toAnsi (.toAttributedString at-str) terminal))
+
+(defn ->ansi-256 [at-str]
+  (.toAnsi (.toAttributedString at-str) 256 true))

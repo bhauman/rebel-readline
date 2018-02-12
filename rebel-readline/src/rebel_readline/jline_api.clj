@@ -116,6 +116,15 @@
   (.bind key-map (org.jline.reader.Reference. widget-id) key-str))
 
 ;; --------------------------------------
+;; contextual ANSI
+;; --------------------------------------
+
+(defn ->ansi [at-str]
+  (if-let [t (and *line-reader* (.getTerminal *line-reader*))]
+    (astring/->ansi at-str t)
+    (astring/->ansi at-str nil)))
+
+;; --------------------------------------
 ;; Buffer operations
 ;; --------------------------------------
 
