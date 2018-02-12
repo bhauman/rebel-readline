@@ -487,9 +487,13 @@
       (set-key-map! "viins" clojure-viins)
       (set-key-map! "vicmd" clojure-vicmd))))
 
+(defn set-word-characters [line-reader]
+  (doto line-reader (.setVariable LineReader/WORDCHARS "")))
+
 (defn add-default-widgets-and-bindings [line-reader]
   (binding [*line-reader* line-reader]
     (doto line-reader
+      set-word-characters
       add-all-widgets
       add-clojure-emacs-key-map
       add-clojure-vi-key-maps)
