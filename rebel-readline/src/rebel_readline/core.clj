@@ -13,6 +13,9 @@
     UserInterruptException
     EndOfFileException]))
 
+(defn help-message []
+  "[Rebel readline] Type :repl/help for online help info")
+
 (defn line-reader
   "Creates a line reader takes a service as an argument.
 
