@@ -15,7 +15,7 @@ of urgency. In cases where we are trying to debug a live system, and
 our tools aren't available, there is no need to make the situation
 harder with a spartan terminal UX.
 
-So you when you do have to use the REPL it would be nice for it to
+So when you do have to use the REPL, it would be nice for it to
 work better.
 
 However, the main reason for this library is for the newcomers to
@@ -27,12 +27,12 @@ when newcomers come to Clojure the most intelligent decision they can
 make, is to not try and negotiate the tooling needed for an editor
 REPL connection but rather just use the `clojure.main/repl` or `lein
 repl` and/or a edit a file with a familiar editor and constantly
-re-run/load a script or a `-main` function. Thus they experience a
-stunted workflow that is all too familiar in other languages and it is
-easy to miss-construe this as the Clojure development experience.
+re-run or re-load a script. Thus, they experience a stunted workflow
+that is all too familiar in other languages and it is easy to
+miss-construe this as the Clojure development experience.
 
 A fluid interactive programming workflow is a fundamental difference
-that Clojure offers yet many newcomers will often never see or
+that Clojure offers, yet many newcomers will often never see or
 experience it.
 
 When I refer to a fluid interactive programming workflow in Clojure I
@@ -53,7 +53,7 @@ that is sharp enough for newcomers to elegantly solve
 [Advent Of Code](http://adventofcode.com/) without having to make a
 steep investment in an unfamiliar toolchain.
 
-As a bonus, when we provide this experience at the very first REPL
+As a bonus, when we provide this experience at the very first REPL,
 newcomers will have a base of experience from which they can now draw
 from to choose their tooling.
 
