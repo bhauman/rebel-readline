@@ -259,5 +259,5 @@ are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
     ;; never insert tabs
     (.unsetOpt LineReader$Option/INSERT_TAB)
     (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
-    base-widgets/add-default-widgets-and-bindings
+    (base-widgets/add-default-widgets-and-bindings service)
     #_add-paredit))

@@ -89,7 +89,7 @@
   (-> *line-reader* (.getKeyMaps)))
 
 (defn key-map [key-map-name]
-  (get (key-maps) key-map-name))
+  (get (key-maps) (name key-map-name)))
 
 (defn set-key-map! [key-map-name key-map]
   (-> (key-maps)

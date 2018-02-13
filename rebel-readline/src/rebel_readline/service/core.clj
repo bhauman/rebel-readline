@@ -166,6 +166,7 @@
    :eldoc true
    :highlight true
    :redirect-output true
+   :key-map :emacs
    :color-theme
    (if (= :light (utils/terminal-background-color?))
      :light-screen-theme

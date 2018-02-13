@@ -163,8 +163,17 @@ Without any arguments displays all the current key bindings")
     (str "Changes the key bindings to the given key-map. Choose from: "
          map-names)))
 
+(defn set-key-map! [key-map-name]
+  (boolean
+   (when (and key-map-name (api/set-main-key-map! (name key-map-name)))
+     ;; its dicey to have parallel state like this so
+     ;; we are just going to have the service config
+     ;; state reflect the jline reader state
+     (swap! srv/*service*
+            assoc :key-map (keyword (api/main-key-map-name))))))
+
 (defmethod command :repl/set-key-map [[_ key-map-name]]
-  (if (and key-map-name (api/set-main-key-map! (name key-map-name)))
+  (if (set-key-map! key-map-name)
     (println "Changed key map to" (pr-str key-map-name))
     (println "Failed to change key map!")))
 

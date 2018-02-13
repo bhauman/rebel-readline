@@ -490,13 +490,12 @@
 (defn set-word-characters [line-reader]
   (doto line-reader (.setVariable LineReader/WORDCHARS "")))
 
-(defn add-default-widgets-and-bindings [line-reader]
+(defn add-default-widgets-and-bindings [line-reader service]
   (binding [*line-reader* line-reader]
     (doto line-reader
       set-word-characters
       add-all-widgets
       add-clojure-emacs-key-map
       add-clojure-vi-key-maps)
-    ;; TODO grab this value from a config
-    (set-main-key-map! "emacs"))
+    (set-main-key-map! (get @service :key-map :emacs)))
   line-reader)
