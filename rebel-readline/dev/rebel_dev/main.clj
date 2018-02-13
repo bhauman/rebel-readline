@@ -11,8 +11,8 @@
    [clojure.main]))
 
 (defn -main [& args]
-  (prn "This is the DEVELOMENT repl in rebel-dev.main")
-  (let [reader (line-reader (local-clj-service/create))]
+  (println "This is the DEVELOPMENT REPL in rebel-dev.main")
+  (let [reader (line-reader (local-clj-service/create #_{:key-map :viins}))]
     (println (help-message))
     (binding [api/*line-reader* (:line-reader reader)
               srv/*service* (:service reader)
