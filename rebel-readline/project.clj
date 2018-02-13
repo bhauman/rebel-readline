@@ -15,7 +15,7 @@
                  [cljfmt "0.5.7"]         ;; depends on tools reader
                  [compliment "0.3.5"]]
 
-  :main rebel-readline.main
+  :main ^:skip-aot rebel-readline.main
 
   :profiles {:dev {:source-paths ["src" "dev"]
                    :main rebel-dev.main}})
