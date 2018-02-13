@@ -5,8 +5,7 @@
    [rebel-readline.jline-api :as api]
    [rebel-readline.service.core :as srv]
    [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
-   [clojure.main])
-  (:gen-class))
+   [clojure.main]))
 
 (defn -main [& args]
   (let [reader (line-reader (local-clj-service/create))]

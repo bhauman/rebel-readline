@@ -8,8 +8,7 @@
    [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
    [rebel-readline.service.impl.simple :as simple-service]
    [rebel-readline.utils :refer [*debug-log*]]
-   [clojure.main])
-  (:gen-class))
+   [clojure.main]))
 
 (defn -main [& args]
   (prn "This is the DEVELOMENT repl in rebel-dev.main")

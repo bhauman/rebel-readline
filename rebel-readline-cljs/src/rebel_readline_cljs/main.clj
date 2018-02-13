@@ -4,8 +4,7 @@
    [cljs.repl.nashorn :as nash]
    [rebel-readline-cljs.service :as cljs-service]
    [rebel-readline.core :refer [line-reader with-readline-input-stream]]
-   [rebel-readline-cljs.core :refer [cljs-repl-read]])
-  (:gen-class))
+   [rebel-readline-cljs.core :refer [cljs-repl-read]]))
 
 #_(let [repl-env (nash/repl-env)]
     (with-readline-input-stream (cljs-service/create {:repl-env repl-env})
