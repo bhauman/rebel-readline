@@ -21,10 +21,17 @@
               *err* (java.io.BufferedWriter. err-writer)]
       (try
         (let [result (eval form)]
+          ;; important to note that there could be lazy errors in this result
+
+          ;; the strategy embraced by prepl is passing an out-fn
+          ;; callback that handles formatting and message sending in
+          ;; the scope of the try catch
           (merge (capture-streams) {:result result}))
         (catch Throwable t
-          (set! *e t)
-          (merge (capture-streams) {:exception (Throwable->map t)}))))))
+          (merge (capture-streams)
+                 (with-meta
+                   {:exception (Throwable->map t)}
+                   :ex t)))))))
 
 (defn call-with-timeout [thunk timeout-ms]
   (let [thread (volatile! nil)
@@ -93,9 +100,13 @@
                 url (assoc :url url))))))
       core/Evaluation
       (-eval [self form]
-        (call-with-timeout
-         #(data-eval form)
-         (get @self :eval-timeout 3000)))
+        (let [res (call-with-timeout
+                   #(data-eval form)
+                   (get @self :eval-timeout 3000))]
+          ;; set! *e outside of the thread
+          (when-let [ex (some-> res :exception meta :ex)]
+            (set! *e ex))
+          res))
       (-eval-str [self form-str]
         (try
           (let [res (core/-read-string self form-str)]

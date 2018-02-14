@@ -373,27 +373,31 @@
 (defn ensure-newline [s]
   (str (string/trim-newline s) (System/getProperty "line.separator")))
 
-(defn format-data-eval-result [{:keys [out err printed-result exception] :as eval-result}]
-  (cond-> (AttributedStringBuilder.)
-    exception (.styled (srv/color :error)
-                       (str "=>!! "
-                            (or (:cause exception)
-                                (some-> exception :via first :type))) )
-    (not (string/blank? out)) (.append (ensure-newline out))
-    (not (string/blank? err)) (.styled (srv/color :error) (ensure-newline err))
-    (or (contains? eval-result :result) printed-result)
-    (.append
-     (inline-result-marker
-      (.toAttributedString
-       (highlight/highlight-clj-str (binding [*print-length*
-                                              (min (or *print-length* Integer/MAX_VALUE)
-                                                   100)
-                                              *print-level*
-                                              (min (or *print-level* Integer/MAX_VALUE)
-                                                   5)]
-                                      (if printed-result
-                                        printed-result
-                                        (pr-str (:result eval-result))))))))))
+(defn no-greater-than [limit val]
+  (min limit (or val Integer/MAX_VALUE)))
+
+(defn format-data-eval-result [{:keys [out err result printed-result exception] :as eval-result}]
+  (let [[printed-result exception]
+        (if result
+          (try
+            (binding [*print-length* (no-greater-than 100 *print-length*)
+                      *print-level*  (no-greater-than 5 *print-level*)]
+              [(pr-str result) exception])
+            (catch Throwable t
+              [nil (Throwable->map t)]))
+          [printed-result exception])]
+    (cond-> (AttributedStringBuilder.)
+      exception (.styled (srv/color :error)
+                         (str "=>!! "
+                              (or (:cause exception)
+                                  (some-> exception :via first :type))) )
+      (not (string/blank? out)) (.append (ensure-newline out))
+      (not (string/blank? err)) (.styled (srv/color :error) (ensure-newline err))
+      (and (not exception) printed-result)
+      (.append
+       (inline-result-marker
+        (.toAttributedString
+         (highlight/highlight-clj-str printed-result)))))))
 
 (def eval-at-point-widget
   (create-widget
