@@ -64,13 +64,17 @@
       (and (nil? color-theme)
            (some? backup-color-theme)
            (col/color-themes backup-color-theme))
-      (srv/apply-to-config assoc :color-theme backup-color-theme)
+      (do (println "Activating color, using theme: " backup-color-theme)
+          (srv/apply-to-config assoc :color-theme backup-color-theme))
       (nil? color-theme)
-      (srv/apply-to-config assoc :color-theme :dark-screen-theme)
+      (do
+        (srv/apply-to-config assoc :color-theme :dark-screen-theme)
+        (println "Activating color, theme not found, defaulting to " :dark-screen-theme))
       (some? color-theme)
       (do
         (srv/apply-to-config assoc :backup-color-theme color-theme)
-        (srv/apply-to-config dissoc :color-theme)))))
+        (srv/apply-to-config dissoc :color-theme)
+        (println "Color deactivated!")))))
 
 (defmethod command-doc :repl/set-color-theme [_]
   (str "Change the color theme to one of the available themes:"
