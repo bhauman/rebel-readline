@@ -12,6 +12,4 @@
                  [org.clojure/clojurescript "1.9.946"]
                  [cljs-tooling "0.2.0"]]
 
-  :main ^:skip-aot rebel-readline-cljs.main
-
   :profiles {:dev {:source-paths ["src" "dev"]}})
