@@ -9,9 +9,9 @@
 (defn log [& args]
   (when *debug-log*
     (spit "rebel-readline-debug-log"
-          (string/join "\n"
+          (string/join ""
                        (map #(if (string? %)
-                               %
+                               (str % "\n")
                                (with-out-str (pp/pprint %)))
                             args))
           :append true))
