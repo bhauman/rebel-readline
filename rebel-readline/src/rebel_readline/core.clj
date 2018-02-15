@@ -242,9 +242,10 @@
    (clojure.main/repl :prompt (fn[])))"
   [service & body]
   `(let [lr# (line-reader ~service)]
-    (binding [*in* (clojure.lang.LineNumberingPushbackReader.
-                    (rebel-readline.io.callback-reader/callback-reader #(stream-read-line lr#)))]
-      ~@body)))
+     (binding [*in* (clojure.lang.LineNumberingPushbackReader.
+                     (rebel-readline.io.callback-reader/callback-reader
+                      #(stream-read-line lr#)))]
+       (rebel-readline.core/with-rebel-bindings lr# ~@body))))
 
 (defn syntax-highlight-prn
   "Print a syntax highlighted clojure value.
