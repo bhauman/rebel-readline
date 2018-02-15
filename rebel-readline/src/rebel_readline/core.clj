@@ -14,6 +14,11 @@
     UserInterruptException
     EndOfFileException]))
 
+(defmacro with-rebel-bindings [line-reader & body]
+  `(binding [rebel-readline.jline-api/*line-reader* (:line-reader ~line-reader)
+             rebel-readline.service.core/*service* (:service ~line-reader)]
+             ~@body))
+
 (defn help-message []
   "[Rebel readline] Type :repl/help for online help info")
 
@@ -253,4 +258,9 @@
 
   See `rebel-readline.main` for an example of how this function is normally used"
   [x]
-  (println (api/->ansi (highlight/highlight-clj-str (pr-str x)))))
+  (println (api/->ansi (highlight/highlight-clj-str (pr-str (or x ""))))))
+
+(defn clj-repl-print [line-reader]
+  (fn [x]
+    (with-rebel-bindings line-reader
+      (syntax-highlight-prn x))))
