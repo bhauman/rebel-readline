@@ -2,7 +2,6 @@
   (:require
    [clojure.string :as string]
    [rebel-readline.jline-api.attributed-string :as astring]
-   [rebel-readline.service.core :as srv]
    [rebel-readline.utils :refer [log]])
   (:import
    [org.jline.keymap KeyMap]
@@ -211,7 +210,6 @@
 (defn reader-println
   ([s] (reader-println *line-reader* s))
   ([reader s]
-   (assert srv/*service* "Must have a service bound in order to print.")
    (binding [*line-reader* reader]
      (let [writer (.writer (.getTerminal reader))]
        (if (reading?)
