@@ -7,6 +7,7 @@
    [cljs.core]
    [cljs.env]
    [cljs.repl]
+   [cljs.tagged-literals :as tags]
    [clojure.string :as string]
    [clojure.tools.reader :as reader]
    [clojure.tools.reader.reader-types :as readers]
@@ -57,9 +58,16 @@
 (defn read-cljs-string [form-str]
   (when-not (string/blank? form-str)
     (try
-      {:form (reader/read {:read-cond :allow :features #{:cljs}}
-                          (readers/source-logging-push-back-reader
-                           (java.io.StringReader. form-str)))}
+      {:form (binding [*ns* (create-ns ana/*cljs-ns*)
+                       reader/resolve-symbol ana/resolve-symbol
+                       reader/*data-readers* tags/*cljs-data-readers*
+                       reader/*alias-map*
+                       (apply merge
+                              ((juxt :requires :require-macros)
+                               (ana/get-namespace ana/*cljs-ns*)))]
+                 (reader/read {:read-cond :allow :features #{:cljs}}
+                              (readers/source-logging-push-back-reader
+                               (java.io.StringReader. form-str))))}
       (catch Exception e
         {:exception (Throwable->map e)}))))
 
@@ -104,7 +112,7 @@
       (swap  [_ f a b args] (swap! config-atom f a b args))
       (reset [_ a] (reset! config-atom a))
       core/CurrentNs
-      (-current-ns [_] (some-> *ns* str))
+      (-current-ns [_] (some-> ana/*cljs-ns* str))
       core/Completions
       (-complete [_ word {:keys [ns]}]
         (let [options (cond-> nil
@@ -135,7 +143,7 @@
         (when repl-env
           (call-with-timeout
            (fn []
-             (data-eval #(eval-cljs repl-env @cljs.env/*compiler* form)))
+             (data-eval #(eval-cljs repl-env (ana/empty-env) form)))
            (get @self :eval-timeout 3000))))
       (-eval-str [self form-str]
         (let [res (core/-read-string self form-str)]
