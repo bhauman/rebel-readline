@@ -13,4 +13,4 @@
                  [cljs-tooling "0.2.0"]]
 
   :profiles {:dev {:source-paths ["src" "dev"]
-                   :main rebel-readline-cljs.main}})
+                   :main rebel-cljs-dev.main}})

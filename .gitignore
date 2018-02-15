@@ -16,3 +16,5 @@ debug-log
 dev/scratch.clj
 notes
 
+
+rebel-readline-cljs/rebel-readline-debug-log
