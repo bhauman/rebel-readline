@@ -161,7 +161,7 @@
 
 (defn name-arglist-display [meta-data]
   (let [{:keys [ns arglists name]} meta-data]
-    (when (and ns name)
+    (when (and ns name (not= ns name))
       (astring/astr
        [(str ns)   (srv/color :eldoc-namespace)]
        ["/"        (srv/color :eldoc-separator)]
@@ -172,9 +172,10 @@
 (defn display-argument-help-message []
   (when-let [funcall-str (one-space-after-funcall-word?)]
     (when-let [fun-meta (srv/resolve-meta funcall-str)]
-      (name-arglist-display fun-meta))))
+      (when (:arglists fun-meta)
+        (name-arglist-display fun-meta)))))
 
-;; TODO this ttd atom doesn't work really
+;; TODO this ttd (time to delete) atom doesn't work really
 ;; need a global state and countdown solution
 ;; more than likely a callback on hook on key presses
 (let [ttd-atom (atom -1)]
