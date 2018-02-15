@@ -76,7 +76,7 @@
                                      (assoc env :ns (ana/get-namespace ana/*cljs-ns*))
                                      "<cljs repl>"
                                      form
-                                     (fn [x] `(cljs.core.pr-str ~x)))]
+                                     (#'cljs.repl/wrap-fn form))]
     res))
 
 (defn data-eval
