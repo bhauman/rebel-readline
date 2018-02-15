@@ -144,7 +144,9 @@
                 (core/-eval self form))
             res))))))
 
-(defn create [options]
-  (create* (merge core/default-config options)))
+(defn create
+  ([] (create nil))
+  ([options]
+   (create* (merge core/default-config options))))
 
 #_(core/-get-config (create {}))
