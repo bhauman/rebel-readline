@@ -1,5 +1,6 @@
 (ns rebel-readline.service.core
   (:require
+   [rebel-readline.jline-api :as api]
    [rebel-readline.parsing.tokenizer :as tokenize]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.tools.sexp :as sexp]
@@ -205,10 +206,13 @@
     (-resolve-meta *service* wrd)))
 
 (defn default-accept-line [line-str cursor]
-  (let [cursor (min (count line-str) cursor)
-        x (subs line-str 0 cursor)
-        tokens (tokenize/tag-sexp-traversal x)]
-    (not (sexp/find-open-sexp-start tokens cursor))))
+  (or
+   (and api/*line-reader*
+        (= "vicmd" (.getKeyMap api/*line-reader*)))
+   (let [cursor (min (count line-str) cursor)
+         x (subs line-str 0 cursor)
+         tokens (tokenize/tag-sexp-traversal x)]
+     (not (sexp/find-open-sexp-start tokens cursor)))))
 
 (defn accept-line [line-str cursor]
   (if (satisfies? AcceptLine *service*)
