@@ -5,6 +5,34 @@ clojurescript repl and a `cljs.repl/repl-read` replacement.
 
 ## Quick try
 
+#### Clojure tools
+
+If you want to try this really quickly [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and then invoke this:
+
+`clojure -Sdeps "{:deps {rebel-readline-cljs {:mvn/version \"0.1.0-SNAPSHOT\"}}}" -m rebel-readline-cljs.main`
+
+That should start a Nashorn ClojureScript REPL that takes its input from the Rebel readline editor.
+
+Note that I am using the `clojure` command and not the `clj` command
+because the latter wraps the process with another readline program (`rlwrap`).
+
+Alternatively you can specify an alias in your `$HOME/.clojure/deps.edn`
+
+```clojure
+{
+ ...
+ :aliases {:rebel {:extra-deps {rebel-readline-cljs {:mvn/version "0.1.0-SNAPSHOT"}}}
+}
+```
+
+And then run with a simpler:
+
+```shell
+$ clojure -R:rebel -m rebel-readline-cljs.main
+```
+
+#### Clone repo
+
 `lein trampoline run` will get you into a Nashorn backed CLJS repl with the readline working.
 
 ## Usage
