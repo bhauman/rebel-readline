@@ -207,23 +207,30 @@
 
 ;; important
 ;; TODO make this work when reading? or not
+
+(def redisplay-lock-obj (Object.))
+
 (defn reader-println
   ([s] (reader-println *line-reader* s))
   ([reader s]
-   (binding [*line-reader* reader]
-     (let [writer (.writer (.getTerminal reader))]
-       (if (reading?)
-         (do
-           (.callWidget reader LineReader/CLEAR)
-           (.println writer s)
-           (.callWidget reader LineReader/REDRAW_LINE)
-           (.callWidget reader LineReader/REDISPLAY)
-           #_(.redisplay reader)
-           (.flush writer)
-           )
-         (do
-           (.println writer s)
-           (.flush writer)))))))
+   ;; this function is normally called for concurrent output
+   ;; there is a need to protect redisplay
+   (locking redisplay-lock-obj
+     (binding [*line-reader* reader]
+       (let [writer (.writer (.getTerminal reader))]
+         (if (reading?)
+           (do
+             (.callWidget reader LineReader/CLEAR)
+             (.println writer s)
+             (.callWidget reader LineReader/REDRAW_LINE)
+             (.callWidget reader LineReader/REDISPLAY)
+             #_(.redisplay reader)
+             (.flush writer)
+             )
+           (do
+             (.println writer s)
+             (.flush writer))))))))
+
 
 #_(defn reader-println [reader s]
   (let [writer (.writer (.getTerminal reader))]
