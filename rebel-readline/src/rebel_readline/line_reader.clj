@@ -213,7 +213,7 @@
       ;; this gets called on a different thread
       ;; by the window resize interrupt handler
       ;; so add these bindings here
-      (binding [srv/*service* service
+      (binding [srv/*service* (or srv/*service* service)
                 api/*line-reader* reader]
         (if (:highlight (srv/config))
           (.toAttributedString (highlight-clj-str buffer))
@@ -241,6 +241,7 @@ are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
 ;; Building the line reader
 ;; ----------------------------------------
 
+;; this shouldn't be passed a service
 (defn line-reader* [service & [{:keys [terminal
                                        completer
                                        highlighter
