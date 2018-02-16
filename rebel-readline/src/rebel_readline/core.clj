@@ -263,7 +263,7 @@
 
   See `rebel-readline.main` for an example of how this function is normally used"
   [x]
-  (println (api/->ansi (highlight/highlight-clj-str (pr-str (or x ""))))))
+  (println (api/->ansi (highlight/highlight-clj-str (pr-str x)))))
 
 (defn clj-repl-print [line-reader]
   (fn [x]
