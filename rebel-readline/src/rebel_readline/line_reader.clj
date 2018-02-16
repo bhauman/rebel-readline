@@ -248,6 +248,7 @@ are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
                                        assert-system-terminal]
                                 :as options}]]
   (doto (-> (LineReaderBuilder/builder)
+            (.appName "Rebel")
             (.terminal (or terminal
                            (create-terminal assert-system-terminal)))
             (.completer (or completer (clojure-completer)))
