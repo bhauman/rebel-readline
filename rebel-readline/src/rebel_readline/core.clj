@@ -114,6 +114,10 @@
              redirect-print-writer)))
         (try
           (binding [*out* redirect-print-writer]
+            ;; this is intensely disatisfying
+            ;; but we are blocking redisplays while the
+            ;; readline is initially drawn
+            (api/block-redisplay-millis 100)
             (let [res' (.readLine line-reader (srv/prompt))]
               (if-not (commands/handle-command res')
                 res'

@@ -186,8 +186,16 @@
       {:rows (.getRows sz)
        :cols (.getColumns sz)})))
 
+(defonce redisplay-lock-obj (Object.))
+
 (defn redisplay []
-  (.redisplay *line-reader*))
+  (locking redisplay-lock-obj
+    (.redisplay *line-reader*)))
+
+(defn block-redisplay-millis [time-ms]
+  (future
+    (locking redisplay-lock-obj
+      (Thread/sleep time-ms))))
 
 (defn display-message [message]
   (let [post-field (get-accessible-field *line-reader* "post")]
@@ -207,8 +215,6 @@
 
 ;; important
 ;; TODO make this work when reading? or not
-
-(def redisplay-lock-obj (Object.))
 
 (defn reader-println
   ([s] (reader-println *line-reader* s))
