@@ -379,7 +379,7 @@
 
 (defn format-data-eval-result [{:keys [out err result printed-result exception] :as eval-result}]
   (let [[printed-result exception]
-        (if result
+        (if (not printed-result)
           (try
             (binding [*print-length* (no-greater-than 100 *print-length*)
                       *print-level*  (no-greater-than 5 *print-level*)]
