@@ -5,7 +5,7 @@
    [clojure.string :as string]
    [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.parsing.tokenizer :as tokenize]
-   [rebel-readline.service.core :as srv]
+   [rebel-readline.service :as srv]
    [rebel-readline.tools.colors :as col]
    [rebel-readline.tools.indent :as indent]
    [rebel-readline.tools.sexp :as sexp]
@@ -502,5 +502,6 @@
       add-all-widgets
       add-clojure-emacs-key-map
       add-clojure-vi-key-maps)
+    ;; TODO this belongs in default service init; remove dependency on service here
     (set-main-key-map! (get @service :key-map :emacs)))
   line-reader)

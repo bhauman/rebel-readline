@@ -12,9 +12,8 @@
    [clojure.tools.reader :as reader]
    [clojure.tools.reader.reader-types :as readers]
    [rebel-readline.info.doc-url :as doc-url]
-   [rebel-readline.service.core :as core]
-   [rebel-readline.service.impl.local-clojure-service
-    :refer [call-with-timeout]]
+   [rebel-readline.service :as srv]
+   [rebel-readline.service.local-clojure :refer [call-with-timeout]]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.utils :refer [log]])
   (:import
@@ -97,64 +96,42 @@
         (catch Throwable t
           (merge (capture-streams) {:exception (Throwable->map t)}))))))
 
-(defn create* [{:keys [repl-env] :as options}]
-  ;; Is this really a warning? b/c things still function without the
-  ;; repl env.  Inline eval is the only thing that will not work.
-  (assert (:repl-env options) "The repl-env option is required.")
-  (let [config-atom (atom (dissoc options :repl-env))]
-    (reify
-      clojure.lang.IDeref
-      (deref [_] @config-atom)
-      clojure.lang.IAtom
-      (swap  [_ f] (swap! config-atom f))
-      (swap  [_ f a] (swap! config-atom f a))
-      (swap  [_ f a b] (swap! config-atom f a b))
-      (swap  [_ f a b args] (swap! config-atom f a b args))
-      (reset [_ a] (reset! config-atom a))
-      core/CurrentNs
-      (-current-ns [_] (some-> ana/*cljs-ns* str))
-      core/Completions
-      (-complete [_ word {:keys [ns]}]
-        (let [options (cond-> nil
-                        ns (assoc :current-ns ns))]
-          (cljs-complete/completions @cljs.env/*compiler* word options)))
-      core/ResolveMeta
-      (-resolve-meta [self var-str]
-        (cljs-info/info @cljs.env/*compiler* var-str
-                        (core/-current-ns self)))
-      core/Document
-      (-doc [self var-str]
-        (when-let [{:keys [ns name] :as info} (core/-resolve-meta self var-str)]
-          (when-let [doc (format-document info)]
-            (let [url (doc-url/url-for (str ns) (str name))]
-              (cond-> {:doc doc}
-                url (assoc :url url))))))
-      core/Source
-      (-source [_ var-str]
-        (some->> (cljs.repl/source-fn @cljs.env/*compiler* (symbol var-str))
-                 (hash-map :source)))
-      core/Apropos
-      (-apropos [_ var-str] (apropos var-str))
-      core/ReadString
-      (-read-string [_ form-str]
-        (read-cljs-string form-str))
-      core/Evaluation
-      (-eval [self form]
-        (when repl-env
-          (call-with-timeout
-           (fn []
-             (data-eval #(eval-cljs repl-env (ana/empty-env) form)))
-           (get @self :eval-timeout 3000))))
-      (-eval-str [self form-str]
-        (let [res (core/-read-string self form-str)]
-          (if (contains? res :form)
-              (let [form (:form res)]
-                (core/-eval self form))
-            res))))))
+(defmethod srv/-current-ns ::service [_] (some-> ana/*cljs-ns* str))
+
+(defmethod srv/-complete ::service [_ word {:keys [ns]}]
+  (let [options (cond-> nil
+                  ns (assoc :current-ns ns))]
+    (cljs-complete/completions @cljs.env/*compiler* word options)))
+
+(defmethod srv/-resolve-meta ::service [self var-str]
+  (cljs-info/info @cljs.env/*compiler* var-str
+                  (srv/-current-ns self)))
+
+(defmethod srv/-doc ::service [self var-str]
+  (when-let [{:keys [ns name] :as info} (srv/-resolve-meta self var-str)]
+    (when-let [doc (format-document info)]
+      (let [url (doc-url/url-for (str ns) (str name))]
+        (cond-> {:doc doc}
+          url (assoc :url url))))))
+
+(defmethod srv/-source ::service [_ var-str]
+  (some->> (cljs.repl/source-fn @cljs.env/*compiler* (symbol var-str))
+           (hash-map :source)))
+
+(defmethod srv/-apropos ::service [_ var-str] (apropos var-str))
+
+(defmethod srv/-read-string ::service [_ form-str] (read-cljs-string form-str))
+
+(defmethod srv/-eval ::service [self form]
+  (when-let [repl-env (:repl-env self)]
+    (call-with-timeout
+     (fn []
+       (data-eval #(eval-cljs repl-env (ana/empty-env) form)))
+     (get self :eval-timeout 3000))))
+
+;; this needs a :repl-eval option
 
 (defn create
   ([] (create nil))
   ([options]
-   (create* (merge core/default-config options))))
-
-#_(core/-get-config (create {}))
+   (atom (merge srv/default-config options {::srv/type ::service}))))

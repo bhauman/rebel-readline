@@ -11,7 +11,7 @@
                                 with-readline-input-stream
                                 with-rebel-bindings]]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.service.core :as srv]))
+   [rebel-readline.service :as srv]))
 
 #_(let [repl-env (nash/repl-env)]
     (with-readline-input-stream (cljs-service/create {:repl-env repl-env})

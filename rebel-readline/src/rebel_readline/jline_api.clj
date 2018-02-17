@@ -36,7 +36,8 @@
 ;; helper for development
 (defmacro with-buffer [b & body]
   `(binding [rebel-readline.jline-api/*buffer* ~b
-             rebel-readline.service.core/*service* (rebel-readline.service.impl.local-clojure-service/create)]
+             rebel-readline.service/*service*
+             (rebel-readline.service.local-clojure/create)]
      ~@body))
 
 (defmacro create-widget [& body]
@@ -45,7 +46,16 @@
        (apply [_#]
          (binding [*line-reader* line-reader#
                    *buffer* (.getBuffer line-reader#)]
-           ~@body)))))
+           (try
+             ~@body
+             (catch clojure.lang.ExceptionInfo e#
+               (if-let [message# (.getMessage e#)]
+                 (do (log :widget-execution-error (Throwable->map e#))
+                     (display-message
+                      (AttributedString.
+                       message# (.foreground AttributedStyle/DEFAULT AttributedStyle/RED)))
+                     true)
+                 (throw e#)))))))))
 
 ;; very naive
 (def get-accessible-field

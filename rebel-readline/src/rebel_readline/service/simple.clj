@@ -1,6 +1,6 @@
-(ns rebel-readline.service.impl.simple
+(ns rebel-readline.service.simple
   (:require
-   [rebel-readline.service.core :as core]))
+   [rebel-readline.service :as srv]))
 
 (defn create
   "A very simple service that you can use to get rebel readline
@@ -13,5 +13,5 @@
   ([options]
    (atom (merge
           {:prompt (fn [] "clj=> ")}
-          core/default-config
+          srv/default-config
           options))))

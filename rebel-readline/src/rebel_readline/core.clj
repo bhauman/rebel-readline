@@ -7,7 +7,7 @@
    [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api]
    [rebel-readline.line-reader :as lr]
-   [rebel-readline.service.core :as srv]
+   [rebel-readline.service :as srv]
    [rebel-readline.tools.syntax-highlight :as highlight])
   (:import
    [org.jline.reader
@@ -16,7 +16,7 @@
 
 (defmacro with-rebel-bindings [line-reader & body]
   `(binding [rebel-readline.jline-api/*line-reader* (:line-reader ~line-reader)
-             rebel-readline.service.core/*service* (:service ~line-reader)]
+             rebel-readline.service/*service* (:service ~line-reader)]
              ~@body))
 
 (defn help-message []
@@ -25,10 +25,10 @@
 (defn line-reader
   "Creates a line reader takes a service as an argument.
 
-  A service implements the protocols found in `rebel-readline.service.core`
+  A service implements the multimethods found in `rebel-readline.service`
 
   Example:
-    (line-reader (rebel-readline.service.impl.local-clojure-service/create))
+    (line-reader (rebel-readline.service.local-clojure/create))
 
   This function also takes an optional options map.
 
@@ -183,7 +183,7 @@
    :prompt (fn []) ;; prompt is handled by line-reader
    :read (clj-repl-read
            (line-reader
-             (rebel-readline.service.impl.local-clojure-service/create))))
+             (rebel-readline.service.local-clojure/create))))
 
   Or catch a bad terminal error and fall back to clojure.main/repl-read:
 
@@ -192,7 +192,7 @@
    :read (try
           (clj-repl-read
            (line-reader
-             (rebel-readline.service.impl.local-clojure-service/create)))
+             (rebel-readline.service.local-clojure/create)))
           (catch clojure.lang.ExceptionInfo e
              (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))
                 (do (println (.getMessage e))
@@ -242,7 +242,7 @@
 
   Examples:
 
-  (with-readline-input-stream (rebel-readline.service.impl.local-clojure-service/create)
+  (with-readline-input-stream (rebel-readline.service.local-clojure/create)
    (clojure.main/repl :prompt (fn[])))"
   [service & body]
   `(let [lr# (line-reader ~service)]

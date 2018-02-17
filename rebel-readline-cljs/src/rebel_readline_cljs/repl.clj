@@ -5,7 +5,7 @@
    [rebel-readline-cljs.service :as cljs-service]
    [rebel-readline.core :refer [line-reader help-message with-rebel-bindings]]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.service.core :as srv]))
+   [rebel-readline.service :as srv]))
 
 ;; with an attempt to support nesting
 

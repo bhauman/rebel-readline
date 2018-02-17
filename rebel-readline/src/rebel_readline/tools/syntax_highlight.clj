@@ -1,6 +1,6 @@
 (ns rebel-readline.tools.syntax-highlight
   (:require
-   [rebel-readline.service.core :as srv]
+   [rebel-readline.service :as srv]
    [rebel-readline.parsing.tokenizer :as tokenize])
   (:import
    [org.jline.utils AttributedStringBuilder]))
