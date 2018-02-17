@@ -6,7 +6,7 @@
    [rebel-readline.jline-api :as api]
    [rebel-readline.service :as srv]
    [rebel-readline.service.local-clojure :as local-clj-service]
-   [rebel-readline.service.impl.simple :as simple-service]
+   [rebel-readline.service.simple :as simple-service]
    [rebel-readline.utils :refer [*debug-log*]]
    [clojure.main]))
 

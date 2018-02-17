@@ -1,4 +1,4 @@
-(ns rebel-readline.service.impl.simple
+(ns rebel-readline.service.simple
   (:require
    [rebel-readline.service :as srv]))
 
