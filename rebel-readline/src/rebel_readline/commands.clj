@@ -229,10 +229,9 @@ Without any arguments displays all the current key bindings")
           (System/getProperty "line.separator")))
       (sort (all-commands)))))))
 
-#_ (require 'rebel-readline.service.impl.local-clojure-service)
-#_(binding [srv/*service* (rebel-readline.service.impl.local-clojure-service/create)]
-    (handle-command ":repl/toggle-ind")
-    (handle-command ":repl/toggle-indent")
-    (srv/config)
-
-  )
+(defn add-command [command-keyword action-fn doc]
+  {:pre [(keyword? command-keyword)
+         (fn? action-fn)
+         (string? doc)]}
+  (defmethod command command-keyword [_] (action-fn))
+  (defmethod command-doc command-keyword [_] doc))

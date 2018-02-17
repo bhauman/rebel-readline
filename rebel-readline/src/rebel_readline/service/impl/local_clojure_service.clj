@@ -34,20 +34,16 @@
                    :ex t)))))))
 
 (defn call-with-timeout [thunk timeout-ms]
-  (let [thread (volatile! nil)
-        ft (future-call
-            (bound-fn []
-              (vreset! thread (Thread/currentThread))
-              (thunk)))
+  (let [prom (promise)
+        thread (Thread. (bound-fn [] (deliver prom (thunk))))
         timed-out (Object.)]
-    (let [res (deref ft timeout-ms timed-out)]
+    (.start thread)
+    (let [res (deref prom timeout-ms timed-out)]
       (if (= res timed-out)
         (do
-          ;; try to gracefully stop the thread if possible
-          (future-cancel ft)
-          (.join @thread 100)
-          (if (.isAlive @thread)
-            (.stop @thread))
+          (.join thread 100)
+          (if (.isAlive thread)
+            (.stop thread))
           {:exception (Throwable->map (Exception. "Eval timed out!"))})
         res))))
 
