@@ -98,7 +98,7 @@ Or with a fallback:
 ```clojure
 (try
   (rebel-readline.core/with-readline-input-stream 
-    (rebel-readline.service.impl.local-clojure-service/create)
+    (rebel-readline.service.local-clojure/create)
       (clojure.main/repl :prompt (fn[])))
   (catch clojure.lang.ExceptionInfo e
     (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))

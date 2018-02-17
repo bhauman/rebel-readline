@@ -12,9 +12,8 @@
    [clojure.tools.reader :as reader]
    [clojure.tools.reader.reader-types :as readers]
    [rebel-readline.info.doc-url :as doc-url]
-   [rebel-readline.service.core :as core]
-   [rebel-readline.service.impl.local-clojure-service
-    :refer [call-with-timeout]]
+   [rebel-readline.service :as srv]
+   [rebel-readline.service.local-clojure :refer [call-with-timeout]]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.utils :refer [log]])
   (:import
