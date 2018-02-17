@@ -10,6 +10,7 @@
    [rebel-readline.utils :refer [*debug-log*]]
    [clojure.main]))
 
+;; TODO refactor this like the cljs dev repl with a "stream" and "one-line" options
 (defn -main [& args]
   (println "This is the DEVELOPMENT REPL in rebel-dev.main")
   (let [reader (line-reader (local-clj-service/create #_{:key-map :viins}))]
@@ -17,6 +18,8 @@
     (binding [api/*line-reader* (:line-reader reader)
               srv/*service* (:service reader)
               *debug-log* true]
+      ;; when you just neeed to work on reading
+      #_((clj-repl-read reader) (Object.) (Object.))
       (clojure.main/repl
        :prompt (fn [])
        :print syntax-highlight-prn

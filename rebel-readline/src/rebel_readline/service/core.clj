@@ -10,7 +10,7 @@
 
 (def ^:dynamic *service* nil)
 
-;; Why not just have an Evaluate Protocol an be done???
+;; Why not just have an Eval multimethod and be done???
 
 ;; Firstly this is a readline and being able to eval shouldn't be a
 ;; hard requirement when the local clojure process can provide a lot
@@ -24,142 +24,10 @@
 ;; hosting the repl. It's nice to not have to depend on the browser be
 ;; an identity function to ack a value that is local.
 
-;; it also allows capability introspection using `satisfies?`
 
-(defprotocol Completions
-  (-complete [_ prefix options]
-    "Takes a word prefix and an options map}
-
-    The options map can contain
-    `:ns`      - the current namespace the completion is occuring in
-    `:context` - a sexp form that contains a marker '__prefix__
-       replacing the given prefix in teh expression where it is being
-       completed. i.e. '(list __prefix__ 1 2)
-
-    Returns a list of candidates of the form
-
-    {:candidate \"alength\"
-     :ns \"clojure.core\"
-     :type :function}"))
-
-(defprotocol CurrentNs
-  (-current-ns [_]
-    "Returns a string representation of the current ns in the current
-     execution environment."))
-
-(defprotocol ResolveMeta
-  (-resolve-meta [_ var-str]
-    "Currently this finds and returns the meta data for the given
-    string currently we are using the :ns, :name, :doc and :arglist
-    meta data that is found on both vars, namespaces
-
-    This function should return the standard or enhanced meta
-    information that is afor a given \"word\" that and editor can
-    focus on.
-
-    `(resolve (symbol var-str))`
-
-    This function shouldn't throw errors but catch them and return nil
-    if the var doesn't exist."))
-
-;; TODO Maybe better to have a :file :line-start :line-end and a :url
-(defprotocol Source
-  (-source [_ var-str]
-    "Given a string that represents a var Returns a map with source
-     information for the var or nil if no source is found.
-
-     A required :source key which will hold a string of the source code
-     for the given var.
-
-     An optional :url key which will hold a url to the source code in
-     the context of the original file or potentially some other helpful url.
-
-     DESIGN NOTE the :url isn't currently used
-
-     Example result for `(-source \"some?\")`:
-
-       {:source \"(defn ^boolean some? [x] \\n(not (nil? x)))\"
-        :url \"https://github.com[...]main/cljs/cljs/core.cljs#L243-L245\" }"))
-
-(defprotocol Apropos
-  (-apropos [_ var-str]
-    "Given a string returns a list of string repesentions of vars
-    that match that string. This fn is already implemented on all
-    the Clojure plaforms."))
-
-(defprotocol Document
-  (-doc [_ var-str]
-    "Given a string that represents a var, returns a map with
-    documentation information for the named var or nil if no
-    documentation is found.
-
-    A required :doc key which will hold a string of the documentation
-    for the given var.
-
-    An optional :url key which will hold a url to the online
-    documentation for the given var."))
-
-(defprotocol AcceptLine
-  (-accept-line [_ line cursor]
-    "Takes a string that is represents the current contents of a
-     readline buffer and an integer position into that readline that
-     represents the current position of the cursor.
-
-     Returns a boolean indicating wether the line is complete and
-     should be accepted as input.
-
-     A service is not required to implement this fn, they would do
-     this to override the default accept line behavior"))
-
-(defprotocol ReadString
-  (-read-string [_ str-form]
-    "Given a string with that contains clojure forms this will read
-    and return a map containing the first form in the string under the
-    key `:form`
-
-    Example:
-    (-read-string *service* \"1\") => {:form 1}
-
-    If an exception is thrown this will return a throwable map under
-    the key `:exception`
-
-    Example:
-    (-read-string *service* \"#asdfasdfas\") => {:exception {:cause ...}}"))
-
-(defprotocol Evaluation
-  (-eval [_ form]
-    "Given a clojure form this will evaluate that form and return a
-    map of the outcome.
-
-    The returned map will contain a `:result` key with a clj form that
-    represents the result of it will contain a `:printed-result` key
-    if the form can only be returned as a printed value.
-
-    The returned map will also contain `:out` and `:err` keys
-    containing any captured output that occured during the evaluation
-    of the form.
-
-    Example:
-    (-eval *service* 1) => {:result 1 :out \"\" :err \"\"}
-
-    If an exception is thrown this will return a throwable map under
-    the key `:exception`
-
-    Example:
-    (-eval *service* '(defn)) => {:exception {:cause ...}}
-
-    An important thing to remember abou this eval is that it is used
-    internally by the line-reader to implement various
-    capabilities (line inline eval)")
-
-  (-eval-str [_ form-str]
-    "Just like `-eval` but takes and string and reads it before
-    sending it on to `-eval`"))
-
-(declare current-ns)
-
-(defn default-prompt-fn []
-  (format "%s=> " (or (current-ns) "")))
+;; ----------------------------------------------
+;; Default Configuration
+;; ----------------------------------------------
 
 (def default-config
   {:completion true
@@ -173,37 +41,80 @@
      :light-screen-theme
      :dark-screen-theme)})
 
-(defn config [] @*service*)
+;; ----------------------------------------------
+;; utilities
+;; ----------------------------------------------
 
-(defn apply-to-config [& args]
-  (apply swap! *service* args))
+(defn resolve-fn? [f]
+  (cond
+    (fn? f) f
+    (or (string? f) (symbol? f))
+    (resolve (symbol f))
+    :else nil))
+
+(defn not-implemented! [srv-atom fn-name]
+  (throw (ex-info (format "The %s service does not implement the %s function."
+                          (pr-str (::type srv-atom))
+                          fn-name)
+                  {})))
+
+;; ----------------------------------------------
+;; multi-methods that have default behavior
+;; ----------------------------------------------
+
+
+;; CurrentNS
+;; ----------------------------------------------
+
+(defmulti -current-ns
+  "Returns a string representation of the current ns in the current
+  execution environment.
+
+  Returns nil if it hasn't been implemented for the current service"
+  (fn [a & args] (::type a)))
+
+;; returning nil is a sensible signal of failure here
+(defmethod -current-ns :default [_])
 
 (defn current-ns []
-  (when (satisfies? CurrentNs *service*)
-    (-current-ns *service*)))
+  (-current-ns @*service*))
 
-(defn completions
-  ([word]
-   (completions word nil))
-  ([word options]
-   (when (satisfies? Completions *service*)
-     (-complete *service* word options))))
+;; Prompt
+;; ----------------------------------------------
 
-(defn apropos [wrd]
-  (when (satisfies? Apropos *service*)
-    (-apropos *service* wrd)))
+(defmulti -prompt
+  "returns a repl prompt string"
+  (fn [a & args] (::type a)))
 
-(defn doc [wrd]
-  (when (satisfies? Document *service*)
-    (-doc *service* wrd)))
+(declare current-ns)
 
-(defn source [wrd]
-  (when (satisfies? Source *service*)
-    (-source *service* wrd)))
+(defn default-prompt-fn []
+  (format "%s=> "
+          (or (current-ns) "clj")))
 
-(defn resolve-meta [wrd]
-  (when (satisfies? ResolveMeta *service*)
-    (-resolve-meta *service* wrd)))
+(defmethod -prompt :default [srv-atom]
+  (default-prompt-fn))
+
+;; TODO this is a good start
+(defn prompt []
+  (if-let [f (resolve-fn? (:prompt @*service*))]
+    (f)
+    (-prompt @*service*)))
+
+;; AcceptLine
+;; ----------------------------------------------
+
+(defmulti -accept-line
+  "Takes a string that is represents the current contents of a
+  readline buffer and an integer position into that readline that
+  represents the current position of the cursor.
+
+  Returns a boolean indicating wether the line is complete and
+  should be accepted as input.
+
+  A service is not required to implement this fn, they would do
+  this to override the default accept line behavior"
+  (fn [a & args] (::type a)))
 
 (defn default-accept-line [line-str cursor]
   (or
@@ -214,37 +125,220 @@
          tokens (tokenize/tag-sexp-traversal x)]
      (not (sexp/find-open-sexp-start tokens cursor)))))
 
+(defmethod -accept-line :default [_ line-str cursor]
+  (default-accept-line line-str cursor))
+
 (defn accept-line [line-str cursor]
-  (if (satisfies? AcceptLine *service*)
-    (-accept-line *service* line-str cursor)
-    (default-accept-line line-str cursor)))
+  (-accept-line @*service* line-str cursor))
+
+;; ----------------------------------------------
+;; multi-methods that have to be defined or they
+;; throw an exception
+;; ----------------------------------------------
+
+;; Completion
+;; ----------------------------------------------
+
+(defmulti -complete
+  "Takes a word prefix and an options map}
+
+    The options map can contain
+    `:ns`      - the current namespace the completion is occuring in
+    `:context` - a sexp form that contains a marker '__prefix__
+       replacing the given prefix in teh expression where it is being
+       completed. i.e. '(list __prefix__ 1 2)
+
+    Returns a list of candidates of the form
+
+    {:candidate \"alength\"
+     :ns \"clojure.core\"
+     :type :function}"
+  (fn [a & args] (::type a)))
+
+(defmethod -complete :default [srv-atom _ _]
+  (not-implemented! srv-atom "-complete"))
+
+(defn completions
+  ([word]
+   (completions word nil))
+  ([word options]
+   (-complete @*service* word options)))
+
+;; ResolveMeta
+;; ----------------------------------------------
+
+(defmulti -resolve-meta
+  "Currently this finds and returns the meta data for the given
+  string currently we are using the :ns, :name, :doc and :arglist
+  meta data that is found on both vars, namespaces
+
+  This function should return the standard or enhanced meta
+  information that is afor a given \"word\" that and editor can
+  focus on.
+
+  `(resolve (symbol var-str))`
+
+  This function shouldn't throw errors but catch them and return nil
+  if the var doesn't exist."
+  (fn [a & args] (::type a)))
+
+(defmethod -resolve-meta :default [srv-atom _]
+  (not-implemented! srv-atom "-resolve-meta"))
+
+(defn resolve-meta [wrd]
+  (-resolve-meta @*service* wrd))
+
+;; Source
+;; ----------------------------------------------
+
+;; TODO Maybe better to have a :file :line-start :line-end and a :url
+(defmulti -source
+  "Given a string that represents a var Returns a map with source
+  information for the var or nil if no source is found.
+
+  A required :source key which will hold a string of the source code
+  for the given var.
+
+  An optional :url key which will hold a url to the source code in
+  the context of the original file or potentially some other helpful url.
+
+  DESIGN NOTE the :url isn't currently used
+
+  Example result for `(-source service \"some?\")`:
+
+    {:source \"(defn ^boolean some? [x] \\n(not (nil? x)))\"
+     :url \"https://github.com[...]main/cljs/cljs/core.cljs#L243-L245\" }"
+  (fn [a & args] (::type a)))
+
+(defmethod -source :default [srv-atom _]
+  (not-implemented! srv-atom "-source"))
+
+(defn source [wrd]
+  (-source @*service* wrd))
+
+;; Apropos
+;; ----------------------------------------------
+
+(defmulti -apropos
+  "Given a string returns a list of string repesentions of vars
+  that match that string. This fn is already implemented on all
+  the Clojure plaforms."
+  (fn [a & args] (::type a)))
+
+(defmethod -apropos :default [srv-atom _]
+  (not-implemented! srv-atom "-apropos"))
+
+(defn apropos [wrd]
+  (-apropos @*service* wrd))
+
+;; Doc
+;; ----------------------------------------------
+
+(defmulti -doc
+  "Given a string that represents a var, returns a map with
+  documentation information for the named var or nil if no
+  documentation is found.
+
+  A required :doc key which will hold a string of the documentation
+  for the given var.
+
+  An optional :url key which will hold a url to the online
+  documentation for the given var."
+  (fn [a & args] (::type a)))
+
+(defmethod -doc :default [srv-atom _]
+  (not-implemented! srv-atom "-doc"))
+
+(defn doc [wrd]
+  (-doc @*service* wrd))
+
+;; ReadString
+;; ----------------------------------------------
+
+(defmulti -read-string
+  "Given a string with that contains clojure forms this will read
+  and return a map containing the first form in the string under the
+  key `:form`
+
+  Example:
+  (-read-string *service* \"1\") => {:form 1}
+
+  If an exception is thrown this will return a throwable map under
+  the key `:exception`
+
+  Example:
+  (-read-string *service* \"#asdfasdfas\") => {:exception {:cause ...}}"
+  (fn [a & args] (::type a)))
+
+(defmethod -read-string :default [srv-atom _]
+  (not-implemented! srv-atom "-read-string"))
 
 (defn read-form [form-str]
-  (when (satisfies? ReadString *service*)
-    (-read-string *service* form-str)))
+  (-read-string @*service* form-str))
+
+;; Eval
+;; ----------------------------------------------
+
+(defmulti -eval
+  "Given a clojure form this will evaluate that form and return a
+  map of the outcome.
+
+  The returned map will contain a `:result` key with a clj form that
+  represents the result of it will contain a `:printed-result` key
+  if the form can only be returned as a printed value.
+
+  The returned map will also contain `:out` and `:err` keys
+  containing any captured output that occured during the evaluation
+  of the form.
+
+  Example:
+  (-eval *service* 1) => {:result 1 :out \"\" :err \"\"}
+
+  If an exception is thrown this will return a throwable map under
+  the key `:exception`
+
+  Example:
+  (-eval *service* '(defn)) => {:exception {:cause ...}}
+
+  An important thing to remember abou this eval is that it is used
+  internally by the line-reader to implement various
+  capabilities (line inline eval)"
+  (fn [a & args] (::type a)))
+
+(defmethod -eval :default [srv-atom _]
+  (not-implemented! srv-atom "-eval"))
 
 (defn evaluate [form]
-  (when (satisfies? Evaluation *service*)
-    (-eval *service* form)))
+  (-eval @*service* form))
+
+;; EvalString
+;; ----------------------------------------------
+;; only needed to prevent round trips for the most common
+;; form of eval needed in an editor
+
+(defmulti -eval-str
+  "Just like `-eval` but takes and string and reads it before
+  sending it on to `-eval`"
+  (fn [a & args] (::type a)))
+
+(defmethod -eval-str :default [srv-atom _]
+  (not-implemented! srv-atom "-eval-str"))
 
 (defn evaluate-str [form-str]
-  (when (satisfies? Evaluation *service*)
-   (-eval-str *service* form-str)))
+  (-eval-str @*service* form-str))
+
+;; Color
+;; ----------------------------------------------
 
 (defn color [sk]
   (->
-   (get (config) :color-theme)
+   (get @*service* :color-theme)
    colors/color-themes
    (get sk AttributedStyle/DEFAULT)))
 
-(defn resolve-fn? [f]
-  (cond
-    (nil? f) nil
-    (fn? f) f
-    (or (string? f) (symbol? f))
-    (resolve (symbol f))
-    :else nil))
 
-(defn prompt []
-  ((or (resolve-fn? (:prompt (config)))
-       default-prompt-fn)))
+;; TODO remove
+(defn config [] @*service*)
+
+(defn apply-to-config [& args]
+  (apply swap! *service* args))

@@ -502,5 +502,6 @@
       add-all-widgets
       add-clojure-emacs-key-map
       add-clojure-vi-key-maps)
+    ;; TODO this belongs in default service init; remove dependency on service here
     (set-main-key-map! (get @service :key-map :emacs)))
   line-reader)

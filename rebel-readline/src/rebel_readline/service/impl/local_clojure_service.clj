@@ -1,6 +1,6 @@
 (ns rebel-readline.service.impl.local-clojure-service
   (:require
-   [rebel-readline.service.core :as core]
+   [rebel-readline.service.core :as service]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.info.doc-url :as doc-url]
    [compliment.core :as compliment]
@@ -64,68 +64,59 @@
         (assoc (meta ns')
                :ns var-str))))
 
-(defn create* [options]
-  (let [config-atom (atom options)]
-    (reify
-      clojure.lang.IDeref
-      (deref [_] @config-atom)
-      clojure.lang.IAtom
-      (swap  [_ f] (swap! config-atom f))
-      (swap  [_ f a] (swap! config-atom f a))
-      (swap  [_ f a b] (swap! config-atom f a b))
-      (swap  [_ f a b args] (swap! config-atom f a b args))
-      (reset [_ a] (reset! config-atom a))
-      core/Completions
-      (-complete [_ word options]
-        (if options
-          (compliment/completions word options)
-          (compliment/completions word)))
-      core/ResolveMeta
-      (-resolve-meta [_ var-str]
-        (resolve-meta var-str))
-      core/CurrentNs
-      (-current-ns [_] (some-> *ns* str))
-      core/Source
-      (-source [_ var-str]
-        (some->> (clojure.repl/source-fn (symbol var-str))
-                 (hash-map :source)))
-      core/Apropos
-      (-apropos [_ var-str] (clojure.repl/apropos var-str))
-      core/Document
-      (-doc [self var-str]
-        (when-let [{:keys [ns name]} (core/-resolve-meta self var-str)]
-          (when-let [doc (compliment/documentation var-str)]
-            (let [url (doc-url/url-for (str ns) (str name))]
-              (cond-> {:doc doc}
-                url (assoc :url url))))))
-      core/Evaluation
-      (-eval [self form]
-        (let [res (call-with-timeout
-                   #(data-eval form)
-                   (get @self :eval-timeout 3000))]
-          ;; set! *e outside of the thread
-          (when-let [ex (some-> res :exception meta :ex)]
-            (set! *e ex))
-          res))
-      (-eval-str [self form-str]
-        (try
-          (let [res (core/-read-string self form-str)]
-            (if (contains? res :form)
-              (core/-eval self (:form res))
-              res))
-          (catch Throwable e
-            (set! *e e)
-            {:exception (Throwable->map e)})))
-      core/ReadString
-      (-read-string [_ form-str]
-        (when (string? form-str)
-          (try
-            {:form (with-in-str form-str
-                     (read {:read-cond :allow} *in*))}
-            (catch Throwable e
-              {:exception (Throwable->map e)})))))))
+(defmethod service/-resolve-meta ::service [_ var-str]
+  (resolve-meta var-str))
+
+(defmethod service/-complete ::service [_ word options]
+  (if options
+    (compliment/completions word options)
+    (compliment/completions word)))
+
+(defmethod service/-current-ns ::service [_]
+  (some-> *ns* str))
+
+(defmethod service/-source ::service [_ var-str]
+  (some->> (clojure.repl/source-fn (symbol var-str))
+           (hash-map :source)))
+
+(defmethod service/-apropos ::service [_ var-str]
+  (clojure.repl/apropos var-str))
+
+(defmethod service/-doc ::service [self var-str]
+  (when-let [{:keys [ns name]} (service/-resolve-meta self var-str)]
+    (when-let [doc (compliment/documentation var-str)]
+      (let [url (doc-url/url-for (str ns) (str name))]
+        (cond-> {:doc doc}
+          url (assoc :url url))))))
+
+(defmethod service/-eval ::service [self form]
+  (let [res (call-with-timeout
+             #(data-eval form)
+             (get self :eval-timeout 3000))]
+    ;; set! *e outside of the thread
+    (when-let [ex (some-> res :exception meta :ex)]
+      (set! *e ex))
+    res))
+
+(defmethod service/-eval-str ::service [self form-str]
+  (try
+    (let [res (service/-read-string self form-str)]
+      (if (contains? res :form)
+        (service/-eval self (:form res))
+        res))
+    (catch Throwable e
+      (set! *e e)
+      {:exception (Throwable->map e)})))
+
+(defmethod service/-read-string ::service [self form-str]
+  (when (string? form-str)
+    (try
+      {:form (with-in-str form-str
+               (read {:read-cond :allow} *in*))}
+      (catch Throwable e
+        {:exception (Throwable->map e)}))))
 
 (defn create
   ([] (create nil))
   ([options]
-   (create* (merge core/default-config options))))
+   (atom (merge service/default-config options {::service/type ::service}))))
