@@ -193,9 +193,11 @@
     (.redisplay *line-reader*)))
 
 (defn block-redisplay-millis [time-ms]
-  (future
-    (locking redisplay-lock-obj
-      (Thread/sleep time-ms))))
+  (.start
+   (Thread.
+    (fn []
+      (locking redisplay-lock-obj
+        (Thread/sleep time-ms))))))
 
 (defn display-message [message]
   (let [post-field (get-accessible-field *line-reader* "post")]
