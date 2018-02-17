@@ -129,13 +129,6 @@
        (data-eval #(eval-cljs repl-env (ana/empty-env) form)))
      (get self :eval-timeout 3000))))
 
-(defmethod srv/-eval-str ::service [self form-str]
-  (let [res (srv/-read-string self form-str)]
-    (if (contains? res :form)
-      (let [form (:form res)]
-        (srv/-eval self form))
-      res)))
-
 ;; this needs a :repl-eval option
 
 (defn create

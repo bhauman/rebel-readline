@@ -94,16 +94,6 @@
       (set! *e ex))
     res))
 
-(defmethod service/-eval-str ::service [self form-str]
-  (try
-    (let [res (service/-read-string self form-str)]
-      (if (contains? res :form)
-        (service/-eval self (:form res))
-        res))
-    (catch Throwable e
-      (set! *e e)
-      {:exception (Throwable->map e)})))
-
 (defmethod service/-read-string ::service [self form-str]
   (when (string? form-str)
     (try

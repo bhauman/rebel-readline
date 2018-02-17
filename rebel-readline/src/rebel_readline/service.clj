@@ -52,9 +52,9 @@
     (resolve (symbol f))
     :else nil))
 
-(defn not-implemented! [srv-atom fn-name]
+(defn not-implemented! [service fn-name]
   (throw (ex-info (format "The %s service does not implement the %s function."
-                          (pr-str (::type srv-atom))
+                          (pr-str (::type service))
                           fn-name)
                   {})))
 
@@ -92,7 +92,7 @@
   (format "%s=> "
           (or (current-ns) "clj")))
 
-(defmethod -prompt :default [srv-atom]
+(defmethod -prompt :default [service]
   (default-prompt-fn))
 
 ;; TODO this is a good start
@@ -131,11 +131,6 @@
 (defn accept-line [line-str cursor]
   (-accept-line @*service* line-str cursor))
 
-;; ----------------------------------------------
-;; multi-methods that have to be defined or they
-;; throw an exception
-;; ----------------------------------------------
-
 ;; Completion
 ;; ----------------------------------------------
 
@@ -155,8 +150,7 @@
      :type :function}"
   (fn [a & args] (::type a)))
 
-(defmethod -complete :default [srv-atom _ _]
-  (not-implemented! srv-atom "-complete"))
+(defmethod -complete :default [service _ _])
 
 (defn completions
   ([word]
@@ -182,11 +176,15 @@
   if the var doesn't exist."
   (fn [a & args] (::type a)))
 
-(defmethod -resolve-meta :default [srv-atom _]
-  (not-implemented! srv-atom "-resolve-meta"))
+(defmethod -resolve-meta :default [service _])
 
 (defn resolve-meta [wrd]
   (-resolve-meta @*service* wrd))
+
+;; ----------------------------------------------
+;; multi-methods that have to be defined or they
+;; throw an exception
+;; ----------------------------------------------
 
 ;; Source
 ;; ----------------------------------------------
@@ -210,8 +208,7 @@
      :url \"https://github.com[...]main/cljs/cljs/core.cljs#L243-L245\" }"
   (fn [a & args] (::type a)))
 
-(defmethod -source :default [srv-atom _]
-  (not-implemented! srv-atom "-source"))
+(defmethod -source :default [service _])
 
 (defn source [wrd]
   (-source @*service* wrd))
@@ -225,8 +222,7 @@
   the Clojure plaforms."
   (fn [a & args] (::type a)))
 
-(defmethod -apropos :default [srv-atom _]
-  (not-implemented! srv-atom "-apropos"))
+(defmethod -apropos :default [service _])
 
 (defn apropos [wrd]
   (-apropos @*service* wrd))
@@ -246,8 +242,7 @@
   documentation for the given var."
   (fn [a & args] (::type a)))
 
-(defmethod -doc :default [srv-atom _]
-  (not-implemented! srv-atom "-doc"))
+(defmethod -doc :default [service _])
 
 (defn doc [wrd]
   (-doc @*service* wrd))
@@ -270,8 +265,8 @@
   (-read-string *service* \"#asdfasdfas\") => {:exception {:cause ...}}"
   (fn [a & args] (::type a)))
 
-(defmethod -read-string :default [srv-atom _]
-  (not-implemented! srv-atom "-read-string"))
+(defmethod -read-string :default [service _]
+  (not-implemented! service "-read-string"))
 
 (defn read-form [form-str]
   (-read-string @*service* form-str))
@@ -305,8 +300,8 @@
   capabilities (line inline eval)"
   (fn [a & args] (::type a)))
 
-(defmethod -eval :default [srv-atom _]
-  (not-implemented! srv-atom "-eval"))
+(defmethod -eval :default [service _]
+  (not-implemented! service "-eval"))
 
 (defn evaluate [form]
   (-eval @*service* form))
@@ -321,8 +316,15 @@
   sending it on to `-eval`"
   (fn [a & args] (::type a)))
 
-(defmethod -eval-str :default [srv-atom _]
-  (not-implemented! srv-atom "-eval-str"))
+(defmethod -eval-str :default [service form-str]
+  (try
+    (let [res (-read-string service form-str)]
+      (if (contains? res :form)
+        (-eval service (:form res))
+        res))
+    (catch Throwable e
+      (set! *e e)
+      {:exception (Throwable->map e)})))
 
 (defn evaluate-str [form-str]
   (-eval-str @*service* form-str))
