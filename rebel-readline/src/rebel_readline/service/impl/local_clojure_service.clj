@@ -1,6 +1,6 @@
 (ns rebel-readline.service.impl.local-clojure-service
   (:require
-   [rebel-readline.service.core :as service]
+   [rebel-readline.service :as service]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.info.doc-url :as doc-url]
    [compliment.core :as compliment]

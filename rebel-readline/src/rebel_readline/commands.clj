@@ -6,7 +6,7 @@
    [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.tools.syntax-highlight :as syn]
    [rebel-readline.tools.colors :as col]
-   [rebel-readline.service.core :as srv])
+   [rebel-readline.service :as srv])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
    [org.jline.reader LineReader EndOfFileException]))
@@ -183,7 +183,7 @@ Without any arguments displays all the current key bindings")
 
 ;; TODO this should be here the underlying repl should handle this
 ;; or consider a cross repl solution that works
-;; maybe something you can put in service core interface
+;; maybe something you can put in service interface
 (defmethod command-doc :repl/quit [_]
   "Quits the REPL. This may only work in certain contexts.")
 

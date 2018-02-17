@@ -6,7 +6,7 @@
    [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api]
    [rebel-readline.parsing.tokenizer :as tokenize]
-   [rebel-readline.service.core :as srv]
+   [rebel-readline.service :as srv]
    [rebel-readline.tools.indent :as indent]
    [rebel-readline.tools.sexp :as sexp]
    [rebel-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]

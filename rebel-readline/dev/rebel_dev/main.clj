@@ -4,7 +4,7 @@
     :refer [line-reader clj-repl-read with-readline-input-stream help-message
             syntax-highlight-prn]]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.service.core :as srv]
+   [rebel-readline.service :as srv]
    [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
    [rebel-readline.service.impl.simple :as simple-service]
    [rebel-readline.utils :refer [*debug-log*]]

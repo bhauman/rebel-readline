@@ -36,7 +36,7 @@
 ;; helper for development
 (defmacro with-buffer [b & body]
   `(binding [rebel-readline.jline-api/*buffer* ~b
-             rebel-readline.service.core/*service*
+             rebel-readline.service/*service*
              (rebel-readline.service.impl.local-clojure-service/create)]
      ~@body))
 

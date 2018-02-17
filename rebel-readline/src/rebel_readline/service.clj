@@ -1,4 +1,4 @@
-(ns rebel-readline.service.core
+(ns rebel-readline.service
   (:require
    [rebel-readline.jline-api :as api]
    [rebel-readline.parsing.tokenizer :as tokenize]
