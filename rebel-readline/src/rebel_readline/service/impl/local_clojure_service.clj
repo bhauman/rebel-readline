@@ -31,7 +31,7 @@
           (merge (capture-streams)
                  (with-meta
                    {:exception (Throwable->map t)}
-                   :ex t)))))))
+                   {:ex t})))))))
 
 (defn call-with-timeout [thunk timeout-ms]
   (let [prom (promise)
