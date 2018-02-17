@@ -5,7 +5,7 @@
             syntax-highlight-prn]]
    [rebel-readline.jline-api :as api]
    [rebel-readline.service :as srv]
-   [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
+   [rebel-readline.service.local-clojure :as local-clj-service]
    [rebel-readline.service.impl.simple :as simple-service]
    [rebel-readline.utils :refer [*debug-log*]]
    [clojure.main]))

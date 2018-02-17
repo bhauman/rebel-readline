@@ -37,7 +37,7 @@
 (defmacro with-buffer [b & body]
   `(binding [rebel-readline.jline-api/*buffer* ~b
              rebel-readline.service/*service*
-             (rebel-readline.service.impl.local-clojure-service/create)]
+             (rebel-readline.service.local-clojure/create)]
      ~@body))
 
 (defmacro create-widget [& body]

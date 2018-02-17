@@ -80,7 +80,7 @@ Example:
   :prompt (fn []) ;; prompt is handled by line-reader
   :read (rebel-readline.core/clj-repl-read
           (rebel-readline.core/line-reader
-            (rebel-readline.service.impl.local-clojure-service/create))))
+            (rebel-readline.service.local-clojure/create))))
 ```
 
 Another option is to just wrap a call you your REPL with
@@ -89,7 +89,7 @@ to an input-stream that is supplied by the line reader.
 
 ```clojure
 (rebel-readline.core/with-readline-input-stream 
-  (rebel-readline.service.impl.local-clojure-service/create)
+  (rebel-readline.service.local-clojure/create)
     (clojure.main/repl :prompt (fn[])))
 ```
 
@@ -117,7 +117,7 @@ When you create a `rebel-readline.core/line-reader`
 you need to supply this service.
 
 The mose common service is the
-`rebel-readline.services.impl.local-clojure-service` which uses the
+`rebel-readline.services.local-clojure` which uses the
 local clojure process to provide this functionality and its a good
 example of how a service works.
 
@@ -132,12 +132,11 @@ functionality that rebel readline provides works without an
 environment to query. And the apropos, doc and completion functionality is
 still sensible when you provide those abilities from the local clojure process.
 
-This could be helpful when you have a Clojurey repl process
-and you don't have a Service for it. In this case you can just use a
-`local-clojure-service` or a `rebel-readline.service.impl.simple`
-service. If you do this you can expect less than optimal results but
-multiline editing, syntax highlighting, auto indenting will all work
-just fine.
+This could be helpful when you have a Clojurey repl process and you
+don't have a Service for it. In this case you can just use a
+`local-clojure` or a `simple` service. If you do this you can expect
+less than optimal results but multiline editing, syntax highlighting,
+auto indenting will all work just fine.
 
 ## Keybindings
 

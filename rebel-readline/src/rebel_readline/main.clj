@@ -4,7 +4,7 @@
     :refer [line-reader clj-repl-read help-message syntax-highlight-prn]]
    [rebel-readline.jline-api :as api]
    [rebel-readline.service :as srv]
-   [rebel-readline.service.impl.local-clojure-service :as local-clj-service]
+   [rebel-readline.service.local-clojure :as local-clj-service]
    [clojure.main]))
 
 (defn -main [& args]

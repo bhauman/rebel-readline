@@ -1,4 +1,4 @@
-(ns rebel-readline.service.impl.local-clojure-service
+(ns rebel-readline.service.local-clojure
   (:require
    [rebel-readline.service :as service]
    [rebel-readline.tools.colors :as colors]
@@ -7,7 +7,7 @@
    [clojure.repl]))
 
 ;; taken from replicant
-;; https://github.com/puredanger/replicant/blob/master/src/replicant/util.clj
+;; https://github.com/puredanger/replicant/blobcl/master/src/replicant/util.clj
 (defn data-eval
   [form]
   (let [out-writer (java.io.StringWriter.)
