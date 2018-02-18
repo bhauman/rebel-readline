@@ -21,8 +21,8 @@
   "Toggle the automatic indenting of Clojure code on and off.")
 
 (defmethod command :repl/toggle-indent [_]
-  (srv/apply-to-config update :indent #(not %))
-  (if (:indent (srv/config))
+  (swap! srv/*service* update :indent #(not %))
+  (if (:indent @srv/*service*)
     (println "Indenting on!")
     (println "Indenting off!")))
 
@@ -31,8 +31,8 @@
 `:repl/toggle-color` if you want to turn color off completely.")
 
 (defmethod command :repl/toggle-highlight [_]
-  (srv/apply-to-config update :highlight #(not %))
-  (if (:highlight (srv/config))
+  (swap! srv/*service* update :highlight #(not %))
+  (if (:highlight @srv/*service*)
     (println "Highlighting on!")
     (println "Highlighting off!")))
 
@@ -40,8 +40,8 @@
   "Toggle the auto display of function signatures on and off.")
 
 (defmethod command :repl/toggle-eldoc [_]
-  (srv/apply-to-config update :eldoc #(not %))
-  (if (:eldoc (srv/config))
+  (swap! srv/*service* update :eldoc #(not %))
+  (if (:eldoc @srv/*service*)
     (println "Eldoc on!")
     (println "Eldoc off!")))
 
@@ -49,8 +49,8 @@
   "Toggle the completion functionality on and off.")
 
 (defmethod command :repl/toggle-completion [_]
-  (srv/apply-to-config update :completion #(not %))
-  (if (:completion (srv/config))
+  (swap! srv/*service* update :completion #(not %))
+  (if (:completion @srv/*service*)
     (println "Completion on!")
     (println "Completion off!")))
 
@@ -58,22 +58,21 @@
   "Toggle ANSI text coloration on and off.")
 
 (defmethod command :repl/toggle-color [_]
-  (let [{:keys [color-theme backup-color-theme]}
-        (srv/config)]
+  (let [{:keys [color-theme backup-color-theme]} @srv/*service*]
     (cond
       (and (nil? color-theme)
            (some? backup-color-theme)
            (col/color-themes backup-color-theme))
       (do (println "Activating color, using theme: " backup-color-theme)
-          (srv/apply-to-config assoc :color-theme backup-color-theme))
+          (swap! srv/*service* assoc :color-theme backup-color-theme))
       (nil? color-theme)
       (do
-        (srv/apply-to-config assoc :color-theme :dark-screen-theme)
+        (swap! srv/*service* assoc :color-theme :dark-screen-theme)
         (println "Activating color, theme not found, defaulting to " :dark-screen-theme))
       (some? color-theme)
       (do
-        (srv/apply-to-config assoc :backup-color-theme color-theme)
-        (srv/apply-to-config dissoc :color-theme)
+        (swap! srv/*service* assoc :backup-color-theme color-theme)
+        (swap! srv/*service* dissoc :color-theme)
         (println "Color deactivated!")))))
 
 (defmethod command-doc :repl/set-color-theme [_]
@@ -90,7 +89,7 @@
             (System/getProperty "line.separator")
             (with-out-str
               (pprint (keys col/color-themes)))))
-      (srv/apply-to-config assoc :color-theme new-theme))))
+      (swap! srv/*service* assoc :color-theme new-theme))))
 
 (defmethod command-doc :repl/key-bindings [_]
   "With an argument displays a search of the current key bindings

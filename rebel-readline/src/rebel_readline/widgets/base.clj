@@ -110,7 +110,7 @@
 
 (def indent-line-widget
   (create-widget
-   (when (:indent (srv/config))
+   (when (:indent @srv/*service*)
        (let [curs (cursor)
              s (buffer-as-string) ;; up-to-cursor better here?
              begin-of-line-pos   (sexp/search-for-line-start s (dec curs))
@@ -191,16 +191,12 @@
      ;; hook here
      ;; if prev-char is a space and the char before that is part
      ;; of a word, and that word is a fn call
-     (when (:eldoc (srv/config))
+     (when (:eldoc @srv/*service*)
        (when-let [message (display-argument-help-message)]
          (reset! ttd-atom 1)
          (display-message message)))
      (call-widget LineReader/SELF_INSERT)
      true)))
-
-;; --------------------------------
-;; helpful partial tokenizer
-;; --------------------------------
 
 (defn word-at-cursor []
   (sexp/word-at-position (buffer-as-string) (cursor)))

@@ -186,7 +186,7 @@
     (complete [^LineReader reader ^ParsedLine line ^java.util.List candidates]
       (let [word (.word line)]
         (when (and
-               (:completion (srv/config))
+               (:completion @srv/*service*)
                (not (string/blank? word))
                (pos? (count word)))
           (let [options (let [ns' (srv/current-ns)
@@ -215,7 +215,7 @@
       ;; so add these bindings here
       (binding [srv/*service* (or srv/*service* service)
                 api/*line-reader* reader]
-        (if (:highlight (srv/config))
+        (if (:highlight @srv/*service*)
           (.toAttributedString (highlight-clj-str buffer))
           (AttributedString. buffer))))))
 

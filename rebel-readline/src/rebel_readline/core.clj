@@ -100,7 +100,7 @@
     (binding [srv/*service* service
               api/*line-reader* line-reader]
       ;; TODO consider redirecting *err* as well
-      (let [redirect-output? (:redirect-output (srv/config))
+      (let [redirect-output? (:redirect-output @srv/*service*)
             save-out (volatile! *out*)
             redirect-print-writer
             (line-print-writer/print-writer :out (output-handler reader))]

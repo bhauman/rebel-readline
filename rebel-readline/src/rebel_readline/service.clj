@@ -337,10 +337,3 @@
    (get @*service* :color-theme)
    colors/color-themes
    (get sk AttributedStyle/DEFAULT)))
-
-
-;; TODO remove
-(defn config [] @*service*)
-
-(defn apply-to-config [& args]
-  (apply swap! *service* args))
