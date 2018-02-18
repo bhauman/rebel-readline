@@ -4,7 +4,8 @@
    [rebel-readline.parsing.tokenizer :as tokenize]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.tools.sexp :as sexp]
-   [rebel-readline.utils :as utils])
+   [rebel-readline.utils :as utils]
+   [rebel-readline.jline-api :as api])
   (:import
    [org.jline.utils AttributedStyle]))
 
@@ -337,3 +338,26 @@
    (get @*service* :color-theme)
    colors/color-themes
    (get sk AttributedStyle/DEFAULT)))
+
+;; ----------------------------------------------
+;; Lifecyle
+;; ----------------------------------------------
+
+;; Initialize
+;; ----------------------------------------------
+
+(defmulti -init
+  "This function is called when we create a new service or when we
+  switch services."
+  (fn [a & args] (::type a)))
+
+(defmethod -init :default [_])
+
+;; this is where we bring all the state into alignment
+;; with the passed in config
+(defn pre-init []
+  (api/set-main-key-map! (get @*service* :key-map :emacs)))
+
+(defn init []
+  (pre-init)
+  (-init @*service*))

@@ -491,13 +491,11 @@
 (defn set-word-characters [line-reader]
   (doto line-reader (.setVariable LineReader/WORDCHARS "")))
 
-(defn add-default-widgets-and-bindings [line-reader service]
+(defn add-default-widgets-and-bindings [line-reader]
   (binding [*line-reader* line-reader]
     (doto line-reader
       set-word-characters
       add-all-widgets
       add-clojure-emacs-key-map
-      add-clojure-vi-key-maps)
-    ;; TODO this belongs in default service init; remove dependency on service here
-    (set-main-key-map! (get @service :key-map :emacs)))
+      add-clojure-vi-key-maps))
   line-reader)

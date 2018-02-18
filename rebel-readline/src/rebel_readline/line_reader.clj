@@ -241,7 +241,17 @@ are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
 ;; Building the line reader
 ;; ----------------------------------------
 
-;; this shouldn't be passed a service
+
+;; TODO initialization is still in play as far as design goes,
+;; it should probably all be farmed out to the service
+;; which sould mean that the completer parser and highlighter would belong to the
+;; service
+
+;; but that is a level of abstraction that we haven't explored yet
+;; are we going to make the readline general enough to work for anything?
+
+;; But these are the "initial" settings and the line reader can be given
+;; different settings by the init fn of another service.
 (defn line-reader* [service & [{:keys [terminal
                                        completer
                                        highlighter
@@ -261,5 +271,10 @@ are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
     ;; never insert tabs
     (.unsetOpt LineReader$Option/INSERT_TAB)
     (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
-    (base-widgets/add-default-widgets-and-bindings service)
+    base-widgets/add-default-widgets-and-bindings
+    ;; initialize to initial config settings
+
+    (#(binding [api/*line-reader* %
+                srv/*service* service]
+        (srv/init)))
     #_add-paredit))
