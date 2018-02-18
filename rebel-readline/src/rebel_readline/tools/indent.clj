@@ -1,7 +1,7 @@
 (ns rebel-readline.tools.indent
   (:require
    [clojure.string :as string]
-   [rebel-readline.parsing.tokenizer :as tokenize]
+   [rebel-readline.clojure.tokenizer :as tokenize]
    [rebel-readline.tools.sexp :as sexp]
    [cljfmt.core :refer [reformat-string]]))
 

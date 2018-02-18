@@ -5,13 +5,13 @@
    [rebel-readline.io.callback-reader :as cbr]
    [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.parsing.tokenizer :as tokenize]
+   [rebel-readline.clojure.tokenizer :as tokenize]
    [rebel-readline.service :as srv]
    [rebel-readline.tools.indent :as indent]
    [rebel-readline.tools.sexp :as sexp]
    [rebel-readline.tools.syntax-highlight :as syn :refer [highlight-clj-str]]
    [rebel-readline.utils :refer [log]]
-   [rebel-readline.widgets.base :as base-widgets]
+   [rebel-readline.clojure.widgets :as base-widgets]
    [clojure.string :as string]
    [clojure.main])
   (:import

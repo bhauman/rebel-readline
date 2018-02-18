@@ -1,7 +1,7 @@
 (ns rebel-readline.service
   (:require
    [rebel-readline.jline-api :as api]
-   [rebel-readline.parsing.tokenizer :as tokenize]
+   [rebel-readline.clojure.tokenizer :as tokenize]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.tools.sexp :as sexp]
    [rebel-readline.utils :as utils]
