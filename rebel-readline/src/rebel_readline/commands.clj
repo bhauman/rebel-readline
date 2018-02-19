@@ -5,11 +5,17 @@
    [rebel-readline.jline-api :as api]
    [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.tools.syntax-highlight :as syn]
-   [rebel-readline.tools.colors :as col]
-   [rebel-readline.service :as srv])
+   [rebel-readline.tools.colors :as col])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
    [org.jline.reader LineReader EndOfFileException]))
+
+;; here to avoid circular dep for now
+(defn color [sk]
+  (->
+   (get @api/*line-reader* :color-theme)
+   col/color-themes
+   (get sk AttributedStyle/DEFAULT)))
 
 (defmulti command first)
 (defmulti command-doc identity)
@@ -133,7 +139,7 @@ Without any arguments displays all the current key bindings")
     (when-let [map-name (api/main-key-map-name)]
       (println "Current key map:" (api/->ansi (astring/astr
                                                [(pr-str (keyword map-name))
-                                                (srv/color :def-call)]))))
+                                                (color :def-call)]))))
     (if (and search (empty? key-data))
       (println "Binding search: No bindings found that match" (pr-str (name search)))
       (doseq [[k data] binding-groups]
@@ -220,7 +226,7 @@ Without any arguments displays all the current key bindings")
       #(when-let [doc (command-doc %)]
          (astring/astr
           " "
-          [(prn-str %) (.underline (srv/color :def-call))]
+          [(prn-str %) (.underline (color :def-call))]
           (string/join
            (System/getProperty "line.separator")
            (map (fn [x] (str "     " x))

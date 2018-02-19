@@ -7,7 +7,6 @@
    [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api]
    [rebel-readline.clojure.line-reader :as lr]
-   [rebel-readline.service :as srv]
    [rebel-readline.tools.syntax-highlight :as highlight])
   (:import
    [org.jline.reader
@@ -109,7 +108,7 @@
           ;; but we are blocking redisplays while the
           ;; readline is initially drawn
           (api/block-redisplay-millis 100)
-          (let [res' (.readLine api/*line-reader* (srv/prompt))]
+          (let [res' (.readLine api/*line-reader* (lr/prompt))]
             (if-not (commands/handle-command res')
               res'
               command-executed)))
@@ -255,6 +254,6 @@
 
   See `rebel-readline.main` for an example of how this function is normally used"
   [x]
-  (println (api/->ansi (highlight/highlight-clj-str (pr-str x)))))
+  (println (api/->ansi (highlight/highlight-str lr/color (pr-str x)))))
 
 (def clj-repl-print syntax-highlight-prn)

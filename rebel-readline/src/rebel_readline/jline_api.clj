@@ -37,7 +37,7 @@
      (.cursor (or c (count s))))))
 
 ;; helper for development
-(defmacro with-buffer [b & body]
+#_(defmacro with-buffer [b & body]
   `(binding [rebel-readline.jline-api/*buffer* ~b
              rebel-readline.service/*service*
              (rebel-readline.service.local-clojure/create)]

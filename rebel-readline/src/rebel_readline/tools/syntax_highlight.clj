@@ -1,11 +1,10 @@
 (ns rebel-readline.tools.syntax-highlight
   (:require
-   [rebel-readline.service :as srv]
    [rebel-readline.parsing.tokenizer :as tokenize])
   (:import
    [org.jline.utils AttributedStringBuilder]))
 
-(defn highlight-clj-str [syntax-str]
+(defn highlight-str [color-fn syntax-str]
   (let [sb (AttributedStringBuilder.)]
     (loop [pos 0
            hd (tokenize/tag-syntax syntax-str)]
@@ -14,7 +13,7 @@
           (= (.length sb) (count syntax-str)) sb
           (= (-> hd first second) pos) ;; style active
           (do
-            (if-let [st (srv/color sk)]
+            (if-let [st (color-fn sk)]
               (.styled sb st (subs syntax-str start end))
               (.append sb (subs syntax-str start end)))
             (recur end (rest hd)))
@@ -24,5 +23,3 @@
           :else
           (do (.append sb (.charAt syntax-str pos))
               (recur (inc pos) hd)))))))
-
-#_ (time (highlight-clj-str code-str))

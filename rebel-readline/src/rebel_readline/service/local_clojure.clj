@@ -1,6 +1,6 @@
 (ns rebel-readline.service.local-clojure
   (:require
-   [rebel-readline.service :as service]
+   [rebel-readline.clojure.line-reader :as service]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.info.doc-url :as doc-url]
    [compliment.core :as compliment]
@@ -105,4 +105,5 @@
 (defn create
   ([] (create nil))
   ([options]
-   (merge service/default-config options {::service/type ::service})))
+   (merge service/default-config options
+          {:rebel-readline.service/type ::service})))

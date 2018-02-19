@@ -15,7 +15,7 @@ pom.xml.asc
 debug-log
 dev/scratch.clj
 notes
-
+*.bak.clj
 
 rebel-readline-cljs/rebel-readline-debug-log
 
