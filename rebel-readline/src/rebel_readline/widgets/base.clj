@@ -110,7 +110,7 @@
 
 (def indent-line-widget
   (create-widget
-   (when (:indent @srv/*service*)
+   (when (:indent @*line-reader*)
        (let [curs (cursor)
              s (buffer-as-string) ;; up-to-cursor better here?
              begin-of-line-pos   (sexp/search-for-line-start s (dec curs))
@@ -191,7 +191,7 @@
      ;; hook here
      ;; if prev-char is a space and the char before that is part
      ;; of a word, and that word is a fn call
-     (when (:eldoc @srv/*service*)
+     (when (:eldoc @*line-reader*)
        (when-let [message (display-argument-help-message)]
          (reset! ttd-atom 1)
          (display-message message)))

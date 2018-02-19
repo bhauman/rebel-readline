@@ -105,4 +105,4 @@
 (defn create
   ([] (create nil))
   ([options]
-   (atom (merge service/default-config options {::service/type ::service}))))
+   (merge service/default-config options {::service/type ::service})))

@@ -31,7 +31,7 @@
     EndOfFileException
     EOFError
     Widget]
-   [org.jline.reader.impl DefaultParser BufferImpl]
+   [org.jline.reader.impl LineReaderImpl DefaultParser BufferImpl]
    [org.jline.terminal TerminalBuilder]
    [org.jline.terminal.impl DumbTerminal]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
@@ -186,7 +186,7 @@
     (complete [^LineReader reader ^ParsedLine line ^java.util.List candidates]
       (let [word (.word line)]
         (when (and
-               (:completion @srv/*service*)
+               (:completion @api/*line-reader*)
                (not (string/blank? word))
                (pos? (count word)))
           (let [options (let [ns' (srv/current-ns)
@@ -207,74 +207,32 @@
 ;; Jline highlighter for Clojure code
 ;; ----------------------------------------
 
-(defn clojure-highlighter [service]
+(defn clojure-highlighter []
   (proxy [Highlighter] []
     (highlight [^LineReader reader ^String buffer]
       ;; this gets called on a different thread
       ;; by the window resize interrupt handler
-      ;; so add these bindings here
-      (binding [srv/*service* (or srv/*service* service)
-                api/*line-reader* reader]
-        (if (:highlight @srv/*service*)
+      ;; so add this binding here
+      (binding [api/*line-reader* reader]
+        (if (:highlight @reader)
           (.toAttributedString (highlight-clj-str buffer))
           (AttributedString. buffer))))))
-
-;; ----------------------------------------
-;; Create a terminal
-;; ----------------------------------------
-
-(defn assert-system-terminal [terminal]
-  (when (instance? DumbTerminal terminal)
-    (throw (ex-info "Unable to create a system Terminal, you must
-not launch the Rebel readline from an intermediate process i.e if you
-are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
-
-(defn create-terminal [& [assert-system-terminal']]
-  (let [terminal (-> (TerminalBuilder/builder)
-                     (.system true)
-                     (.build))]
-    (when (not (false? assert-system-terminal'))
-      (assert-system-terminal terminal))
-    terminal))
-
 ;; ----------------------------------------
 ;; Building the line reader
 ;; ----------------------------------------
 
-
-;; TODO initialization is still in play as far as design goes,
-;; it should probably all be farmed out to the service
-;; which sould mean that the completer parser and highlighter would belong to the
-;; service
-
-;; but that is a level of abstraction that we haven't explored yet
-;; are we going to make the readline general enough to work for anything?
-
-;; But these are the "initial" settings and the line reader can be given
-;; different settings by the init fn of another service.
-(defn line-reader* [service & [{:keys [terminal
-                                       completer
-                                       highlighter
-                                       parser
-                                       assert-system-terminal]
-                                :as options}]]
-  (doto (-> (LineReaderBuilder/builder)
-            (.appName "Rebel")
-            (.terminal (or terminal
-                           (create-terminal assert-system-terminal)))
-            (.completer (or completer (clojure-completer)))
-            (.highlighter (or highlighter (clojure-highlighter service)))
-            (.parser  (or parser (make-parser)))
-            (.build))
+(defn line-reader* [terminal service & [{:keys [completer highlighter parser]}]]
+  {:pre [(instance? org.jline.terminal.Terminal terminal)
+         (map? service)]}
+  (doto (api/create-line-reader terminal "Clojure Readline" service)
+    (.setCompleter (or completer (clojure-completer)))
+    (.setHighlighter (or highlighter (clojure-highlighter )))
+    (.setParser (or parser (make-parser)))
     ;; make sure that we don't have to double escape things
     (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
-    ;; never insert tabs
+        ;; never insert tabs
     (.unsetOpt LineReader$Option/INSERT_TAB)
     (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
     base-widgets/add-default-widgets-and-bindings
-    ;; initialize to initial config settings
-
-    (#(binding [api/*line-reader* %
-                srv/*service* service]
-        (srv/init)))
-    #_add-paredit))
+    (#(binding [api/*line-reader* %]
+        (api/set-main-key-map! (get service :key-map :emacs))))))
