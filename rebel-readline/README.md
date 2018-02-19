@@ -61,7 +61,7 @@ You should look at `rebel-readline.main` and `rebel-readline.core`
 to give you top level usage information.
 
 The core of the functionality is in `rebel-readline.line-reader` and
-`rebel-readline.clojure.widgets` everything else is just support.
+`rebel-readline.widgets.base` everything else is just support.
 
 ## Quick Usage
 

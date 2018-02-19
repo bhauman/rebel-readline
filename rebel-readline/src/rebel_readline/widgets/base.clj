@@ -1,10 +1,10 @@
-(ns rebel-readline.clojure.widgets
+(ns rebel-readline.widgets.base
   (:require
    [clojure.pprint]
    [clojure.repl]
    [clojure.string :as string]
    [rebel-readline.jline-api.attributed-string :as astring]
-   [rebel-readline.clojure.tokenizer :as tokenize]
+   [rebel-readline.parsing.tokenizer :as tokenize]
    [rebel-readline.service :as srv]
    [rebel-readline.tools.colors :as col]
    [rebel-readline.tools.indent :as indent]
