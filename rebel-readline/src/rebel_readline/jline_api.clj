@@ -215,9 +215,10 @@ are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
         (.put widget-id (if (fn? widget) (widget *line-reader*) widget)))))
 
 (defn terminal-size []
-  (when-let [sz (.getSize (.getTerminal *line-reader*))]
-    {:rows (.getRows sz)
-     :cols (.getColumns sz)}))
+  (let [size-field (get-accessible-field *line-reader* "size")]
+    (when-let [sz (.get size-field *line-reader*)]
+      {:rows (.getRows sz)
+       :cols (.getColumns sz)})))
 
 (defonce redisplay-lock-obj (Object.))
 
