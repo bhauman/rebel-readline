@@ -1,4 +1,4 @@
-(ns rebel-readline.line-reader
+(ns rebel-readline.clojure.line-reader
   (:refer-clojure :exclude [read-line])
   (:require
    [rebel-readline.commands :as commands]

@@ -6,7 +6,7 @@
    [rebel-readline.io.callback-reader]
    [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.line-reader :as lr]
+   [rebel-readline.clojure.line-reader :as lr]
    [rebel-readline.service :as srv]
    [rebel-readline.tools.syntax-highlight :as highlight])
   (:import
