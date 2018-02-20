@@ -165,16 +165,16 @@
   ;; this will create an input stream to be read from by a Clojure/Script REPL
 
   (rebel-readline.io.calback-reader/callback-reader #(stream-read-line line-reader))"
-  [{:keys [service line-reader] :as reader}]
+  []
   (let [request-prompt (Object.)
         request-exit   (Object.)
-        possible-result (repl-read-line reader request-prompt request-exit)]
+        possible-result (repl-read-line request-prompt request-exit)]
     (cond
       (= request-prompt possible-result) (System/getProperty "line.separator")
       (= request-exit possible-result) nil
       :else (str possible-result (System/getProperty "line.separator")))))
 
-(defmacro with-readline-input-stream
+(defmacro with-readline-in
   "This macro takes a rebel readline service and binds *in* to an a
   `clojure.lang.LineNumberingPushbackReader` that is backed by the
   readline.
@@ -190,10 +190,9 @@
 
   (with-readline-input-stream (rebel-readline.clojure.service.local/create)
    (clojure.main/repl :prompt (fn[])))"
-  [service & body]
-  `(let [lr# (line-reader ~service)]
+  [line-reader & body]
+  `(with-line-reader ~line-reader
      (binding [*in* (clojure.lang.LineNumberingPushbackReader.
                      (rebel-readline.io.callback-reader/callback-reader
-                      #(stream-read-line lr#)))
-               rebel-readline.jline-api/*line-reader* lr#]
+                      stream-read-line))]
        ~@body)))

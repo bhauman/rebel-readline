@@ -1,4 +1,4 @@
-(ns rebel-readline-cljs.service
+(ns rebel-readline.cljs.service.local
   (:require
    [cljs-tooling.complete :as cljs-complete]
    [cljs-tooling.info :as cljs-info]
@@ -11,10 +11,9 @@
    [clojure.string :as string]
    [clojure.tools.reader :as reader]
    [clojure.tools.reader.reader-types :as readers]
-   [rebel-readline.info.doc-url :as doc-url]
-   [rebel-readline.service :as srv]
-   [rebel-readline.service.local-clojure :refer [call-with-timeout]]
-   [rebel-readline.tools.colors :as colors]
+   [rebel-readline.clojure.utils :as clj-utils]
+   [rebel-readline.clojure.line-reader :as clj-reader]
+   [rebel-readline.clojure.service.local :refer [call-with-timeout]]
    [rebel-readline.utils :refer [log]])
   (:import
    [java.util.regex Pattern]))
@@ -96,42 +95,42 @@
         (catch Throwable t
           (merge (capture-streams) {:exception (Throwable->map t)}))))))
 
-(defmethod srv/-current-ns ::service [_] (some-> ana/*cljs-ns* str))
+(defmethod clj-reader/-current-ns ::service [_] (some-> ana/*cljs-ns* str))
 
-(defmethod srv/-complete ::service [_ word {:keys [ns]}]
+(defmethod clj-reader/-complete ::service [_ word {:keys [ns]}]
   (let [options (cond-> nil
                   ns (assoc :current-ns ns))]
     (cljs-complete/completions @cljs.env/*compiler* word options)))
 
-(defmethod srv/-resolve-meta ::service [self var-str]
+(defmethod clj-reader/-resolve-meta ::service [self var-str]
   (cljs-info/info @cljs.env/*compiler* var-str
-                  (srv/-current-ns self)))
+                  (clj-reader/-current-ns self)))
 
-(defmethod srv/-doc ::service [self var-str]
-  (when-let [{:keys [ns name] :as info} (srv/-resolve-meta self var-str)]
+(defmethod clj-reader/-doc ::service [self var-str]
+  (when-let [{:keys [ns name] :as info} (clj-reader/-resolve-meta self var-str)]
     (when-let [doc (format-document info)]
-      (let [url (doc-url/url-for (str ns) (str name))]
+      (let [url (clj-utils/url-for (str ns) (str name))]
         (cond-> {:doc doc}
           url (assoc :url url))))))
 
-(defmethod srv/-source ::service [_ var-str]
+(defmethod clj-reader/-source ::service [_ var-str]
   (some->> (cljs.repl/source-fn @cljs.env/*compiler* (symbol var-str))
            (hash-map :source)))
 
-(defmethod srv/-apropos ::service [_ var-str] (apropos var-str))
+(defmethod clj-reader/-apropos ::service [_ var-str] (apropos var-str))
 
-(defmethod srv/-read-string ::service [_ form-str] (read-cljs-string form-str))
+(defmethod clj-reader/-read-string ::service [_ form-str] (read-cljs-string form-str))
 
-(defmethod srv/-eval ::service [self form]
+(defmethod clj-reader/-eval ::service [self form]
   (when-let [repl-env (:repl-env self)]
     (call-with-timeout
      (fn []
        (data-eval #(eval-cljs repl-env (ana/empty-env) form)))
      (get self :eval-timeout 3000))))
 
-;; this needs a :repl-eval option
+;; this needs a :repl-env option
 
 (defn create
   ([] (create nil))
   ([options]
-   (atom (merge srv/default-config options {::srv/type ::service}))))
+   (merge clj-reader/default-config options {:rebel-readline.service/type ::service})))

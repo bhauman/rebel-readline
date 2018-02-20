@@ -1,11 +1,12 @@
-(ns rebel-readline-cljs.core
+(ns rebel-readline.cljs.repl
   (:require
    [cljs.repl]
    [clojure.tools.reader :as r]
    [clojure.tools.reader.reader-types :as rtypes]
    [rebel-readline.core :as rebel]
-   [rebel-readline.jline-api :as api]
-   [rebel-readline.tools.syntax-highlight :as highlight]))
+   [rebel-readline.clojure.line-reader :as clj-line-reader]
+   [rebel-readline.cljs.service.local :as cljs-service]
+   [rebel-readline.jline-api :as api]))
 
 (defn has-remaining?
   "Takes a clojure.tools.reader.reader-types/SourceLoggingPushbackReader
@@ -17,7 +18,7 @@
      (rtypes/unread pbr x)
      true)))
 
-(def cljs-repl-read
+(def create-repl-read
  "Creates a drop in replacement for cljs.repl/repl-read, since a
   readline can return multiple Clojure forms this function is stateful
   and buffers the forms and returns the next form on subsequent reads.
@@ -52,9 +53,27 @@
 
   See `rebel-readline-cljs.main` for an example of how this function is normally used"
   [x]
-  (println (api/->ansi (highlight/highlight-clj-str (or x "")))))
+  (println (api/->ansi (clj-line-reader/highlight-clj-str (or x "")))))
 
-(defn cljs-repl-print [line-reader]
-  (fn [x]
-    (rebel/with-rebel-bindings line-reader
-      (syntax-highlight-println x))))
+(defn repl* [repl-env opts]
+  (rebel/with-line-reader
+    (clj-line-reader/create
+     (cljs-service/create (assoc
+                           (when api/*line-reader*
+                             @api/*line-reader*)
+                           :repl-env repl-env)))
+    (when-let [prompt-fn (:prompt opts)]
+      (swap! api/*line-reader* assoc :prompt #(with-out-str (prompt-fn))))
+    (println (rebel/help-message))
+    (cljs.repl/repl* repl-env 
+     (merge
+      {:print syntax-highlight-println
+       :read (create-repl-read)}
+      opts
+      {:prompt (fn [])}))))
+
+(defn repl [repl-env & opts]
+  (repl* repl-env (apply hash-map opts)))
+
+
+

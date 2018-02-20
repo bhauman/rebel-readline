@@ -8,7 +8,7 @@
         :url "https://github.com/bhauman/rebel-readline"
         :dir ".."}
 
-  :dependencies [[rebel-readline "0.1.0-SNAPSHOT"]
+  :dependencies [[rebel-readline "0.1.1-SNAPSHOT"]
                  [org.clojure/clojurescript "1.9.946"]
                  [cljs-tooling "0.2.0"]]
 

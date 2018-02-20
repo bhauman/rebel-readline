@@ -1,29 +1,28 @@
 (ns rebel-dev.main
   (:require
-   [rebel-readline.core
-    :refer [line-reader clj-repl-read with-readline-input-stream help-message
-            syntax-highlight-prn]]
+   [rebel-readline.core :as core]
+   [rebel-readline.clojure.main :as main]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.service :as srv]
-   [rebel-readline.service.local-clojure :as local-clj-service]
-   [rebel-readline.service.simple :as simple-service]
+   [rebel-readline.clojure.line-reader :as clj-line-reader]
+   [rebel-readline.clojure.service.local :as clj-service]
+   [rebel-readline.clojure.service.simple :as simple-service]
    [rebel-readline.utils :refer [*debug-log*]]
    [clojure.main]))
 
 ;; TODO refactor this like the cljs dev repl with a "stream" and "one-line" options
 (defn -main [& args]
   (println "This is the DEVELOPMENT REPL in rebel-dev.main")
-  (let [reader (line-reader (local-clj-service/create #_{:key-map :viins}))]
-    (println (help-message))
-    (binding [api/*line-reader* (:line-reader reader)
-              srv/*service* (:service reader)
-              *debug-log* true]
-      ;; when you just neeed to work on reading
-      #_((clj-repl-read reader) (Object.) (Object.))
+  (binding [*debug-log* true]
+    (core/with-line-reader
+      (clj-line-reader/create
+       (clj-service/create
+        #_{:key-map :viins}))
+      (println (core/help-message))
+      #_((clj-repl-read) (Object.) (Object.))
       (clojure.main/repl
        :prompt (fn [])
-       :print syntax-highlight-prn
-       :read (clj-repl-read reader)))))
+       :print main/syntax-highlight-prn
+       :read (main/create-repl-read)))))
 
 #_(defn -main [& args]
   (let [repl-env (nash/repl-env)]
