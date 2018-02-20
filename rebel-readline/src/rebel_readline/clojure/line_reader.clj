@@ -7,7 +7,7 @@
    [rebel-readline.clojure.tokenizer :as tokenize]
    [rebel-readline.clojure.sexp :as sexp]
    [rebel-readline.tools.syntax-highlight :as highlight :refer [highlight-str]]
-   [rebel-readline.tools :refer [color]]
+   [rebel-readline.tools :as tools :refer [color service-dispatch]]
    [rebel-readline.utils :as utils :refer [log]]
    [cljfmt.core :refer [reformat-string]]
    [clojure.string :as string]
@@ -33,7 +33,7 @@
    [org.jline.terminal TerminalBuilder]
    [org.jline.terminal.impl DumbTerminal]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
-        InfoCmp$Capability]))
+    InfoCmp$Capability]))
 
 #_ (remove-ns 'rebel-readline.clojure.line-reader)
 
@@ -52,26 +52,6 @@
    (if (= :light (utils/terminal-background-color?))
      :light-screen-theme
      :dark-screen-theme)})
-
-(defn service-dispatch [a & args] (:rebel-readline.service/type a))
-
-;; ----------------------------------------------
-;; utilities
-;; ----------------------------------------------
-
-(defn resolve-fn? [f]
-  (cond
-    (fn? f) f
-    (or (string? f) (symbol? f))
-    (resolve (symbol f))
-    :else nil))
-
-(defn not-implemented! [service fn-name]
-  (throw (ex-info (format "The %s service does not implement the %s function."
-                          (pr-str (::type service))
-                          fn-name)
-                  {})))
-
 
 ;; ---------------------------------------------------------------------
 ;; ---------------------------------------------------------------------
@@ -101,24 +81,14 @@
 ;; Prompt
 ;; ----------------------------------------------
 
-(defmulti -prompt
-  "returns a repl prompt string"
-  service-dispatch)
-
 (declare current-ns)
 
 (defn default-prompt-fn []
   (format "%s=> "
           (or (current-ns) "clj")))
 
-(defmethod -prompt :default [service]
+(defmethod tools/-prompt :default [service]
   (default-prompt-fn))
-
-;; TODO this is a good start
-(defn prompt []
-  (if-let [f (resolve-fn? (:prompt @*line-reader*))]
-    (f)
-    (-prompt @*line-reader*)))
 
 ;; AcceptLine
 ;; ----------------------------------------------
@@ -285,7 +255,7 @@
   service-dispatch)
 
 (defmethod -read-string :default [service _]
-  (not-implemented! service "-read-string"))
+  (tools/not-implemented! service "-read-string"))
 
 (defn read-form [form-str]
   (-read-string @*line-reader* form-str))
@@ -320,7 +290,7 @@
   service-dispatch)
 
 (defmethod -eval :default [service _]
-  (not-implemented! service "-eval"))
+  (tools/not-implemented! service "-eval"))
 
 (defn evaluate [form]
   (-eval @*line-reader* form))

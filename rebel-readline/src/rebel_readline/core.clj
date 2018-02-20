@@ -6,7 +6,7 @@
    [rebel-readline.io.callback-reader]
    [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.clojure.line-reader :as lr]
+   [rebel-readline.tools :as tools]
    [rebel-readline.tools.syntax-highlight :as highlight])
   (:import
    [org.jline.reader
@@ -100,7 +100,7 @@
           ;; but we are blocking redisplays while the
           ;; readline is initially drawn
           (api/block-redisplay-millis 100)
-          (let [res' (.readLine api/*line-reader* (lr/prompt))]
+          (let [res' (.readLine api/*line-reader* (tools/prompt))]
             (if-not (commands/handle-command res')
               res'
               command-executed)))
