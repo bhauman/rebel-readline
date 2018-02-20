@@ -122,7 +122,8 @@
   (get (.defaultKeyMaps *line-reader*) key-map-name))
 
 (defn bind-key [key-map widget-id key-str]
-  (.bind key-map (org.jline.reader.Reference. widget-id) key-str))
+  (when key-str
+    (.bind key-map (org.jline.reader.Reference. widget-id) key-str)))
 
 ;; --------------------------------------
 ;; contextual ANSI
