@@ -4,7 +4,6 @@
    [clojure.string :as string]
    [rebel-readline.jline-api :as api]
    [rebel-readline.jline-api.attributed-string :as astring]
-   [rebel-readline.tools.syntax-highlight :as syn]
    [rebel-readline.tools.colors :as col])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]

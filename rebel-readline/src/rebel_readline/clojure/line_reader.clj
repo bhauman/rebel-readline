@@ -5,11 +5,11 @@
    [rebel-readline.jline-api :as api :refer :all]
    [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.clojure.tokenizer :as tokenize]
-   [rebel-readline.tools.indent :as indent]
-   [rebel-readline.tools.sexp :as sexp]
+   [rebel-readline.clojure.sexp :as sexp]
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.tools.syntax-highlight :as highlight :refer [highlight-str]]
    [rebel-readline.utils :as utils :refer [log]]
+   [cljfmt.core :refer [reformat-string]]
    [clojure.string :as string]
    [clojure.main])
   (:import
@@ -453,6 +453,35 @@
 ;; line indentation widget
 ;; -----------------------------------------
 
+(defn indent-proxy-str [s cursor]
+  (let [tagged-parses (tokenize/tag-sexp-traversal s)]
+    ;; never indent in quotes
+    ;; this is an optimization, the code should work fine without this
+    (when-not (sexp/in-quote? tagged-parses cursor)
+      (when-let [[delim sexp-start] (sexp/find-open-sexp-start tagged-parses cursor)]
+        (let [line-start (sexp/search-for-line-start s sexp-start)]
+          (str (apply str (repeat (- sexp-start line-start) \space))
+               (subs s sexp-start cursor)
+               "\n1" (sexp/flip-delimiter-char (first delim))))))))
+
+(defn indent-amount [s cursor]
+  (if (zero? cursor)
+    0
+    (if-let [prx (indent-proxy-str s cursor)]
+      (try (->>
+            (reformat-string prx {:remove-trailing-whitespace? false
+                                  :insert-missing-whitespace? false
+                                  :remove-surrounding-whitespace? false
+                                  :remove-consecutive-blank-lines? false})
+            string/split-lines
+            last
+            sexp/count-leading-white-space)
+           (catch clojure.lang.ExceptionInfo e
+             (if (-> e ex-data :type (= :reader-exception))
+               (+ 2 (sexp/count-leading-white-space prx))
+               (throw e))))
+      0)))
+
 (def indent-line-widget
   (create-widget
    (when (:indent @*line-reader*)
@@ -460,7 +489,7 @@
              s (buffer-as-string) ;; up-to-cursor better here?
              begin-of-line-pos   (sexp/search-for-line-start s (dec curs))
              leading-white-space (sexp/count-leading-white-space (subs s begin-of-line-pos))
-         indent-amount       (indent/indent-amount s begin-of-line-pos)
+         indent-amount       (indent-amount s begin-of-line-pos)
          cursor-in-leading-white-space? (< curs
                                            (+ leading-white-space begin-of-line-pos))]
 
@@ -1034,6 +1063,7 @@
         (if (:highlight @reader)
           (.toAttributedString (highlight-str color buffer))
           (AttributedString. buffer))))))
+
 ;; ----------------------------------------
 ;; Building the line reader
 ;; ----------------------------------------

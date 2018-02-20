@@ -1,4 +1,4 @@
-(ns rebel-readline.info.doc-url
+(ns rebel-readline.clojure.utils
   (:require
    [clojure.string :as string]))
 

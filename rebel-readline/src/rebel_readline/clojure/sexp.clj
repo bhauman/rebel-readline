@@ -1,4 +1,4 @@
-(ns rebel-readline.tools.sexp
+(ns rebel-readline.clojure.sexp
   (:require
    [clojure.string :as string]
    [rebel-readline.clojure.tokenizer :as tokenize])

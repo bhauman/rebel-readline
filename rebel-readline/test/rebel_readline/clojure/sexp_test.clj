@@ -1,10 +1,8 @@
-(ns rebel-readline.tools.sexp-test
+(ns rebel-readline.clojure.sexp-test
   (:require
    [rebel-readline.clojure.tokenizer :as tokenize]
-   [rebel-readline.tools.sexp :refer :all]
+   [rebel-readline.clojure.sexp :refer :all]
    [clojure.test :refer [deftest is are testing]]))
-
-#_(remove-ns 'rebel-readline.tools.sexp-test)
 
 (defn find-open [sexp pos]
   (find-open-sexp-start (tokenize/tag-sexp-traversal sexp) pos))
