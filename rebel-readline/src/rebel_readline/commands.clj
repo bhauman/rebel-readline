@@ -4,17 +4,11 @@
    [clojure.string :as string]
    [rebel-readline.jline-api :as api]
    [rebel-readline.jline-api.attributed-string :as astring]
-   [rebel-readline.tools.colors :as col])
+   [rebel-readline.tools.colors :as col]
+   [rebel-readline.tools :refer [color]])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
    [org.jline.reader LineReader EndOfFileException]))
-
-;; here to avoid circular dep for now
-(defn color [sk]
-  (->
-   (get @api/*line-reader* :color-theme)
-   col/color-themes
-   (get sk AttributedStyle/DEFAULT)))
 
 (defmulti command first)
 (defmulti command-doc identity)

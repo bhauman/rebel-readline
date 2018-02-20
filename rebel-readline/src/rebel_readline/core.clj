@@ -16,7 +16,7 @@
 (defn help-message []
   "[Rebel readline] Type :repl/help for online help info")
 
-(defn line-reader
+#_(defn line-reader
   "Creates a line reader takes a service as an argument.
 
   A service implements the multimethods found in `rebel-readline.service`
@@ -159,41 +159,6 @@
                     (repl-read-fn request-prompt request-exit)))
                 request-prompt))))))))
 
-(def clj-repl-read
-  "A drop in replacement for clojure.main/repl-read, since a readline
-  can return multiple Clojure forms this function is stateful and
-  buffers the forms and returns the next form on subsequent reads.
-
-  This function is a constructor that takes a line-reader and returns
-  a function that can replace `clojure.main/repl-read`.
-
-  Example Usage:
-
-  (clojure.main/repl
-   :prompt (fn []) ;; prompt is handled by line-reader
-   :read (clj-repl-read
-           (line-reader
-             (rebel-readline.clojure.service.local/create))))
-
-  Or catch a bad terminal error and fall back to clojure.main/repl-read:
-
-  (clojure.main/repl
-   :prompt (fn [])
-   :read (try
-          (clj-repl-read
-           (line-reader
-             (rebel-readline.clojure.service.local/create)))
-          (catch clojure.lang.ExceptionInfo e
-             (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))
-                (do (println (.getMessage e))
-                    clojure.main/repl-read)
-                (throw e)))))"
-  (create-buffered-repl-reader-fn
-   (fn [s] (clojure.lang.LineNumberingPushbackReader.
-            (java.io.StringReader. s)))
-   has-remaining?
-   clojure.main/repl-read))
-
 (defn stream-read-line
   "This function reads lines and returns them ready to be read by a
   java.io.Reader. This basically adds newlines at the end of readline
@@ -241,19 +206,3 @@
                       #(stream-read-line lr#)))
                rebel-readline.jline-api/*line-reader* lr#]
        ~@body)))
-
-(defn syntax-highlight-prn
-  "Print a syntax highlighted clojure value.
-
-  This printer respects the current color settings set in the
-  service.
-
-  The `rebel-readline.jline-api/*line-reader*` and
-  `rebel-readline.jline-api/*service*` dynamic vars have to be set for
-  this to work.
-
-  See `rebel-readline.main` for an example of how this function is normally used"
-  [x]
-  (println (api/->ansi (highlight/highlight-str lr/color (pr-str x)))))
-
-(def clj-repl-print syntax-highlight-prn)

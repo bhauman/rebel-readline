@@ -6,8 +6,8 @@
    [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.clojure.tokenizer :as tokenize]
    [rebel-readline.clojure.sexp :as sexp]
-   [rebel-readline.tools.colors :as colors]
    [rebel-readline.tools.syntax-highlight :as highlight :refer [highlight-str]]
+   [rebel-readline.tools :refer [color]]
    [rebel-readline.utils :as utils :refer [log]]
    [cljfmt.core :refer [reformat-string]]
    [clojure.string :as string]
@@ -347,16 +347,6 @@
 
 (defn evaluate-str [form-str]
   (-eval-str @*line-reader* form-str))
-
-;; Color
-;; ----------------------------------------------
-
-(defn color [sk]
-  (->
-   (get @*line-reader* :color-theme)
-   colors/color-themes
-   (get sk AttributedStyle/DEFAULT)))
-
 
 ;; ----------------------------------------------------
 ;; ----------------------------------------------------
@@ -1068,7 +1058,7 @@
 ;; Building the line reader
 ;; ----------------------------------------
 
-(defn line-reader* [terminal service & [{:keys [completer highlighter parser]}]]
+(defn create* [terminal service & [{:keys [completer highlighter parser]}]]
   {:pre [(instance? org.jline.terminal.Terminal terminal)
          (map? service)]}
   (doto (create-line-reader terminal "Clojure Readline" service)
@@ -1083,3 +1073,23 @@
     add-widgets-and-bindings
     (#(binding [*line-reader* %]
         (set-main-key-map! (get service :key-map :emacs))))))
+
+(defn create
+  "Creates a line reader takes a service as an argument.
+
+  A service implements the multimethods found in `rebel-readline.service`
+
+  Example:
+    (create (rebel-readline.clojure.service.local/create))
+  Or:
+    (create (rebel-readline.clojure.service.simple/create))
+
+  This function also takes an optional options map.
+
+  The available options are:
+
+  :completer - to override the clojure based completer
+  :highlighter - to override the clojure based systax highlighter
+  :parser - to override the clojure base word parser"
+  [service & [options]]
+  (create* api/*terminal* service options))
