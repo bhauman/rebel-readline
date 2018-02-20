@@ -1,4 +1,4 @@
-(ns rebel-readline.service.local-clojure
+(ns rebel-readline.clojure.service.local
   (:require
    [rebel-readline.clojure.line-reader :as service]
    [rebel-readline.tools.colors :as colors]

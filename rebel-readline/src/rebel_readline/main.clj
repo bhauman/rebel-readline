@@ -3,8 +3,7 @@
    [rebel-readline.core
     :refer [line-reader clj-repl-read help-message syntax-highlight-prn]]
    [rebel-readline.jline-api :as api]
-   #_[rebel-readline.service :as srv]
-   [rebel-readline.service.local-clojure :as local-clj-service]
+   [rebel-readline.clojure.service.local :as local-clj-service]
    [clojure.main]))
 
 (defn repl* [opts]

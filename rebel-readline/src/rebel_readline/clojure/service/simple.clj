@@ -1,4 +1,4 @@
-(ns rebel-readline.service.simple
+(ns rebel-readline.clojure.service.simple
   (:require
    [rebel-readline.clojure.line-reader :as lr]))
 
@@ -11,7 +11,7 @@
   prompt with the current namespace."
   ([] (create nil))
   ([options]
-   (atom (merge
-          {:prompt (fn [] "clj=> ")}
-          lr/default-config
-          options))))
+   (merge
+    #_{:prompt (fn [] "clj=> ")}
+    lr/default-config
+    options)))

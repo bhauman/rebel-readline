@@ -80,7 +80,7 @@ Example:
   :prompt (fn []) ;; prompt is handled by line-reader
   :read (rebel-readline.core/clj-repl-read
           (rebel-readline.core/line-reader
-            (rebel-readline.service.local-clojure/create))))
+            (rebel-readline.clojure.service.local/create))))
 ```
 
 Another option is to just wrap a call you your REPL with
@@ -89,7 +89,7 @@ to an input-stream that is supplied by the line reader.
 
 ```clojure
 (rebel-readline.core/with-readline-input-stream 
-  (rebel-readline.service.local-clojure/create)
+  (rebel-readline.clojure.service.local/create)
     (clojure.main/repl :prompt (fn[])))
 ```
 
@@ -98,7 +98,7 @@ Or with a fallback:
 ```clojure
 (try
   (rebel-readline.core/with-readline-input-stream 
-    (rebel-readline.service.local-clojure/create)
+    (rebel-readline.clojure.service.local/create)
       (clojure.main/repl :prompt (fn[])))
   (catch clojure.lang.ExceptionInfo e
     (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))
@@ -134,7 +134,7 @@ still sensible when you provide those abilities from the local clojure process.
 
 This could be helpful when you have a Clojurey repl process and you
 don't have a Service for it. In this case you can just use a
-`local-clojure` or a `simple` service. If you do this you can expect
+`local` or a `simple` service. If you do this you can expect
 less than optimal results but multiline editing, syntax highlighting,
 auto indenting will all work just fine.
 
