@@ -13,27 +13,9 @@
     UserInterruptException
     EndOfFileException]))
 
-(defn help-message []
-  "[Rebel readline] Type :repl/help for online help info")
-
-#_(defn line-reader
-  "Creates a line reader takes a service as an argument.
-
-  A service implements the multimethods found in `rebel-readline.service`
-
-  Example:
-    (line-reader (rebel-readline.clojure.service.local/create))
-
-  This function also takes an optional options map.
-
-  The available options are:
-
-  :terminal - to give the line reader and existing terminal
-  :completer - to override the clojure based completer
-  :highlighter - to override the clojure based systax highlighter
-  :parser - to override the clojure base word parser
-  :assert-system-terminal - wether to throw an exception when we can't
-                            connect to a system terminal
+(defmacro ensure-terminal
+  "Bind the rebel-readline.jline-api/*terminal* var to a new Jline
+  terminal if needed, otherwise use the currently bound one.
 
   --------------------------------------------------------------------
   IMPORTANT NOTE:
@@ -56,10 +38,20 @@
   The underlying Terminal manipulation code is Jline3 and it makes
   every effort to be compatible with a wide array of terminals. It is
   entirely possible that your terminal is not well supported."
-  [terminal service & [options]]
-  (lr/line-reader* terminal service options))
+  [& body]
+  `(binding [rebel-readline.jline-api/*terminal*
+             (or rebel-readline.jline-api/*terminal* (rebel-readline.jline-api/create-terminal))]
+     ~@body))
 
-(defn- output-handler
+(defmacro with-line-reader [line-reader & body]
+  `(ensure-terminal
+    (binding [rebel-readline.jline-api/*line-reader* ~line-reader]
+      ~@body)))
+
+(defn help-message []
+  "[Rebel readline] Type :repl/help for online help info")
+
+(defn output-handler
   "Creates a function that takes output to be redirected \"above\" a
   running readline editor."
   [line-reader]
