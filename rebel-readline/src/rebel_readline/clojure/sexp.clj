@@ -1,7 +1,7 @@
-(ns rebel-readline.tools.sexp
+(ns rebel-readline.clojure.sexp
   (:require
    [clojure.string :as string]
-   [rebel-readline.parsing.tokenizer :as tokenize])
+   [rebel-readline.clojure.tokenizer :as tokenize])
   (:import
    [java.util.regex Pattern]))
 

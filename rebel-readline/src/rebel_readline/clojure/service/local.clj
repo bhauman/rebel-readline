@@ -1,8 +1,8 @@
-(ns rebel-readline.service.local-clojure
+(ns rebel-readline.clojure.service.local
   (:require
-   [rebel-readline.service :as service]
+   [rebel-readline.clojure.line-reader :as service]
    [rebel-readline.tools.colors :as colors]
-   [rebel-readline.info.doc-url :as doc-url]
+   [rebel-readline.clojure.utils :as clj-utils]
    [compliment.core :as compliment]
    [clojure.repl]))
 
@@ -81,7 +81,7 @@
 (defmethod service/-doc ::service [self var-str]
   (when-let [{:keys [ns name]} (service/-resolve-meta self var-str)]
     (when-let [doc (compliment/documentation var-str)]
-      (let [url (doc-url/url-for (str ns) (str name))]
+      (let [url (clj-utils/url-for (str ns) (str name))]
         (cond-> {:doc doc}
           url (assoc :url url))))))
 
@@ -105,4 +105,5 @@
 (defn create
   ([] (create nil))
   ([options]
-   (atom (merge service/default-config options {::service/type ::service}))))
+   (merge service/default-config options
+          {:rebel-readline.service/type ::service})))

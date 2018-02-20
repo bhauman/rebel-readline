@@ -4,12 +4,17 @@
    [clojure.string :as string]
    [rebel-readline.jline-api :as api]
    [rebel-readline.jline-api.attributed-string :as astring]
-   [rebel-readline.tools.syntax-highlight :as syn]
-   [rebel-readline.tools.colors :as col]
-   [rebel-readline.service :as srv])
+   [rebel-readline.tools.colors :as col])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
    [org.jline.reader LineReader EndOfFileException]))
+
+;; here to avoid circular dep for now
+(defn color [sk]
+  (->
+   (get @api/*line-reader* :color-theme)
+   col/color-themes
+   (get sk AttributedStyle/DEFAULT)))
 
 (defmulti command first)
 (defmulti command-doc identity)
@@ -21,8 +26,8 @@
   "Toggle the automatic indenting of Clojure code on and off.")
 
 (defmethod command :repl/toggle-indent [_]
-  (swap! srv/*service* update :indent #(not %))
-  (if (:indent @srv/*service*)
+  (swap! api/*line-reader* update :indent #(not %))
+  (if (:indent @api/*line-reader*)
     (println "Indenting on!")
     (println "Indenting off!")))
 
@@ -31,8 +36,8 @@
 `:repl/toggle-color` if you want to turn color off completely.")
 
 (defmethod command :repl/toggle-highlight [_]
-  (swap! srv/*service* update :highlight #(not %))
-  (if (:highlight @srv/*service*)
+  (swap! api/*line-reader* update :highlight #(not %))
+  (if (:highlight @api/*line-reader*)
     (println "Highlighting on!")
     (println "Highlighting off!")))
 
@@ -40,8 +45,8 @@
   "Toggle the auto display of function signatures on and off.")
 
 (defmethod command :repl/toggle-eldoc [_]
-  (swap! srv/*service* update :eldoc #(not %))
-  (if (:eldoc @srv/*service*)
+  (swap! api/*line-reader* update :eldoc #(not %))
+  (if (:eldoc @api/*line-reader*)
     (println "Eldoc on!")
     (println "Eldoc off!")))
 
@@ -49,8 +54,8 @@
   "Toggle the completion functionality on and off.")
 
 (defmethod command :repl/toggle-completion [_]
-  (swap! srv/*service* update :completion #(not %))
-  (if (:completion @srv/*service*)
+  (swap! api/*line-reader* update :completion #(not %))
+  (if (:completion @api/*line-reader*)
     (println "Completion on!")
     (println "Completion off!")))
 
@@ -58,21 +63,21 @@
   "Toggle ANSI text coloration on and off.")
 
 (defmethod command :repl/toggle-color [_]
-  (let [{:keys [color-theme backup-color-theme]} @srv/*service*]
+  (let [{:keys [color-theme backup-color-theme]} @api/*line-reader*]
     (cond
       (and (nil? color-theme)
            (some? backup-color-theme)
            (col/color-themes backup-color-theme))
       (do (println "Activating color, using theme: " backup-color-theme)
-          (swap! srv/*service* assoc :color-theme backup-color-theme))
+          (swap! api/*line-reader* assoc :color-theme backup-color-theme))
       (nil? color-theme)
       (do
-        (swap! srv/*service* assoc :color-theme :dark-screen-theme)
+        (swap! api/*line-reader* assoc :color-theme :dark-screen-theme)
         (println "Activating color, theme not found, defaulting to " :dark-screen-theme))
       (some? color-theme)
       (do
-        (swap! srv/*service* assoc :backup-color-theme color-theme)
-        (swap! srv/*service* dissoc :color-theme)
+        (swap! api/*line-reader* assoc :backup-color-theme color-theme)
+        (swap! api/*line-reader* dissoc :color-theme)
         (println "Color deactivated!")))))
 
 (defmethod command-doc :repl/set-color-theme [_]
@@ -89,7 +94,7 @@
             (System/getProperty "line.separator")
             (with-out-str
               (pprint (keys col/color-themes)))))
-      (swap! srv/*service* assoc :color-theme new-theme))))
+      (swap! api/*line-reader* assoc :color-theme new-theme))))
 
 (defmethod command-doc :repl/key-bindings [_]
   "With an argument displays a search of the current key bindings
@@ -133,7 +138,7 @@ Without any arguments displays all the current key bindings")
     (when-let [map-name (api/main-key-map-name)]
       (println "Current key map:" (api/->ansi (astring/astr
                                                [(pr-str (keyword map-name))
-                                                (srv/color :def-call)]))))
+                                                (color :def-call)]))))
     (if (and search (empty? key-data))
       (println "Binding search: No bindings found that match" (pr-str (name search)))
       (doseq [[k data] binding-groups]
@@ -172,7 +177,7 @@ Without any arguments displays all the current key bindings")
      ;; its dicey to have parallel state like this so
      ;; we are just going to have the service config
      ;; state reflect the jline reader state
-     (swap! srv/*service*
+     (swap! api/*line-reader*
             assoc :key-map (keyword (api/main-key-map-name))))))
 
 (defmethod command :repl/set-key-map [[_ key-map-name]]
@@ -220,7 +225,7 @@ Without any arguments displays all the current key bindings")
       #(when-let [doc (command-doc %)]
          (astring/astr
           " "
-          [(prn-str %) (.underline (srv/color :def-call))]
+          [(prn-str %) (.underline (color :def-call))]
           (string/join
            (System/getProperty "line.separator")
            (map (fn [x] (str "     " x))

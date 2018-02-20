@@ -19,9 +19,12 @@
     EndOfFileException
     EOFError
     Widget]
-   [org.jline.reader.impl DefaultParser BufferImpl]
+   [org.jline.reader.impl LineReaderImpl DefaultParser BufferImpl]
+   [org.jline.terminal TerminalBuilder]
+   [org.jline.terminal.impl DumbTerminal]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
+(def ^:dynamic *terminal* nil)
 (def ^:dynamic *line-reader* nil)
 (def ^:dynamic *buffer* nil)
 
@@ -34,11 +37,29 @@
      (.cursor (or c (count s))))))
 
 ;; helper for development
-(defmacro with-buffer [b & body]
+#_(defmacro with-buffer [b & body]
   `(binding [rebel-readline.jline-api/*buffer* ~b
              rebel-readline.service/*service*
              (rebel-readline.service.local-clojure/create)]
      ~@body))
+
+;; ----------------------------------------
+;; Create a terminal
+;; ----------------------------------------
+
+(defn assert-system-terminal [terminal]
+  (when (instance? DumbTerminal terminal)
+    (throw (ex-info "Unable to create a system Terminal, you must
+not launch the Rebel readline from an intermediate process i.e if you
+are using `lein` you need to use `lein trampoline`." {:type ::bad-terminal}))))
+
+(defn create-terminal [& [assert-system-terminal']]
+  (let [terminal (-> (TerminalBuilder/builder)
+                     (.system true)
+                     (.build))]
+    (when (not (false? assert-system-terminal'))
+      (assert-system-terminal terminal))
+    terminal))
 
 (defmacro create-widget [& body]
   `(fn [line-reader#]
@@ -60,9 +81,12 @@
 ;; very naive
 (def get-accessible-field
   (memoize (fn [obj field-name]
-             (when-let [field (-> obj .getClass (.getDeclaredField field-name))]
-               (doto field
-                 (.setAccessible true))))))
+             (or (when-let [field (-> obj
+                                      .getClass
+                                      .getSuperclass
+                                      (.getDeclaredField field-name))]
+                   (doto field
+                     (.setAccessible true)))))))
 
 (defn supplier [f]
   (proxy [java.util.function.Supplier] []
@@ -122,7 +146,8 @@
   (get (.defaultKeyMaps *line-reader*) key-map-name))
 
 (defn bind-key [key-map widget-id key-str]
-  (.bind key-map (org.jline.reader.Reference. widget-id) key-str))
+  (when key-str
+    (.bind key-map (org.jline.reader.Reference. widget-id) key-str)))
 
 ;; --------------------------------------
 ;; contextual ANSI
@@ -242,24 +267,25 @@
              (.println writer s)
              (.callWidget reader LineReader/REDRAW_LINE)
              (.callWidget reader LineReader/REDISPLAY)
-             #_(.redisplay reader)
-             (.flush writer)
-             )
+             (.flush writer))
            (do
              (.println writer s)
              (.flush writer))))))))
 
-
-#_(defn reader-println [reader s]
-  (let [writer (.writer (.getTerminal reader))]
-    (.callWidget reader LineReader/CLEAR)
-    (.println writer s)
-    (.callWidget reader LineReader/REDRAW_LINE)
-    (.callWidget reader LineReader/REDISPLAY)
-    (.flush writer)))
-
-#_(defn output-tester [reader]
-    (.start (Thread. (bound-fn []
-                       (dotimes [n 20]
-                         (Thread/sleep 1000)
-                         (reader-println reader "WORLD!!"))))))
+(defn create-line-reader [terminal app-name service]
+  (let [service-variable-name (name :rebel-readline.service/service)
+        swap* (fn [obj f args]
+                (locking obj
+                  (let [old-val @obj
+                        new-val (apply f old-val args)]
+                    (if (= @obj old-val)
+                      (reset! obj new-val)
+                      false))))]
+    (proxy [LineReaderImpl clojure.lang.IDeref clojure.lang.IAtom]
+        [terminal
+         (or app-name "Rebel Readline")
+         (java.util.HashMap. {(name ::service) service})]
+      (deref [] (.getVariable this service-variable-name))
+      ;; TODO implement all swaps??
+      (swap  [f & args] (swap* this f args))
+      (reset [a] (.setVariable this service-variable-name a)))))

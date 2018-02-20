@@ -6,18 +6,12 @@
    [rebel-readline.io.callback-reader]
    [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.line-reader :as lr]
-   [rebel-readline.service :as srv]
+   [rebel-readline.clojure.line-reader :as lr]
    [rebel-readline.tools.syntax-highlight :as highlight])
   (:import
    [org.jline.reader
     UserInterruptException
     EndOfFileException]))
-
-(defmacro with-rebel-bindings [line-reader & body]
-  `(binding [rebel-readline.jline-api/*line-reader* (:line-reader ~line-reader)
-             rebel-readline.service/*service* (:service ~line-reader)]
-             ~@body))
 
 (defn help-message []
   "[Rebel readline] Type :repl/help for online help info")
@@ -28,7 +22,7 @@
   A service implements the multimethods found in `rebel-readline.service`
 
   Example:
-    (line-reader (rebel-readline.service.local-clojure/create))
+    (line-reader (rebel-readline.clojure.service.local/create))
 
   This function also takes an optional options map.
 
@@ -62,21 +56,20 @@
   The underlying Terminal manipulation code is Jline3 and it makes
   every effort to be compatible with a wide array of terminals. It is
   entirely possible that your terminal is not well supported."
-  [service & [options]]
-  {:service service
-   :line-reader (lr/line-reader* service options)})
+  [terminal service & [options]]
+  (lr/line-reader* terminal service options))
 
 (defn- output-handler
   "Creates a function that takes output to be redirected \"above\" a
   running readline editor."
-  [{:keys [line-reader service]}]
+  [line-reader]
   (fn [{:keys [text]}]
     (when (not (string/blank? text))
-      (binding [srv/*service* service]
-        (api/reader-println line-reader text)))))
+      (binding [api/*line-reader* line-reader]
+        (api/reader-println text)))))
 
 (defn read-line
-  "Reads a line from the supplied rebel line reader. If you supply the
+  "Reads a line from the currently rebel line reader. If you supply the
   optional `command-executed` sentinal value, it will be returned when
   a repl command is executed, otherwise a blank string will be
   returned when a repl command is executed.
@@ -95,36 +88,33 @@
 
   Once the reading is done it returns the terminal to its original
   settings."
-  [{:keys [service line-reader] :as reader} & [command-executed]]
+  [& [command-executed]]
   (let [command-executed (or command-executed "")]
-    (binding [srv/*service* service
-              api/*line-reader* line-reader]
-      ;; TODO consider redirecting *err* as well
-      (let [redirect-output? (:redirect-output @srv/*service*)
-            save-out (volatile! *out*)
-            redirect-print-writer
-            (line-print-writer/print-writer :out (output-handler reader))]
-        (.flush *out*)
-        (.flush *err*)
-        (when redirect-output?
-          (alter-var-root
-           #'*out*
-           (fn [root-out]
-             (vreset! save-out root-out)
-             redirect-print-writer)))
-        (try
-          (binding [*out* redirect-print-writer]
-            ;; this is intensely disatisfying
-            ;; but we are blocking redisplays while the
-            ;; readline is initially drawn
-            (api/block-redisplay-millis 100)
-            (let [res' (.readLine line-reader (srv/prompt))]
-              (if-not (commands/handle-command res')
-                res'
-                command-executed)))
-          (finally
-            (when redirect-output?
-              (alter-var-root #'*out* (fn [_] @save-out)))))))))
+    (let [redirect-output? (:redirect-output @api/*line-reader*)
+          save-out (volatile! *out*)
+          redirect-print-writer
+          (line-print-writer/print-writer :out (output-handler api/*line-reader*))]
+      (.flush *out*)
+      (.flush *err*)
+      (when redirect-output?
+        (alter-var-root
+         #'*out*
+         (fn [root-out]
+           (vreset! save-out root-out)
+           redirect-print-writer)))
+      (try
+        (binding [*out* redirect-print-writer]
+          ;; this is intensely disatisfying
+          ;; but we are blocking redisplays while the
+          ;; readline is initially drawn
+          (api/block-redisplay-millis 100)
+          (let [res' (.readLine api/*line-reader* (lr/prompt))]
+            (if-not (commands/handle-command res')
+              res'
+              command-executed)))
+        (finally
+          (when redirect-output?
+            (alter-var-root #'*out* (fn [_] @save-out))))))))
 
 (defn repl-read-line
   "A readline function that converts the Exceptions normally thrown by
@@ -136,9 +126,9 @@
 
   This function either returns the string read by this readline or the
   request-exit or request-prompt sentinal objects."
-  [{:keys [service line-reader] :as reader} request-prompt request-exit]
+  [request-prompt request-exit]
   (try
-    (read-line reader request-prompt)
+    (read-line request-prompt)
     (catch UserInterruptException e
       request-prompt)
     (catch EndOfFileException e
@@ -153,13 +143,13 @@
          (do (.unread pbr x) true))))
 
 (defn create-buffered-repl-reader-fn [create-buffered-reader-fn has-remaining-pred repl-read-fn]
-  (fn [line-reader]
+  (fn []
     (let [reader-buffer (atom (create-buffered-reader-fn ""))]
       (fn [request-prompt request-exit]
         (if (has-remaining-pred @reader-buffer)
           (binding [*in* @reader-buffer]
             (repl-read-fn request-prompt request-exit))
-          (let [possible-forms (repl-read-line line-reader request-prompt request-exit)]
+          (let [possible-forms (repl-read-line request-prompt request-exit)]
             (if (#{request-prompt request-exit} possible-forms)
               possible-forms
               (if-not (string/blank? possible-forms)
@@ -183,7 +173,7 @@
    :prompt (fn []) ;; prompt is handled by line-reader
    :read (clj-repl-read
            (line-reader
-             (rebel-readline.service.local-clojure/create))))
+             (rebel-readline.clojure.service.local/create))))
 
   Or catch a bad terminal error and fall back to clojure.main/repl-read:
 
@@ -192,7 +182,7 @@
    :read (try
           (clj-repl-read
            (line-reader
-             (rebel-readline.service.local-clojure/create)))
+             (rebel-readline.clojure.service.local/create)))
           (catch clojure.lang.ExceptionInfo e
              (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))
                 (do (println (.getMessage e))
@@ -242,14 +232,15 @@
 
   Examples:
 
-  (with-readline-input-stream (rebel-readline.service.local-clojure/create)
+  (with-readline-input-stream (rebel-readline.clojure.service.local/create)
    (clojure.main/repl :prompt (fn[])))"
   [service & body]
   `(let [lr# (line-reader ~service)]
      (binding [*in* (clojure.lang.LineNumberingPushbackReader.
                      (rebel-readline.io.callback-reader/callback-reader
-                      #(stream-read-line lr#)))]
-       (rebel-readline.core/with-rebel-bindings lr# ~@body))))
+                      #(stream-read-line lr#)))
+               rebel-readline.jline-api/*line-reader* lr#]
+       ~@body)))
 
 (defn syntax-highlight-prn
   "Print a syntax highlighted clojure value.
@@ -263,9 +254,6 @@
 
   See `rebel-readline.main` for an example of how this function is normally used"
   [x]
-  (println (api/->ansi (highlight/highlight-clj-str (pr-str x)))))
+  (println (api/->ansi (highlight/highlight-str lr/color (pr-str x)))))
 
-(defn clj-repl-print [line-reader]
-  (fn [x]
-    (with-rebel-bindings line-reader
-      (syntax-highlight-prn x))))
+(def clj-repl-print syntax-highlight-prn)
