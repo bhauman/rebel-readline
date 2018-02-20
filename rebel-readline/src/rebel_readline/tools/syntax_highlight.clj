@@ -1,6 +1,6 @@
 (ns rebel-readline.tools.syntax-highlight
   (:require
-   [rebel-readline.parsing.tokenizer :as tokenize])
+   [rebel-readline.clojure.tokenizer :as tokenize])
   (:import
    [org.jline.utils AttributedStringBuilder]))
 

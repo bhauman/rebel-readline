@@ -1,4 +1,4 @@
-(ns rebel-readline.parsing.tokenizer
+(ns rebel-readline.clojure.tokenizer
   (:require
    [clojure.string :as string]
    [clojure.repl])

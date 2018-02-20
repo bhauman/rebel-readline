@@ -4,7 +4,7 @@
    [rebel-readline.commands :as commands]
    [rebel-readline.jline-api :as api :refer :all]
    [rebel-readline.jline-api.attributed-string :as astring]
-   [rebel-readline.parsing.tokenizer :as tokenize]
+   [rebel-readline.clojure.tokenizer :as tokenize]
    [rebel-readline.tools.indent :as indent]
    [rebel-readline.tools.sexp :as sexp]
    [rebel-readline.tools.colors :as colors]
