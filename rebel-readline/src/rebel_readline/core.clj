@@ -6,8 +6,7 @@
    [rebel-readline.io.callback-reader]
    [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.tools :as tools]
-   [rebel-readline.tools.syntax-highlight :as highlight])
+   [rebel-readline.tools :as tools])
   (:import
    [org.jline.reader
     UserInterruptException

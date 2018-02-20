@@ -3,7 +3,7 @@
    [rebel-readline.tools.colors :as colors]
    [rebel-readline.jline-api :as api])
   (:import
-   [org.jline.utils AttributedStyle]))
+   [org.jline.utils AttributedStringBuilder AttributedStyle]))
 
 ;; ----------------------------------------------
 ;; Extra Abilities
@@ -17,6 +17,32 @@
    (get @api/*line-reader* :color-theme)
    colors/color-themes
    (get sk AttributedStyle/DEFAULT)))
+
+;; String Highlighting
+;; ----------------------------------------------
+
+(defn highlight-tokens [color-fn tokens syntax-str]
+  (let [sb (AttributedStringBuilder.)]
+    (loop [pos 0
+           hd tokens]
+      (let [[_ start end sk] (first hd)]
+        (cond
+          (= (.length sb) (count syntax-str)) sb
+          (= (-> hd first second) pos) ;; style active
+          (do
+            (if-let [st (color-fn sk)]
+              (.styled sb st (subs syntax-str start end))
+              (.append sb (subs syntax-str start end)))
+            (recur end (rest hd)))
+          ;; TODO this could be faster if we append whole sections
+          ;; instead of advancing one char at a time
+          ;; but its pretty fast now
+          :else
+          (do (.append sb (.charAt syntax-str pos))
+              (recur (inc pos) hd)))))))
+
+(defn highlight-str [color-fn tokenizer-fn syntax-str]
+  (highlight-tokens color-fn (tokenizer-fn syntax-str) syntax-str))
 
 ;; Baseline services
 ;; ----------------------------------------------
@@ -40,12 +66,11 @@
 ;; ----------------------------------------------
 
 (defmulti -prompt
-  "returns a repl prompt string"
+  "returns a read-line prompt string"
   service-dispatch)
 
 (defmethod -prompt :default [_] "")
 
-;; TODO this is a good start
 (defn prompt []
   (if-let [f (resolve-fn? (:prompt @api/*line-reader*))]
     (f)

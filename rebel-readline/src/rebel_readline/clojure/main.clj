@@ -4,7 +4,6 @@
    [rebel-readline.clojure.line-reader :as clj-line-reader]
    [rebel-readline.jline-api :as api]
    [rebel-readline.tools :as tools]
-   [rebel-readline.tools.syntax-highlight :as highlight]
    [rebel-readline.clojure.service.local :as clj-service]
    [clojure.main]))
 
@@ -20,7 +19,7 @@
 
   See `rebel-readline.main` for an example of how this function is normally used"
   [x]
-  (println (api/->ansi (highlight/highlight-str tools/color (pr-str x)))))
+  (println (api/->ansi (clj-line-reader/highlight-clj-str (pr-str x)))))
 
 ;; this is intended to only be used with clojure repls
 (def create-repl-read

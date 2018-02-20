@@ -6,7 +6,6 @@
    [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.clojure.tokenizer :as tokenize]
    [rebel-readline.clojure.sexp :as sexp]
-   [rebel-readline.tools.syntax-highlight :as highlight :refer [highlight-str]]
    [rebel-readline.tools :as tools :refer [color service-dispatch]]
    [rebel-readline.utils :as utils :refer [log]]
    [cljfmt.core :refer [reformat-string]]
@@ -52,6 +51,8 @@
    (if (= :light (utils/terminal-background-color?))
      :light-screen-theme
      :dark-screen-theme)})
+
+(def highlight-clj-str (partial tools/highlight-str color tokenize/tag-syntax))
 
 ;; ---------------------------------------------------------------------
 ;; ---------------------------------------------------------------------
@@ -559,7 +560,7 @@
         (when-let [name-line (name-arglist-display var-meta-data)]
           (when-not (string/blank? source)
             {:arglist-line name-line
-             :source (highlight-str color source)}))))))
+             :source (highlight-clj-str source)}))))))
 
 (def source-at-point-widget
   (create-widget
@@ -728,7 +729,7 @@
       (.append
        (inline-result-marker
         (.toAttributedString
-         (highlight/highlight-str color printed-result)))))))
+         (highlight-clj-str printed-result)))))))
 
 (def eval-at-point-widget
   (create-widget
@@ -1021,7 +1022,7 @@
       ;; so add this binding here
       (binding [*line-reader* reader]
         (if (:highlight @reader)
-          (.toAttributedString (highlight-str color buffer))
+          (.toAttributedString (highlight-clj-str buffer))
           (AttributedString. buffer))))))
 
 ;; ----------------------------------------
