@@ -8,8 +8,6 @@
    [rebel-readline.clojure.service.local :as clj-service]
    [clojure.main]))
 
-#_(remove-ns 'rebel-readline.main)
-
 (defn syntax-highlight-prn
   "Print a syntax highlighted clojure value.
 
