@@ -18,9 +18,18 @@
   (last args))
 
 (defn terminal-background-color? []
-  (when-let [term-program (System/getenv "TERM_PROGRAM")]
-    (let [tp (string/lower-case term-program)]
-      (cond
-        (.startsWith tp "iterm") :dark
-        (.startsWith tp "apple") :light
-        :else :dark))))
+  (or (when-let [fgbg (System/getenv "COLORFGBG")]
+        (when-let [[fg bg] (try (map #(Integer/parseInt (string/trim %))
+                                     (string/split fgbg #";"))
+                                (catch Throwable t nil))]
+          (when (and fg bg)
+            (if (< -1 fg bg 16)
+              :light
+              :dark))))
+      (when-let [term-program (System/getenv "TERM_PROGRAM")]
+        (let [tp (string/lower-case term-program)]
+          (cond
+            (.startsWith tp "iterm") :dark
+            (.startsWith tp "apple") :light
+            :else nil)))
+      :dark))
