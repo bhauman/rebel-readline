@@ -4,8 +4,7 @@
    [clojure.string :as string]
    [rebel-readline.jline-api :as api]
    [rebel-readline.jline-api.attributed-string :as astring]
-   [rebel-readline.tools.colors :as col]
-   [rebel-readline.tools :refer [color]])
+   [rebel-readline.tools :as tools :refer [color]])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]
    [org.jline.reader LineReader EndOfFileException]))
@@ -61,7 +60,7 @@
     (cond
       (and (nil? color-theme)
            (some? backup-color-theme)
-           (col/color-themes backup-color-theme))
+           (tools/color-themes backup-color-theme))
       (do (println "Activating color, using theme: " backup-color-theme)
           (swap! api/*line-reader* assoc :color-theme backup-color-theme))
       (nil? color-theme)
@@ -78,16 +77,16 @@
   (str "Change the color theme to one of the available themes:"
        (System/getProperty "line.separator")
        (with-out-str
-         (pprint (keys col/color-themes)))))
+         (pprint (keys tools/color-themes)))))
 
 (defmethod command :repl/set-color-theme [[_ new-theme]]
   (let [new-theme (keyword new-theme)]
-    (if-not (col/color-themes new-theme)
+    (if-not (tools/color-themes new-theme)
       (println
        (str (pr-str new-theme) " is not a known color theme, please choose one of:"
             (System/getProperty "line.separator")
             (with-out-str
-              (pprint (keys col/color-themes)))))
+              (pprint (keys tools/color-themes)))))
       (swap! api/*line-reader* assoc :color-theme new-theme))))
 
 (defmethod command-doc :repl/key-bindings [_]

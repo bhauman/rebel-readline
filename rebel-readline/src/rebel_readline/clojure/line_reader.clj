@@ -34,8 +34,6 @@
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
     InfoCmp$Capability]))
 
-#_ (remove-ns 'rebel-readline.clojure.line-reader)
-
 ;; ----------------------------------------------
 ;; Default Configuration
 ;; ----------------------------------------------

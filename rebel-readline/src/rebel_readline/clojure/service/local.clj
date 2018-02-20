@@ -1,7 +1,6 @@
 (ns rebel-readline.clojure.service.local
   (:require
    [rebel-readline.clojure.line-reader :as service]
-   [rebel-readline.tools.colors :as colors]
    [rebel-readline.clojure.utils :as clj-utils]
    [compliment.core :as compliment]
    [clojure.repl]))
