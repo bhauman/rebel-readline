@@ -99,12 +99,14 @@
    :font-lock/foreign        (.bold (fg-color 220))
    :font-lock/builtin        (.bold (fg-color 167))
 
-   :widget/half-contrast         (fg-color 243)
+   :widget/half-contrast     (fg-color 243)
    :widget/half-contrast-inverse (.inverse (fg-color 243))
-   :widget/half-contrast-faint   (.faint (fg-color 243))
+
    ;; system widget colors
    :widget/eldoc-namespace   (.faint (fg-color 123))
    :widget/eldoc-varname     (.faint (fg-color 178))
+   :widget/eldoc-separator   (fg-color 243)
+   :widget/arglists          (fg-color 243)
 
    :widget/doc               (fg-color 222)
    :widget/anchor            (fg-color 39)
@@ -115,7 +117,9 @@
    :widget/apropos-namespace (.faint (fg-color 243))
 
    :widget/warning           AttributedStyle/DEFAULT
-   :widget/error             (fg-color 196)})
+   :widget/error             (fg-color 196)
+
+   })
 
 (register-color-theme! :dark-screen-theme dark-screen-theme)
 
@@ -133,14 +137,16 @@
          :font-lock/doc             (.bold (fg-color 132))
          :font-lock/comment         (.bold (fg-color 247))
 
-         :widget/eldoc-namespace    (.faint (fg-color 28))
-         :widget/eldoc-varname      (.faint (fg-color 21))
+         :widget/eldoc-namespace    (fg-color 28)
+         :widget/eldoc-varname      (fg-color 21)
+         ;:widget/eldoc-separator   (fg-color 243)
+         ;:widget/arglists          (fg-color 243)
 
-         :widget/doc                (.bold (fg-color 127))
+         :widget/doc                (fg-color 238)
          :widget/light-anchor       (.underline (.faint (fg-color 26)))
 
          :widget/apropos-word       AttributedStyle/DEFAULT
          :widget/apropos-highlight  (fg-color 27)
-         :widget/apropos-namespace  (.faint (.foreground AttributedStyle/DEFAULT 243))))
+         :widget/apropos-namespace  (fg-color 243)))
 
 (register-color-theme! :light-screen-theme light-screen-theme)

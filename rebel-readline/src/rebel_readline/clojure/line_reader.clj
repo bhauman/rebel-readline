@@ -497,10 +497,11 @@
     (when (and ns name (not= ns name))
       (astring/astr
        [(str ns)   (color :widget/eldoc-namespace)]
-       ["/"        (color :widget/half-contrast)]
+       ["/"        (color :widget/eldoc-separator)]
        [(str name) (color :widget/eldoc-varname)]
+       (when arglists [": " (color :widget/eldoc-separator)])
        (when arglists
-         [(str ": " (pr-str arglists)) (color :widget/half-contrast)])))))
+         [(pr-str arglists) (color :widget/arglists)])))))
 
 (defn display-argument-help-message []
   (when-let [funcall-str (one-space-after-funcall-word?)]
