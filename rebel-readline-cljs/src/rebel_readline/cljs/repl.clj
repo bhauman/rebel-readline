@@ -53,7 +53,9 @@
 
   See `rebel-readline-cljs.main` for an example of how this function is normally used"
   [x]
-  (println (api/->ansi (clj-line-reader/highlight-clj-str (or x "")))))
+  (-> api/*terminal*
+      (.writer)
+      (.println (api/->ansi (clj-line-reader/highlight-clj-str (or x ""))))))
 
 (defn repl* [repl-env opts]
   (rebel/with-line-reader
@@ -74,6 +76,4 @@
 
 (defn repl [repl-env & opts]
   (repl* repl-env (apply hash-map opts)))
-
-
 
