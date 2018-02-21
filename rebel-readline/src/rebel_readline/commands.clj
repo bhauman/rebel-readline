@@ -75,7 +75,7 @@
 
 (defmethod command-doc :repl/set-color-theme [_]
   (str "Change the color theme to one of the available themes:"
-       (System/getProperty "line.separator")
+       "\n"
        (with-out-str
          (pprint (keys tools/color-themes)))))
 
@@ -84,7 +84,7 @@
     (if-not (tools/color-themes new-theme)
       (println
        (str (pr-str new-theme) " is not a known color theme, please choose one of:"
-            (System/getProperty "line.separator")
+            "\n"
             (with-out-str
               (pprint (keys tools/color-themes)))))
       (swap! api/*line-reader* assoc :color-theme new-theme))))
@@ -142,7 +142,7 @@ Without any arguments displays all the current key bindings")
              [(format "%s key bindings:" (string/capitalize (name k)))
               (.bold AttributedStyle/DEFAULT)])))
           (println
-           (string/join (System/getProperty "line.separator")
+           (string/join "\n"
                         (map (fn [[k v]]
                                (format "  %-12s%s" k v))
                              data))))))))
@@ -213,17 +213,17 @@ Without any arguments displays all the current key bindings")
     (apply
      astring/astr
      ["Available Commands:" (.bold AttributedStyle/DEFAULT)]
-     (System/getProperty "line.separator")
+     "\n"
      (keep
       #(when-let [doc (command-doc %)]
          (astring/astr
           " "
           [(prn-str %) (.underline (color :font-lock/core-form))]
           (string/join
-           (System/getProperty "line.separator")
+           "\n"
            (map (fn [x] (str "     " x))
                 (string/split-lines doc)))
-          (System/getProperty "line.separator")))
+          "\n"))
       (sort (all-commands)))))))
 
 (defn add-command [command-keyword action-fn doc]

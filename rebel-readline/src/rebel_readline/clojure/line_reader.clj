@@ -332,7 +332,7 @@
           (astring/split-lines at-str)))
 
 (defn window-lines [at-str-lines pos rows]
-  (astring/join (System/getProperty "line.separator")
+  (astring/join "\n"
                 (take rows (drop pos at-str-lines))))
 
 (defn- lines-needed [hdr columns]
@@ -360,7 +360,7 @@
                (lines-needed (:footer options) columns))
             (- (rows-available-for-post-display) 3))
        (display-message (astring/join
-                         (System/getProperty "line.separator")
+                         "\n"
                          (keep identity
                                [(when-let [header (:header options)]
                                   (if (fn? header) (header) header))
@@ -379,7 +379,7 @@
            (if (< 2 window-rows)
              (do
                (display-message (astring/join
-                                 (System/getProperty "line.separator")
+                                 "\n"
                                  (keep identity
                                   [header
                                    (window-lines at-str-lines pos window-rows)
@@ -666,7 +666,7 @@
              (apply map vector)
              (map #(interpose "   " %))
              (map #(apply astring/astr %))
-             (interpose (apply str (System/getProperty "line.separator")))
+             (interpose (apply str "\n"))
              (apply astring/astr))))))
 
 (def apropos-at-point-widget
@@ -702,7 +702,7 @@
       s)))
 
 (defn ensure-newline [s]
-  (str (string/trim-newline s) (System/getProperty "line.separator")))
+  (str (string/trim-newline s) "\n"))
 
 (defn no-greater-than [limit val]
   (min limit (or val Integer/MAX_VALUE)))

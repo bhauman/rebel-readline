@@ -170,9 +170,9 @@
         request-exit   (Object.)
         possible-result (repl-read-line request-prompt request-exit)]
     (cond
-      (= request-prompt possible-result) (System/getProperty "line.separator")
+      (= request-prompt possible-result) "\n"
       (= request-exit possible-result) nil
-      :else (str possible-result (System/getProperty "line.separator")))))
+      :else (str possible-result "\n"))))
 
 (defmacro with-readline-in
   "This macro takes a rebel readline service and binds *in* to an a

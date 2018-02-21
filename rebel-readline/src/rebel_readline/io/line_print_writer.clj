@@ -53,7 +53,7 @@
                                 lines (if (and
                                            (not
                                             (.endsWith text
-                                                       (System/getProperty "line.separator")))
+                                                       "\n"))
                                            (< (count (last lines)) 500))
                                         ;; pushback
                                         (do
@@ -64,7 +64,7 @@
                             (handler {:type ::output
                                       :channel channel-type
                                       :text (string/join
-                                             (System/getProperty "line.separator")
+                                             "\n"
                                              lines)}))))))
                   true)))
 
