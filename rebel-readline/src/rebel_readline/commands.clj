@@ -131,7 +131,7 @@ Without any arguments displays all the current key bindings")
     (when-let [map-name (api/main-key-map-name)]
       (println "Current key map:" (api/->ansi (astring/astr
                                                [(pr-str (keyword map-name))
-                                                (color :def-call)]))))
+                                                (color :font-lock/core-form)]))))
     (if (and search (empty? key-data))
       (println "Binding search: No bindings found that match" (pr-str (name search)))
       (doseq [[k data] binding-groups]
@@ -218,7 +218,7 @@ Without any arguments displays all the current key bindings")
       #(when-let [doc (command-doc %)]
          (astring/astr
           " "
-          [(prn-str %) (.underline (color :def-call))]
+          [(prn-str %) (.underline (color :font-lock/core-form))]
           (string/join
            (System/getProperty "line.separator")
            (map (fn [x] (str "     " x))

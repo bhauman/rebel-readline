@@ -50,7 +50,7 @@
      :light-screen-theme
      :dark-screen-theme)})
 
-(def highlight-clj-str (partial tools/highlight-str color tokenize/tag-syntax))
+(def highlight-clj-str (partial tools/highlight-str color tokenize/tag-font-lock))
 
 ;; ---------------------------------------------------------------------
 ;; ---------------------------------------------------------------------
@@ -348,7 +348,7 @@
          (merge {:header #(astring/astr [(apply str (repeat (:cols (terminal-size)) \-))
                                          (.faint AttributedStyle/DEFAULT)])
                  :footer (astring/astr ["-- SCROLL WITH ARROW KEYS --"
-                                        (color :less-help-message)])}
+                                        (color :widget/half-contrast-inverse)])}
                 options)
          columns     (:cols (terminal-size))
          at-str-lines (split-into-wrapped-lines at-str columns)
@@ -496,11 +496,11 @@
   (let [{:keys [ns arglists name]} meta-data]
     (when (and ns name (not= ns name))
       (astring/astr
-       [(str ns)   (color :eldoc-namespace)]
-       ["/"        (color :eldoc-separator)]
-       [(str name) (color :eldoc-varname)]
+       [(str ns)   (color :widget/eldoc-namespace)]
+       ["/"        (color :widget/half-contrast)]
+       [(str name) (color :widget/eldoc-varname)]
        (when arglists
-         [(str ": " (pr-str arglists)) (color :eldoc-arglists)])))))
+         [(str ": " (pr-str arglists)) (color :widget/half-contrast)])))))
 
 (defn display-argument-help-message []
   (when-let [funcall-str (one-space-after-funcall-word?)]
@@ -542,9 +542,9 @@
   (create-widget
    (when-let [[wrd] (word-at-cursor)]
      (when-let [doc-options (doc wrd)]
-       (display-less (AttributedString. (:doc doc-options) (color :doc))
+       (display-less (AttributedString. (:doc doc-options) (color :widget/doc))
                      (when-let [url (:url doc-options)]
-                       {:header (AttributedString. url (color :light-anchor))}))))
+                       {:header (AttributedString. url (color :widget/light-anchor))}))))
    true))
 
 ;; -------------------------------------
@@ -582,11 +582,11 @@
   (let [sep (apply str (repeat (- width (count ns') (count name')) \space))
         idx (.indexOf name' wrd)]
     (astring/astr
-     [(subs name' 0 idx)                   (color :apropos-word)]
-     [(subs name' idx (+ idx (count wrd))) (color :apropos-highlight)]
-     [(subs name' (+ idx (count wrd)))     (color :apropos-word)]
+     [(subs name' 0 idx)                   (color :widget/apropos-word)]
+     [(subs name' idx (+ idx (count wrd))) (color :widget/apropos-highlight)]
+     [(subs name' (+ idx (count wrd)))     (color :widget/apropos-word)]
      sep
-     [ns'                                  (color :apropos-namespace)])))
+     [ns'                                  (color :widget/apropos-namespace)])))
 
 (defn format-column [wrd column]
   (let [max-width (apply max (map count column))]
@@ -690,7 +690,7 @@
         (evaluate-str form-str)))))
 
 (defn inline-result-marker [^AttributedString at-str]
-  (astring/astr ["#_=>" (color :inline-display-marker)] " " at-str))
+  (astring/astr ["#_=>" (color :widget/half-contrast-inverse)] " " at-str))
 
 (defn limit-character-size [s]
   (let [{:keys [rows cols]} (terminal-size)
@@ -717,12 +717,12 @@
               [nil (Throwable->map t)]))
           [printed-result exception])]
     (cond-> (AttributedStringBuilder.)
-      exception (.styled (color :error)
+      exception (.styled (color :widget/error)
                          (str "=>!! "
                               (or (:cause exception)
                                   (some-> exception :via first :type))) )
       (not (string/blank? out)) (.append (ensure-newline out))
-      (not (string/blank? err)) (.styled (color :error) (ensure-newline err))
+      (not (string/blank? err)) (.styled (color :widget/error) (ensure-newline err))
       (and (not exception) printed-result)
       (.append
        (inline-result-marker

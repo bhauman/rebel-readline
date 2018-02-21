@@ -240,6 +240,38 @@
                :protocol-def-name
                :dynamic-var))
 
+(defn tag-font-lock [syntax-str]
+  (tag-matches syntax-str
+               syntax-token-tagging-rexp
+               :font-lock/string        ;; :string-literal
+               :font-lock/comment       ;; :line-comment
+               :font-lock/core-form     ;; :def-call
+               :font-lock/function-name ;; :def-varname
+               :font-lock/doc           ;; :def-doc-string
+               :font-lock/core-form     ;; :def-call
+               :font-lock/function-name ;; :def-varname
+               :font-lock/core-form     ;; :def-call
+               :font-lock/variable-name ;; :def-val-varname
+               :font-lock/doc           ;; :def-doc-string
+               :font-lock/core-form     ;; :core-macro
+               :font-lock/core-form     ;; :special-form
+               :font-lock/string        ;; :unterm-string-literal
+               :font-lock/function-name ;; :core-fn
+               :font-lock/builtin       ;; :core-var
+               :font-lock/constant      ;; :keyword-colon
+               :font-lock/type          ;; :keyword-namespace
+               :font-lock/constant      ;; :keyword-body
+               :font-lock/type          ;; :symbol-namespace
+               :symbol-body
+               :font-lock/type          ;; :classname
+               :font-lock/foreign       ;; :interop-call
+               :font-lock/variable-name ;; :function-arg
+               :font-lock/type          ;; :namespace
+               :font-lock/string        ;; :character
+               :font-lock/foreign       ;; :protocol-def-name
+               :font-lock/variable-name ;; :dynamic-var
+               ))
+
 (def non-interp-regexp
   (Pattern/compile
    (str
@@ -255,8 +287,6 @@
                :string-literal
                :unterm-string-literal
                :character))
-
-
 
 (def sexp-traversal-rexp
   (Pattern/compile
