@@ -49,9 +49,11 @@
 
 (defn assert-system-terminal [terminal]
   (when (instance? DumbTerminal terminal)
-    (throw (ex-info "Unable to create a system Terminal, you must
-not launch the Rebel readline from an intermediate process\nIf you
-are using `lein` you may need to use `lein trampoline`." {:type ::bad-terminal}))))
+    (throw (ex-info
+"Unable to detect a system Terminal, you must not launch the Rebel readline
+from an intermediate process.
+If you are using `lein` you may need to use `lein trampoline`."
+            {:type ::bad-terminal}))))
 
 (defn create-terminal [& [assert-system-terminal']]
   (let [terminal (-> (TerminalBuilder/builder)
