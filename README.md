@@ -101,7 +101,7 @@ Or with a fallback:
     (rebel-readline.service.local-clojure/create)
       (clojure.main/repl :prompt (fn[])))
   (catch clojure.lang.ExceptionInfo e
-    (if (-> e ex-data :type (= :rebel-readline.line-reader/bad-terminal))
+    (if (-> e ex-data :type (= :rebel-readline.jline-api/bad-terminal))
       (do (println (.getMessage e))
           (clojure.main/repl))
       (throw e))))
