@@ -218,7 +218,7 @@ Without any arguments displays all the current key bindings")
       #(when-let [doc (command-doc %)]
          (astring/astr
           " "
-          [(prn-str %) (.underline (color :font-lock/core-form))]
+          [(prn-str %) (color :widget/anchor)]
           (string/join
            "\n"
            (map (fn [x] (str "     " x))
