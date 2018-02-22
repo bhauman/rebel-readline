@@ -560,7 +560,7 @@
         (when-let [name-line (name-arglist-display var-meta-data)]
           (when-not (string/blank? source)
             {:arglist-line name-line
-             :source (highlight-clj-str source)}))))))
+             :source (highlight-clj-str (string/trim source))}))))))
 
 (def source-at-point-widget
   (create-widget
