@@ -543,7 +543,8 @@
   (create-widget
    (when-let [[wrd] (word-at-cursor)]
      (when-let [doc-options (doc wrd)]
-       (display-less (AttributedString. (:doc doc-options) (color :widget/doc))
+       (display-less (AttributedString. (string/trim (:doc doc-options))
+                                        (color :widget/doc))
                      (when-let [url (:url doc-options)]
                        {:header (AttributedString. url (color :widget/light-anchor))}))))
    true))
@@ -617,7 +618,7 @@
                     (* x-avg x-avg)))
         total (count coll)]
     (-> (/ (apply + squares)
-           (- total 1))
+           (max (- total 1) 1))
         (Math/sqrt))))
 
 ;; TODO move to lib
