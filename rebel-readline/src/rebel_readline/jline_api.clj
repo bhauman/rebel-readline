@@ -252,9 +252,6 @@ If you are using `lein` you may need to use `lein trampoline`."
 (defn call-widget [widget-name]
   (.callWidget *line-reader* widget-name))
 
-;; important
-;; TODO make this work when reading? or not
-
 (defn reader-println
   ([s] (reader-println *line-reader* s))
   ([reader s]

@@ -19,9 +19,8 @@
 
   See `rebel-readline.main` for an example of how this function is normally used"
   [x]
-  (-> api/*terminal*
-      (.writer)
-      (.println (api/->ansi (clj-line-reader/highlight-clj-str (pr-str x))))))
+  (binding [*out* (.. api/*line-reader* getTerminal writer)]
+    (println (api/->ansi (clj-line-reader/highlight-clj-str (pr-str x))))))
 
 ;; this is intended to only be used with clojure repls
 (def create-repl-read

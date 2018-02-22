@@ -53,9 +53,8 @@
 
   See `rebel-readline-cljs.main` for an example of how this function is normally used"
   [x]
-  (-> api/*terminal*
-      (.writer)
-      (.println (api/->ansi (clj-line-reader/highlight-clj-str (or x ""))))))
+  (binding [*out* (.. api/*line-reader* getTerminal writer)]
+    (println (api/->ansi (clj-line-reader/highlight-clj-str (or x ""))))))
 
 (defn repl* [repl-env opts]
   (rebel/with-line-reader
@@ -67,7 +66,7 @@
     (when-let [prompt-fn (:prompt opts)]
       (swap! api/*line-reader* assoc :prompt #(with-out-str (prompt-fn))))
     (println (rebel/help-message))
-    (cljs.repl/repl* repl-env 
+    (cljs.repl/repl* repl-env
      (merge
       {:print syntax-highlight-println
        :read (create-repl-read)}
