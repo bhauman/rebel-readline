@@ -6,7 +6,10 @@
    [rebel-readline.core :as rebel]
    [rebel-readline.clojure.line-reader :as clj-line-reader]
    [rebel-readline.cljs.service.local :as cljs-service]
-   [rebel-readline.jline-api :as api]))
+   [rebel-readline.io.line-print-writer :as line-print-writer]   
+   [rebel-readline.jline-api :as api])
+  (:import
+   [org.jline.utils OSUtils]))
 
 (defn has-remaining?
   "Takes a clojure.tools.reader.reader-types/SourceLoggingPushbackReader
@@ -66,12 +69,20 @@
     (when-let [prompt-fn (:prompt opts)]
       (swap! api/*line-reader* assoc :prompt #(with-out-str (prompt-fn))))
     (println (rebel/help-message))
-    (cljs.repl/repl* repl-env
-     (merge
-      {:print syntax-highlight-println
-       :read (create-repl-read)}
-      opts
-      {:prompt (fn [])}))))
+    ;; only rebinding out on windows as it needs the ANSI handling provided
+    ;; by the terminal, this is pretty complex and we are currently only doing
+    ;; it for CLJS
+    (binding [*out* (if OSUtils/IS_WINDOWS
+                      (line-print-writer/print-writer
+                       :out
+                       (rebel/output-handler api/*line-reader*))
+                      *out*)]
+      (cljs.repl/repl* repl-env
+       (merge
+        {:print syntax-highlight-println
+         :read (create-repl-read)}
+        opts
+        {:prompt (fn [])})))))
 
 (defn repl [repl-env & opts]
   (repl* repl-env (apply hash-map opts)))
