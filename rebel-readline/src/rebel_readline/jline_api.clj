@@ -229,11 +229,12 @@ If you are using `lein` you may need to use `lein trampoline`."
     (.redisplay *line-reader*)))
 
 (defn block-redisplay-millis [time-ms]
-  (.start
-   (Thread.
-    (fn []
-      (locking (.writer (.getTerminal *line-reader*))
-        (Thread/sleep time-ms))))))
+  (let [writer (.writer (.getTerminal *line-reader*))]
+    (.start
+     (Thread.
+      (fn []
+        (locking writer
+            (Thread/sleep time-ms)))))))
 
 (defn display-message [message]
   (let [post-field (get-accessible-field *line-reader* "post")]
