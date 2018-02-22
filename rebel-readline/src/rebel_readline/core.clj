@@ -4,7 +4,6 @@
    [clojure.string :as string]
    [rebel-readline.commands :as commands]
    [rebel-readline.io.callback-reader]
-   [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api]
    [rebel-readline.tools :as tools])
   (:import
@@ -50,15 +49,6 @@
 (defn help-message []
   "[Rebel readline] Type :repl/help for online help info")
 
-(defn output-handler
-  "Creates a function that takes output to be redirected \"above\" a
-  running readline editor."
-  [line-reader]
-  (fn [{:keys [text]}]
-    (when (not (string/blank? text))
-      (binding [api/*line-reader* line-reader]
-        (api/reader-println text)))))
-
 (defn read-line
   "Reads a line from the currently rebel line reader. If you supply the
   optional `command-executed` sentinal value, it will be returned when
@@ -84,9 +74,7 @@
     (let [redirect-output? (:redirect-output @api/*line-reader*)
           save-out (volatile! *out*)
           redirect-print-writer
-          (line-print-writer/print-writer :out (output-handler api/*line-reader*))]
-      (.flush *out*)
-      (.flush *err*)
+          (api/line-reader-redisplay-print-writer api/*line-reader*)]
       (when redirect-output?
         (alter-var-root
          #'*out*

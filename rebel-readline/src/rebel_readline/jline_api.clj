@@ -22,6 +22,7 @@
    [org.jline.reader.impl LineReaderImpl DefaultParser BufferImpl]
    [org.jline.terminal TerminalBuilder]
    [org.jline.terminal.impl DumbTerminal]
+   [java.io Writer]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
 (def ^:dynamic *terminal* nil)
@@ -223,17 +224,15 @@ If you are using `lein` you may need to use `lein trampoline`."
       {:rows (.getRows sz)
        :cols (.getColumns sz)})))
 
-(defonce redisplay-lock-obj (Object.))
-
 (defn redisplay []
-  (locking redisplay-lock-obj
+  (locking (.writer (.getTerminal *line-reader*))
     (.redisplay *line-reader*)))
 
 (defn block-redisplay-millis [time-ms]
   (.start
    (Thread.
     (fn []
-      (locking redisplay-lock-obj
+      (locking (.writer (.getTerminal *line-reader*))
         (Thread/sleep time-ms))))))
 
 (defn display-message [message]
@@ -245,31 +244,58 @@ If you are using `lein` you may need to use `lein trampoline`."
         buffer-rows (count (string/split-lines (buffer-as-string)))]
     (max 0 (- rows buffer-rows))))
 
-(defn reading? []
-  (let [reading-field (get-accessible-field *line-reader* "reading")]
-    (boolean (.get reading-field *line-reader*))))
+(defn reading? [line-reader]
+  (let [reading-field (get-accessible-field line-reader "reading")]
+    (boolean (.get reading-field line-reader))))
 
 (defn call-widget [widget-name]
   (.callWidget *line-reader* widget-name))
 
-(defn reader-println
-  ([s] (reader-println *line-reader* s))
-  ([reader s]
-   ;; this function is normally called for concurrent output
-   ;; there is a need to protect redisplay
-   (locking redisplay-lock-obj
-     (binding [*line-reader* reader]
-       (let [writer (.writer (.getTerminal reader))]
-         (if (reading?)
-           (do
-             (.callWidget reader LineReader/CLEAR)
-             (.println writer s)
-             (.callWidget reader LineReader/REDRAW_LINE)
-             (.callWidget reader LineReader/REDISPLAY)
-             (.flush writer))
-           (do
-             (.println writer s)
-             (.flush writer))))))))
+;; TODO we can handle dangling output without newlines better
+;; we could only flush upto and including the last newline
+;; and place the dangling print into the buffer
+
+;; taken from Clojure 1.10 core.print
+(defn ^java.io.PrintWriter PrintWriter-on
+  "implements java.io.PrintWriter given flush-fn, which will be called
+  when .flush() is called, with a string built up since the last call to .flush().
+  if not nil, close-fn will be called with no arguments when .close is called"
+  {:added "1.10"}
+  [flush-fn close-fn]
+  (let [sb (StringBuilder.)]
+    (-> (proxy [Writer] []
+          (flush []
+            (when (pos? (.length sb))
+              (flush-fn (.toString sb)))
+            (.setLength sb 0))
+          (close []
+                 (.flush ^Writer this)
+                 (when close-fn (close-fn))
+                 nil)
+          (write [str-cbuf off len]
+                 (when (pos? len)
+                   (if (instance? String str-cbuf)
+                     (.append sb ^String str-cbuf ^int off ^int len)
+                     (.append sb ^chars str-cbuf ^int off ^int len)))))
+        java.io.BufferedWriter.
+        java.io.PrintWriter.)))
+
+(defn redisplay-flush [line-reader s]
+  (let [writer (.writer (.getTerminal line-reader))]
+    (locking writer
+      (if (reading? line-reader)
+        (do
+          (.callWidget line-reader LineReader/CLEAR)
+          (.print writer s)
+          (.flush writer)
+          (.callWidget line-reader LineReader/REDRAW_LINE)
+          (.callWidget line-reader LineReader/REDISPLAY))
+        (do
+          (.print writer s)
+          (.flush writer))))))
+
+(defn ^java.io.PrintWriter line-reader-redisplay-print-writer [line-reader]
+  (PrintWriter-on (partial redisplay-flush line-reader) nil))
 
 (defn create-line-reader [terminal app-name service]
   (let [service-variable-name (name :rebel-readline.service/service)

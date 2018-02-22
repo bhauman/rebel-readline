@@ -6,7 +6,7 @@
    [rebel-readline.core :as rebel]
    [rebel-readline.clojure.line-reader :as clj-line-reader]
    [rebel-readline.cljs.service.local :as cljs-service]
-   [rebel-readline.io.line-print-writer :as line-print-writer]   
+   [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api])
   (:import
    [org.jline.utils OSUtils]))
@@ -73,9 +73,7 @@
     ;; by the terminal, this is pretty complex and we are currently only doing
     ;; it for CLJS
     (binding [*out* (if OSUtils/IS_WINDOWS
-                      (line-print-writer/print-writer
-                       :out
-                       (rebel/output-handler api/*line-reader*))
+                      (api/line-reader-redisplay-print-writer api/*line-reader*)
                       *out*)]
       (cljs.repl/repl* repl-env
        (merge
@@ -86,4 +84,3 @@
 
 (defn repl [repl-env & opts]
   (repl* repl-env (apply hash-map opts)))
-
