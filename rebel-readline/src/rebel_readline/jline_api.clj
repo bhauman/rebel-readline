@@ -270,10 +270,6 @@ If you are using `lein` you may need to use `lein trampoline`."
       (swap  [f & args] (swap* this f args))
       (reset [a] (.setVariable this service-variable-name a)))))
 
-;; TODO we can handle dangling output without newlines better
-;; we could only flush upto and including the last newline
-;; and place the dangling print into the buffer
-
 ;; taken from Clojure 1.10 core.print
 (defn ^java.io.PrintWriter PrintWriter-on
   "implements java.io.PrintWriter given flush-fn, which will be called
@@ -314,4 +310,9 @@ If you are using `lein` you may need to use `lein trampoline`."
           (.flush writer))))))
 
 (defn ^java.io.PrintWriter safe-terminal-writer [line-reader]
-  (PrintWriter-on (partial redisplay-flush line-reader) nil))
+  (PrintWriter-on #(as-> % x
+                     ;; ensure newline on flush to protect prompt
+                     (string/trim-newline x)
+                     (str x \newline)
+                     (redisplay-flush line-reader x))
+                  nil))

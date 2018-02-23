@@ -73,8 +73,7 @@
   (let [command-executed (or command-executed "")]
     (let [redirect-output? (:redirect-output @api/*line-reader*)
           save-out (volatile! *out*)
-          redirect-print-writer
-          (api/safe-terminal-writer api/*line-reader*)]
+          redirect-print-writer (api/safe-terminal-writer api/*line-reader*)]
       (when redirect-output?
         (alter-var-root
          #'*out*
@@ -84,8 +83,8 @@
       (try
         (binding [*out* redirect-print-writer]
           ;; this is intensely disatisfying
-          ;; but we are blocking redisplays while the
-          ;; readline is initially drawn
+          ;; but we are blocking concurrent redisplays while the
+          ;; readline prompt is initially drawn
           (api/block-redisplay-millis 100)
           (let [res' (.readLine api/*line-reader* (tools/prompt))]
             (if-not (commands/handle-command res')
@@ -93,6 +92,7 @@
               command-executed)))
         (finally
           (when redirect-output?
+            (flush)
             (alter-var-root #'*out* (fn [_] @save-out))))))))
 
 (defn repl-read-line

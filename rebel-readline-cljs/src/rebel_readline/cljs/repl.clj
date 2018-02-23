@@ -68,12 +68,7 @@
     (when-let [prompt-fn (:prompt opts)]
       (swap! api/*line-reader* assoc :prompt #(with-out-str (prompt-fn))))
     (println (rebel/help-message))
-    ;; only rebinding out on windows as it needs the ANSI handling provided
-    ;; by the terminal, this is pretty complex and we are currently only doing
-    ;; it for CLJS
-    (binding [*out* (if OSUtils/IS_WINDOWS
-                      (api/safe-terminal-writer api/*line-reader*)
-                      *out*)]
+    (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
       (cljs.repl/repl* repl-env
        (merge
         {:print syntax-highlight-println
