@@ -630,7 +630,7 @@
 ;; the thing we are looking for
 (defn eliminate-long-outliers [coll]
   (let [max-len (two-standards-plus-mean (map count coll))]
-    (filter #(< (count %) max-len) coll)))
+    (filter #(<= (count %) max-len) coll)))
 
 (defn find-number-of-columns [coll total-width]
   (let [suggests coll]
