@@ -69,6 +69,19 @@
 
   Once the reading is done it returns the terminal to its original
   settings."
+  ;; much of this code is intended to protect the prompt. If the
+  ;; prompt gets corrupted by extraneous output it can lead to the
+  ;; horrible condition of the readline program thinking the cursor is
+  ;; in a different position than it is. We try to prevent this by
+  ;; creating a safe writer that will print the output and redraw the
+  ;; readline, while ensuring that the printed output has a newline at
+  ;; the end.
+
+  ;; We then expand the scope of this print-writer by temorarily
+  ;; redefining the root binding of *out* to it.
+
+  ;; The idea being that we want to catch as much concurrant output as
+  ;; possible while the readline is enguaged.
   [& [command-executed]]
   (let [command-executed (or command-executed "")]
     (let [redirect-output? (:redirect-output @api/*line-reader*)
