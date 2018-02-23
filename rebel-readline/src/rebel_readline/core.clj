@@ -74,7 +74,7 @@
     (let [redirect-output? (:redirect-output @api/*line-reader*)
           save-out (volatile! *out*)
           redirect-print-writer
-          (api/line-reader-redisplay-print-writer api/*line-reader*)]
+          (api/safe-terminal-writer api/*line-reader*)]
       (when redirect-output?
         (alter-var-root
          #'*out*

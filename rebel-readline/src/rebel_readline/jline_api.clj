@@ -313,5 +313,5 @@ If you are using `lein` you may need to use `lein trampoline`."
           (.print writer s)
           (.flush writer))))))
 
-(defn ^java.io.PrintWriter line-reader-redisplay-print-writer [line-reader]
+(defn ^java.io.PrintWriter safe-terminal-writer [line-reader]
   (PrintWriter-on (partial redisplay-flush line-reader) nil))

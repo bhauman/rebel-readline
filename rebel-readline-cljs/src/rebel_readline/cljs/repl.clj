@@ -72,7 +72,7 @@
     ;; by the terminal, this is pretty complex and we are currently only doing
     ;; it for CLJS
     (binding [*out* (if OSUtils/IS_WINDOWS
-                      (api/line-reader-redisplay-print-writer api/*line-reader*)
+                      (api/safe-terminal-writer api/*line-reader*)
                       *out*)]
       (cljs.repl/repl* repl-env
        (merge
