@@ -252,6 +252,24 @@ If you are using `lein` you may need to use `lein trampoline`."
 (defn call-widget [widget-name]
   (.callWidget *line-reader* widget-name))
 
+(defn create-line-reader [terminal app-name service]
+  (let [service-variable-name (name :rebel-readline.service/service)
+        swap* (fn [obj f args]
+                (locking obj
+                  (let [old-val @obj
+                        new-val (apply f old-val args)]
+                    (if (= @obj old-val)
+                      (reset! obj new-val)
+                      false))))]
+    (proxy [LineReaderImpl clojure.lang.IDeref clojure.lang.IAtom]
+        [terminal
+         (or app-name "Rebel Readline")
+         (java.util.HashMap. {(name ::service) service})]
+      (deref [] (.getVariable this service-variable-name))
+      ;; TODO implement all swaps??
+      (swap  [f & args] (swap* this f args))
+      (reset [a] (.setVariable this service-variable-name a)))))
+
 ;; TODO we can handle dangling output without newlines better
 ;; we could only flush upto and including the last newline
 ;; and place the dangling print into the buffer
@@ -297,21 +315,3 @@ If you are using `lein` you may need to use `lein trampoline`."
 
 (defn ^java.io.PrintWriter line-reader-redisplay-print-writer [line-reader]
   (PrintWriter-on (partial redisplay-flush line-reader) nil))
-
-(defn create-line-reader [terminal app-name service]
-  (let [service-variable-name (name :rebel-readline.service/service)
-        swap* (fn [obj f args]
-                (locking obj
-                  (let [old-val @obj
-                        new-val (apply f old-val args)]
-                    (if (= @obj old-val)
-                      (reset! obj new-val)
-                      false))))]
-    (proxy [LineReaderImpl clojure.lang.IDeref clojure.lang.IAtom]
-        [terminal
-         (or app-name "Rebel Readline")
-         (java.util.HashMap. {(name ::service) service})]
-      (deref [] (.getVariable this service-variable-name))
-      ;; TODO implement all swaps??
-      (swap  [f & args] (swap* this f args))
-      (reset [a] (.setVariable this service-variable-name a)))))

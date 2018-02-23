@@ -6,7 +6,6 @@
    [rebel-readline.core :as rebel]
    [rebel-readline.clojure.line-reader :as clj-line-reader]
    [rebel-readline.cljs.service.local :as cljs-service]
-   [rebel-readline.io.line-print-writer :as line-print-writer]
    [rebel-readline.jline-api :as api])
   (:import
    [org.jline.utils OSUtils]))
