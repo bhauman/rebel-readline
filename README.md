@@ -40,7 +40,7 @@ If you want to try this really quickly
 [install the Clojure CLI tools](https://clojure.org/guides/getting_started) 
 and then invoke this:
 
-`clojure -Sdeps "{:deps {rebel-readline {:mvn/version \"0.1.0-SNAPSHOT\"}}}" -m rebel-readline.main`
+`clojure -Sdeps "{:deps {rebel-readline {:mvn/version \"0.1.1-SNAPSHOT\"}}}" -m rebel-readline.main`
 
 That should start a Clojure REPL that takes its input from the Rebel readline editor.
 
@@ -57,11 +57,11 @@ Note that `lein run` will not work! See above.
 
 ## Quick Lay of the land
 
-You should look at `rebel-readline.main` and `rebel-readline.core`
+You should look at `rebel-readline.clojure.main` and `rebel-readline.core`
 to give you top level usage information.
 
-The core of the functionality is in `rebel-readline.line-reader` and
-`rebel-readline.widgets.base` everything else is just support.
+The core of the functionality is in
+`rebel-readline.clojure.line-reader` everything else is just support.
 
 ## Quick Usage
 
@@ -76,11 +76,12 @@ REPL loop is reading.
 Example:
 
 ```clojure
-(clojure.main/repl
-  :prompt (fn []) ;; prompt is handled by line-reader
-  :read (rebel-readline.core/clj-repl-read
-          (rebel-readline.core/line-reader
-            (rebel-readline.service.local-clojure/create))))
+(rebel-readline.core/with-line-reader
+  (rebel-readline.clojure.core/create
+    (rebel-readline.clojure.service.local/create))
+  (clojure.main/repl
+     :prompt (fn []) ;; prompt is handled by line-reader
+     :read (rebel-readline.clojure.main/create-repl-read)))
 ```
 
 Another option is to just wrap a call you your REPL with
@@ -88,22 +89,24 @@ Another option is to just wrap a call you your REPL with
 to an input-stream that is supplied by the line reader.
 
 ```clojure
-(rebel-readline.core/with-readline-input-stream 
-  (rebel-readline.service.local-clojure/create)
-    (clojure.main/repl :prompt (fn[])))
+(rebel-readline.core/with-readline-in 
+  (rebel-readline.clojure.core/create
+    (rebel-readline.clojure.service.local/create))
+  (clojure.main/repl :prompt (fn[])))
 ```
 
 Or with a fallback:
 
 ```clojure
 (try
-  (rebel-readline.core/with-readline-input-stream 
-    (rebel-readline.service.local-clojure/create)
-      (clojure.main/repl :prompt (fn[])))
+  (rebel-readline.core/with-readline-in 
+    (rebel-readline.clojure.core/create
+      (rebel-readline.clojure.service.local/create))
+    (clojure.main/repl :prompt (fn[])))
   (catch clojure.lang.ExceptionInfo e
     (if (-> e ex-data :type (= :rebel-readline.jline-api/bad-terminal))
       (do (println (.getMessage e))
-          (clojure.main/repl))
+        (clojure.main/repl))
       (throw e))))
 ```
 
@@ -113,15 +116,15 @@ The line reader provides features like completion, documentation,
 source, apropos, eval and more. The line reader needs a Service to
 provide this functionality.
 
-When you create a `rebel-readline.core/line-reader`
+When you create a `rebel-readline.clojure.core/line-reader`
 you need to supply this service.
 
 The mose common service is the
-`rebel-readline.services.local-clojure` which uses the
+`rebel-readline.services.clojure.local` which uses the
 local clojure process to provide this functionality and its a good
 example of how a service works.
 
-https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/src/rebel_readline/service/impl/local_clojure_service.clj
+https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/src/rebel_readline/clojure/service/local.clj
 
 In general, it's much better if the service is querying the Clojure process
 where the eventual repl eval takes place.
@@ -134,9 +137,9 @@ still sensible when you provide those abilities from the local clojure process.
 
 This could be helpful when you have a Clojurey repl process and you
 don't have a Service for it. In this case you can just use a
-`local-clojure` or a `simple` service. If you do this you can expect
-less than optimal results but multiline editing, syntax highlighting,
-auto indenting will all work just fine.
+`clojure.service.local` or a `clojure.service.simple` service. If you
+do this you can expect less than optimal results but multiline
+editing, syntax highlighting, auto indenting will all work just fine.
 
 ## Keybindings
 
@@ -175,7 +178,7 @@ See https://github.com/bhauman/rebel-readline/tree/master/rebel-readline-cljs
 
 Services have not been written for these REPLs yet!!
 
-But you can use the `rebel-readline.service.impl.simple` service in the meantime.
+But you can use the `rebel-readline.clojure.service.simple` service in the meantime.
 
 ## Contributing
 
