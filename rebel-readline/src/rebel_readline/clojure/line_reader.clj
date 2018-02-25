@@ -10,6 +10,7 @@
    [rebel-readline.utils :as utils :refer [log]]
    [cljfmt.core :refer [reformat-string]]
    [clojure.string :as string]
+   [clojure.java.io :as io]
    [clojure.main])
   (:import
    [java.nio CharBuffer]
@@ -1041,6 +1042,14 @@
         ;; never insert tabs
     (.unsetOpt LineReader$Option/INSERT_TAB)
     (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
+    ;; history
+    (#(when (.exists (io/file (System/getProperty "user.home")))
+        (.setVariable % LineReader/HISTORY_FILE
+                      (str
+                       (io/file (System/getProperty "user.home") ".rebel_readline_history")))))
+    (.setOpt LineReader$Option/HISTORY_REDUCE_BLANKS)
+    (.setOpt LineReader$Option/HISTORY_IGNORE_DUPS)
+    (.setOpt LineReader$Option/HISTORY_INCREMENTAL)
     add-widgets-and-bindings
     (#(binding [*line-reader* %]
         (set-main-key-map! (get service :key-map :emacs))))))
