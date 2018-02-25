@@ -86,7 +86,7 @@
   (format "%s=> "
           (or (current-ns) "clj")))
 
-(defmethod tools/-prompt :default [service]
+(defmethod tools/-prompt ::clojure [service]
   (default-prompt-fn))
 
 ;; AcceptLine

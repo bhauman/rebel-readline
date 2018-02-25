@@ -1,6 +1,6 @@
 (ns rebel-readline.clojure.service.local
   (:require
-   [rebel-readline.clojure.line-reader :as service]
+   [rebel-readline.clojure.line-reader :as clj-reader]
    [rebel-readline.clojure.utils :as clj-utils]
    [compliment.core :as compliment]
    [clojure.repl]))
@@ -59,32 +59,34 @@
         (assoc (meta ns')
                :ns var-str))))
 
-(defmethod service/-resolve-meta ::service [_ var-str]
+(derive ::service ::clj-reader/clojure)
+
+(defmethod clj-reader/-resolve-meta ::service [_ var-str]
   (resolve-meta var-str))
 
-(defmethod service/-complete ::service [_ word options]
+(defmethod clj-reader/-complete ::service [_ word options]
   (if options
     (compliment/completions word options)
     (compliment/completions word)))
 
-(defmethod service/-current-ns ::service [_]
+(defmethod clj-reader/-current-ns ::service [_]
   (some-> *ns* str))
 
-(defmethod service/-source ::service [_ var-str]
+(defmethod clj-reader/-source ::service [_ var-str]
   (some->> (clojure.repl/source-fn (symbol var-str))
            (hash-map :source)))
 
-(defmethod service/-apropos ::service [_ var-str]
+(defmethod clj-reader/-apropos ::service [_ var-str]
   (clojure.repl/apropos var-str))
 
-(defmethod service/-doc ::service [self var-str]
-  (when-let [{:keys [ns name]} (service/-resolve-meta self var-str)]
+(defmethod clj-reader/-doc ::service [self var-str]
+  (when-let [{:keys [ns name]} (clj-reader/-resolve-meta self var-str)]
     (when-let [doc (compliment/documentation var-str)]
       (let [url (clj-utils/url-for (str ns) (str name))]
         (cond-> {:doc doc}
           url (assoc :url url))))))
 
-(defmethod service/-eval ::service [self form]
+(defmethod clj-reader/-eval ::service [self form]
   (let [res (call-with-timeout
              #(data-eval form)
              (get self :eval-timeout 3000))]
@@ -93,7 +95,7 @@
       (set! *e ex))
     res))
 
-(defmethod service/-read-string ::service [self form-str]
+(defmethod clj-reader/-read-string ::service [self form-str]
   (when (string? form-str)
     (try
       {:form (with-in-str form-str
@@ -104,5 +106,5 @@
 (defn create
   ([] (create nil))
   ([options]
-   (merge service/default-config options
+   (merge clj-reader/default-config options
           {:rebel-readline.service/type ::service})))

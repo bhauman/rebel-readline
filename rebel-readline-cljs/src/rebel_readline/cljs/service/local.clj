@@ -95,6 +95,8 @@
         (catch Throwable t
           (merge (capture-streams) {:exception (Throwable->map t)}))))))
 
+(derive ::service ::clj-reader/clojure)
+
 (defmethod clj-reader/-current-ns ::service [_] (some-> ana/*cljs-ns* str))
 
 (defmethod clj-reader/-complete ::service [_ word {:keys [ns]}]
