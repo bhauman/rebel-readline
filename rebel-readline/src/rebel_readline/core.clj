@@ -197,3 +197,6 @@
                      (rebel-readline.io.callback-reader/callback-reader
                       stream-read-line))]
        ~@body)))
+
+(defn basic-line-reader [& opts]
+  (api/create-line-reader api/*terminal* nil (apply hash-map opts)))
