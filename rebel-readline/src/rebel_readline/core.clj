@@ -15,6 +15,14 @@
   "Bind the rebel-readline.jline-api/*terminal* var to a new Jline
   terminal if needed, otherwise use the currently bound one.
 
+  Will throw a clojure.lang.ExceptionInfo with a data payload of
+  `{:type :rebel-readline.jline-api/bad-terminal}` if JVM wasn't
+  launched from a terminal process.
+
+  There should really only be one instance of a Jline terminal as it
+  represents a \"connection\" to the terminal that launched JVM
+  process.
+
   --------------------------------------------------------------------
   IMPORTANT NOTE:
   --------------------------------------------------------------------
@@ -41,19 +49,43 @@
              (or rebel-readline.jline-api/*terminal* (rebel-readline.jline-api/create-terminal))]
      ~@body))
 
-(defmacro with-line-reader [line-reader & body]
+(defmacro with-line-reader
+  "This macro take a line-reader and binds it.  It is one of the
+  primary ways to utilize this library. You can think of the
+  rebel-readline.jline-api/*line-reader* binding as an alternative in
+  source that the rebel-readline.core/read-line function reads from.
+
+  Example:
+  (require '[rebel-readline.core :as rebel])
+
+  (rebel/with-line-reader
+    (rebel-readline.clojure.line-reader/create
+      (rebel-readline.clojure.service.local/create))
+    ;; optionally bind the output directly to the jline terminal
+    ;; in such a way so that output won't corrupt the terminal
+    ;; this is optional
+    (binding [*out* (rebel-readline.jline-api/safe-terminal-writer)]
+      (clojure.main/repl
+        ;; this will create a fn that reads from the *line-reader*
+        :read (rebel-readline.clojure.main/create-repl-read)
+       :prompt (fn []))))"
+  [line-reader & body]
   `(ensure-terminal
     (binding [rebel-readline.jline-api/*line-reader* ~line-reader]
       ~@body)))
 
-(defn help-message []
+(defn help-message
+  "Returns a help message to print before enguaging the
+  readline. Helpful for repl development."
+  []
   "[Rebel readline] Type :repl/help for online help info")
 
 (defn read-line
-  "Reads a line from the currently rebel line reader. If you supply the
-  optional `command-executed` sentinal value, it will be returned when
-  a repl command is executed, otherwise a blank string will be
-  returned when a repl command is executed.
+  "Reads a line from the currently bound
+  rebel-readline.jline-api/*line-reader*. If you supply the optional
+  `command-executed` sentinal value, it will be returned when a repl
+  command is executed, otherwise a blank string will be returned when
+  a repl command is executed.
 
   This function activates the rebel line reader which, in turn, will put
   the terminal that launched the jvm process into \"raw mode\" during the
@@ -62,10 +94,10 @@
   You can think of the readline operation as a launching of an editor
   for the brief period that the line is read.
 
-  If :redirect-output is truthy (the default value) in the supplied
-  rebel line reader service config this function will alter the root
-  binding of the *out* var to prevent extraneous output from
-  corrupting the read line editors output.
+  If readline service value of :redirect-output is truthy (the default
+  value) in the supplied rebel line reader service config this
+  function will alter the root binding of the *out* var to prevent
+  extraneous output from corrupting the read line editors output.
 
   Once the reading is done it returns the terminal to its original
   settings."
@@ -110,7 +142,7 @@
 
 (defn repl-read-line
   "A readline function that converts the Exceptions normally thrown by
-  org.jline.reader.impl.LineREaderImpl that signal user interrupt or
+  org.jline.reader.impl.LineReaderImpl that signal user interrupt or
   the end of the parent stream into concrete sentinal objects that one
   can act on.
 
@@ -165,7 +197,7 @@
 
   ;; this will create an input stream to be read from by a Clojure/Script REPL
 
-  (rebel-readline.io.calback-reader/callback-reader #(stream-read-line line-reader))"
+  (rebel-readline.io.calback-reader/callback-reader #(stream-read-line))"
   []
   (let [request-prompt (Object.)
         request-exit   (Object.)
@@ -182,14 +214,17 @@
 
   This is perhaps the easiest way to utilize this readline library.
 
-  The downside to using this method is if you are working on something
-  that reads from the *in* that wouldn't benefit from the features of
-  this readline lib. In that case I would look at `clj-repl-read` where
-  the readline is only engaged during the read portion of the REPL.
+  The downside to using this method is if you are working in a REPL on
+  something that reads from the *in* that wouldn't benefit from the
+  features of this readline lib. In that case I would look at
+  `clj-repl-read` where the readline is only engaged during the read
+  portion of the REPL.
 
   Examples:
 
-  (with-readline-input-stream (rebel-readline.clojure.service.local/create)
+  (with-readline-in
+    (rebel-readline.clojure.line-reader/create
+      (rebel-readline.clojure.service.local/create {:prompt clojure.main/repl-prompt} ))
    (clojure.main/repl :prompt (fn[])))"
   [line-reader & body]
   `(with-line-reader ~line-reader
