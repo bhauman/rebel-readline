@@ -66,7 +66,7 @@
                              @api/*line-reader*)
                            :repl-env repl-env)))
     (when-let [prompt-fn (:prompt opts)]
-      (swap! api/*line-reader* assoc :prompt #(with-out-str (prompt-fn))))
+      (swap! api/*line-reader* assoc :prompt prompt-fn))
     (println (rebel/help-message))
     (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
       (cljs.repl/repl* repl-env

@@ -1,6 +1,7 @@
 (ns rebel-readline.tools
   (:require
-   [rebel-readline.jline-api :as api])
+   [rebel-readline.jline-api :as api]
+   [rebel-readline.utils :refer [log]])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedStyle]))
 
@@ -81,8 +82,10 @@
 (defmethod -prompt :default [_] "")
 
 (defn prompt []
+  (log :prompt-fn @api/*line-reader*)
   (if-let [f (resolve-fn? (:prompt @api/*line-reader*))]
-    (f)
+    ;; follow the prompt function convention here
+    (with-out-str (f))
     (-prompt @api/*line-reader*)))
 
 ;; Initial Themes

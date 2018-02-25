@@ -12,6 +12,6 @@
   ([] (create nil))
   ([options]
    (merge
-    #_{:prompt (fn [] "clj=> ")}
+    #_{:prompt (fn [] (println "clj=> "))}
     lr/default-config
     options)))
