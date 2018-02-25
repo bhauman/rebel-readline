@@ -59,8 +59,8 @@
   the terminal that launched the jvm process into \"raw mode\" during the
   readline operation.
 
-  You can think of the readline opertaion as a launching of an editor
-  for the breif period that the line is read.
+  You can think of the readline operation as a launching of an editor
+  for the brief period that the line is read.
 
   If :redirect-output is truthy (the default value) in the supplied
   rebel line reader service config this function will alter the root
