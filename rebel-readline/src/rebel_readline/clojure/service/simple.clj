@@ -1,6 +1,7 @@
 (ns rebel-readline.clojure.service.simple
   (:require
-   [rebel-readline.clojure.line-reader :as lr]))
+   [rebel-readline.clojure.line-reader :as lr]
+   [rebel-readline.tools :as tools]))
 
 (defn create
   "A very simple service that you can use to get rebel readline
@@ -12,6 +13,7 @@
   ([] (create nil))
   ([options]
    (merge
-    #_{:prompt (fn [] (println "clj=> "))}
+    {:prompt (fn [] (println "clj=> "))}
     lr/default-config
+    (tools/user-config)
     options)))

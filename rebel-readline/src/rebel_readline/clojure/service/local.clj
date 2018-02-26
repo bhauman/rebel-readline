@@ -2,6 +2,7 @@
   (:require
    [rebel-readline.clojure.line-reader :as clj-reader]
    [rebel-readline.clojure.utils :as clj-utils]
+   [rebel-readline.tools :as tools]
    [compliment.core :as compliment]
    [clojure.repl]))
 
@@ -106,5 +107,7 @@
 (defn create
   ([] (create nil))
   ([options]
-   (merge clj-reader/default-config options
+   (merge clj-reader/default-config
+          (tools/user-config)
+          options
           {:rebel-readline.service/type ::service})))

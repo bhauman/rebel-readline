@@ -1,7 +1,9 @@
 (ns rebel-readline.tools
   (:require
    [rebel-readline.jline-api :as api]
-   [rebel-readline.utils :refer [log]])
+   [rebel-readline.utils :refer [log]]
+   [clojure.java.io :as io]
+   [clojure.edn :as edn])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedStyle]))
 
@@ -53,6 +55,31 @@
 
 (defn highlight-str [color-fn tokenizer-fn syntax-str]
   (highlight-tokens color-fn (tokenizer-fn syntax-str) syntax-str))
+
+;; Baseline service config
+;; ----------------------------------------------
+
+;; follow tools deps conventions
+
+(defn user-config-file []
+  (->> [(System/getenv "CLJ_CONFIG")
+        (some-> (System/getenv "XDG_CONFIG_HOME")
+                (io/file "clojure"))
+        (io/file (System/getProperty "user.home")
+                 ".clojure")]
+       (keep identity)
+       (map #(io/file % "rebel-readline.edn"))
+       (filter #(.exists %))
+       first))
+
+(defn user-config []
+  (when-let [file (user-config-file)]
+    (try (edn/read-string (slurp file))
+         (catch Throwable e
+           (binding [*out* *err*]
+             (println (format "[Rebel Readline] Error reading config file %s: %s"
+                              (str file)
+                              (.getMessage e))))))))
 
 ;; Baseline services
 ;; ----------------------------------------------

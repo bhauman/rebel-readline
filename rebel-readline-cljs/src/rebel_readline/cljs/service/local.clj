@@ -14,6 +14,7 @@
    [rebel-readline.clojure.utils :as clj-utils]
    [rebel-readline.clojure.line-reader :as clj-reader]
    [rebel-readline.clojure.service.local :refer [call-with-timeout]]
+   [rebel-readline.tools :as tools]
    [rebel-readline.utils :refer [log]])
   (:import
    [java.util.regex Pattern]))
@@ -131,8 +132,10 @@
      (get self :eval-timeout 3000))))
 
 ;; this needs a :repl-env option
-
 (defn create
   ([] (create nil))
   ([options]
-   (merge clj-reader/default-config options {:rebel-readline.service/type ::service})))
+   (merge clj-reader/default-config
+          (tools/user-config)
+          options
+          {:rebel-readline.service/type ::service})))
