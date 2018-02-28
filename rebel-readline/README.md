@@ -1,6 +1,6 @@
 # rebel-readline
 
-[![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline.svg)](https://clojars.org
+[![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline.svg)](https://clojars.org)
 [![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline-cljs.svg)](https://clojars.org/com.bhauman/rebel-readline-cljs)
 
 A terminal readline library for Clojure Dialects
@@ -36,19 +36,53 @@ If you want to try this really quickly
 [install the Clojure CLI tools](https://clojure.org/guides/getting_started) 
 and then invoke this:
 
-`clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.1\"}}}" -m rebel-readline.main`
+```shell
+clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.1\"}}}" -m rebel-readline.main
+```
 
 That should start a Clojure REPL that takes its input from the Rebel readline editor.
 
 Note that I am using the `clojure` command and not the `clj` command
 because the latter wraps the process with another readline program (rlwrap).
 
+Alternatively you can specify an alias in your `$HOME/.clojure/deps.edn`
+
+```clojure
+{
+ ...
+ :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.1"}}}
+}
+```
+
+And then run with a simpler:
+
+```shell
+$ clojure -R:rebel -m rebel-readline.main
+```
+
 #### Leiningen
 
 Add `[com.bhauman/rebel-readline "0.1.1"]` to the dependencies in your
 `project.clj` then start a REPL like this:
 
-`lein trampoline -m rebel-readline.main`
+```shell
+lein trampoline -m rebel-readline.main
+```
+
+Alternatively, you can add rebel-readline globally to `$HOME/.lein/profiles.clj`
+
+```clojure
+{
+ ...
+ :user {:dependencies [[com.bhauman/rebel-readline "0.1.1"]]}
+}
+```
+
+Then you can just call
+
+```shell
+lein trampoline -m rebel-readline.main
+```
 
 #### Clone repo
 
