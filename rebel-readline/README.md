@@ -78,10 +78,16 @@ Alternatively, you can add rebel-readline globally to `$HOME/.lein/profiles.clj`
 }
 ```
 
-Then you can just call
+Then you can call
 
 ```shell
 lein trampoline -m rebel-readline.main
+```
+
+#### Boot
+
+```
+boot -d com.bhauman/rebel-readline call -f rebel-readline.main/-main
 ```
 
 #### Clone repo
