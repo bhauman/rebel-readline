@@ -68,7 +68,7 @@
         (io/file (System/getProperty "user.home")
                  ".clojure")]
        (keep identity)
-       (map #(io/file % "rebel-readline.edn"))
+       (map #(io/file % "rebel_readline.edn"))
        (filter #(.exists %))
        first))
 
