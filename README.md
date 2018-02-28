@@ -1,9 +1,5 @@
 # rebel-readline
 
-**WARNING: UNDER ACTIVE INITIAL DEVELOPMENT!!**
-
-This is a pre-release. That is being made available for comment and behavior verification.
-
 [![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline.svg)](https://clojars.org
 [![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline-cljs.svg)](https://clojars.org/com.bhauman/rebel-readline-cljs)
 
