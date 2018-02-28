@@ -47,22 +47,20 @@ That should start a Clojure REPL that takes its input from the Rebel readline ed
 Note that I am using the `clojure` command and not the `clj` command
 because the latter wraps the process with another readline program (rlwrap).
 
-#### Leinigen
+#### Leiningen
 
 Add `[com.bhauman/rebel-readline "0.1.1"]` to the dependencies in your
-`project.clj`.
-
-Then invoke this:
+`project.clj` then start a REPL like this:
 
 `lein trampoline -m rebel-readline.main`
 
 #### Clone repo
 
 Clone this repo and then from the `rebel-readline` sub-directory
-typing `lein trampoline run` will get you into a Clojure REPL with the
-readline editor working.
+typing `lein trampoline run -m rebel-readline.main` will get you into
+a Clojure REPL with the readline editor working.
 
-Note that `lein run` will not work! See above.
+Note that `lein run -m rebel-readline.main` will not work! See above.
 
 ## Quick Lay of the land
 
