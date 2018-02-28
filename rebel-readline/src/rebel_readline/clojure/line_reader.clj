@@ -11,7 +11,8 @@
    [cljfmt.core :refer [reformat-string]]
    [clojure.string :as string]
    [clojure.java.io :as io]
-   [clojure.main])
+   [clojure.main]
+   [no.disassemble :refer [disassemble]])
   (:import
    [java.nio CharBuffer]
    [org.jline.keymap KeyMap]
@@ -738,6 +739,30 @@
      (display-less (format-data-eval-result result)))
    true))
 
+;; -------------------------------------
+;; Disassemble widget
+;; -------------------------------------
+
+(defn format-disassembly-result [{:keys [disassembly exception] :as disassembly-result}]
+  (if exception
+    (format-data-eval-result disassembly-result)
+    (highlight-clj-str disassembly)))
+
+(defn disassemble-at-point []
+  (when-let [[wrd] (word-at-cursor)]
+    (when-let [{:keys [result exception] :as eval-result} (evaluate-str wrd)]
+      (if exception
+        eval-result
+        (let [disassembly (disassemble result)]
+          (when-not (string/blank? disassembly)
+            {:disassembly (string/trim disassembly)}))))))
+
+(def disassemble-at-point-widget
+  (create-widget
+   (when-let [result (disassemble-at-point)]
+     (display-less (format-disassembly-result result) {}))
+   true))
+
 ;; --------------------------------------------
 ;; Buffer position
 ;; --------------------------------------------
@@ -762,12 +787,13 @@
     (register-widget "clojure-indent-line"        indent-line-widget)
     (register-widget "clojure-indent-or-complete" indent-or-complete-widget)
 
-    (register-widget "clojure-doc-at-point"       document-at-point-widget)
-    (register-widget "clojure-source-at-point"    source-at-point-widget)
-    (register-widget "clojure-apropos-at-point"   apropos-at-point-widget)
-    (register-widget "clojure-eval-at-point"      eval-at-point-widget)
-    (register-widget "end-of-buffer"              end-of-buffer)
-    (register-widget "beginning-of-buffer"        beginning-of-buffer)))
+    (register-widget "clojure-doc-at-point"            document-at-point-widget)
+    (register-widget "clojure-source-at-point"         source-at-point-widget)
+    (register-widget "clojure-apropos-at-point"        apropos-at-point-widget)
+    (register-widget "clojure-eval-at-point"           eval-at-point-widget)
+    (register-widget "clojure-disassemble-at-point"    disassemble-at-point-widget)
+    (register-widget "end-of-buffer"                   end-of-buffer)
+    (register-widget "beginning-of-buffer"             beginning-of-buffer)))
 
 (defn bind-indents [key-map]
   (doto key-map
@@ -785,10 +811,11 @@
 
 (defn bind-clojure-widgets [key-map]
   (doto key-map
-    (bind-key "clojure-doc-at-point"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)))
-    (bind-key "clojure-source-at-point"     (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)))
-    (bind-key "clojure-apropos-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
-    (bind-key "clojure-eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))))
+    (bind-key "clojure-doc-at-point"           (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)))
+    (bind-key "clojure-source-at-point"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)))
+    (bind-key "clojure-apropos-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
+    (bind-key "clojure-eval-at-point"          (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))
+    (bind-key "clojure-disassemble-at-point"   (str (KeyMap/ctrl \X) (KeyMap/ctrl \I)))))
 
 (defn clojure-emacs-mode [key-map]
   (doto key-map

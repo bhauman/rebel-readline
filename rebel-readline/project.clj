@@ -14,7 +14,8 @@
                  [org.jline/jline-terminal "3.5.1"]
                  [org.jline/jline-terminal-jansi "3.5.1"]
                  [cljfmt "0.5.7"]     ;; depends on tools reader
-                 [compliment "0.3.6"]]
+                 [compliment "0.3.6"]
+                 [nodisassemble "0.1.3"]]
 
   :profiles {:dev {:source-paths ["src" "dev"]
                    :main rebel-dev.main}})
