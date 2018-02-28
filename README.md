@@ -58,6 +58,37 @@ a Clojure REPL with the readline editor working.
 
 Note that `lein run -m rebel-readline.main` will not work! See above.
 
+## How do I default to vi bindings?
+
+In `~/.clojure/rebel_readline.edn` put
+
+```
+{:key-map :viins}
+```
+
+## Config
+
+In `~/.clojure/rebel_readline.edn` you can provide a map with the
+following options:
+
+```
+:key-map         - either :viins or :emacs. Defaults to :emacs
+
+:color-theme     - either :light-screen-theme or :dark-screen-theme
+
+:highlight       - boolean, wether to syntax highlight or not. Defaults to true
+
+:completion      - boolean, wether to complete on tab. Defaults to true
+
+:eldoc           - boolean, wether to display function docs as you type. 
+                   Defaults to true
+
+:indent          - boolean, wether to auto indent code on newline. Defaults to true
+
+:redirect-output - boolean, rebinds root *out* during read to protect linereader
+                   Defaults to true
+```
+
 ## Quick Lay of the land
 
 You should look at `rebel-readline.clojure.main` and `rebel-readline.core`
@@ -67,6 +98,9 @@ The core of the functionality is in
 `rebel-readline.clojure.line-reader` everything else is just support.
 
 ## Quick Usage
+
+These are some quick exmaple demonstrating how to use the rebel-readline
+API.
 
 The main way to utililize this readline editor is to replace the
 `clojure.main/repl-read` behavior in `clojure.main/repl`. 
@@ -88,8 +122,8 @@ Example:
 ```
 
 Another option is to just wrap a call you your REPL with
-`rebel-readline.core/with-readline-input-stream` this will bind `*in*`
-to an input-stream that is supplied by the line reader.
+`rebel-readline.core/with-readline-in` this will bind `*in*` to an
+input-stream that is supplied by the line reader.
 
 ```clojure
 (rebel-readline.core/with-readline-in 

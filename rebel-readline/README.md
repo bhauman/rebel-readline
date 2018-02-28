@@ -1,11 +1,7 @@
 # rebel-readline
 
-**WARNING: UNDER ACTIVE INITIAL DEVELOPMENT!!**
-
-This is a pre-release. That is being made available for comment and behavior verification.
-
-[![Clojars Project](https://img.shields.io/clojars/v/rebel-readline.svg)](https://clojars.org/rebel-readline)
-[![Clojars Project](https://img.shields.io/clojars/v/rebel-readline-cljs.svg)](https://clojars.org/rebel-readline-cljs)
+[![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline.svg)](https://clojars.org
+[![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline-cljs.svg)](https://clojars.org/com.bhauman/rebel-readline-cljs)
 
 A terminal readline library for Clojure Dialects
 
@@ -40,20 +36,58 @@ If you want to try this really quickly
 [install the Clojure CLI tools](https://clojure.org/guides/getting_started) 
 and then invoke this:
 
-`clojure -Sdeps "{:deps {rebel-readline {:mvn/version \"0.1.1-SNAPSHOT\"}}}" -m rebel-readline.main`
+`clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.1\"}}}" -m rebel-readline.main`
 
 That should start a Clojure REPL that takes its input from the Rebel readline editor.
 
 Note that I am using the `clojure` command and not the `clj` command
 because the latter wraps the process with another readline program (rlwrap).
 
+#### Leiningen
+
+Add `[com.bhauman/rebel-readline "0.1.1"]` to the dependencies in your
+`project.clj` then start a REPL like this:
+
+`lein trampoline -m rebel-readline.main`
+
 #### Clone repo
 
 Clone this repo and then from the `rebel-readline` sub-directory
-typing `lein trampoline run` will get you into a Clojure REPL with the
-readline editor working.
+typing `lein trampoline run -m rebel-readline.main` will get you into
+a Clojure REPL with the readline editor working.
 
-Note that `lein run` will not work! See above.
+Note that `lein run -m rebel-readline.main` will not work! See above.
+
+## How do I default to vi bindings?
+
+In `~/.clojure/rebel_readline.edn` put
+
+```
+{:key-map :viins}
+```
+
+## Config
+
+In `~/.clojure/rebel_readline.edn` you can provide a map with the
+following options:
+
+```
+:key-map         - either :viins or :emacs. Defaults to :emacs
+
+:color-theme     - either :light-screen-theme or :dark-screen-theme
+
+:highlight       - boolean, wether to syntax highlight or not. Defaults to true
+
+:completion      - boolean, wether to complete on tab. Defaults to true
+
+:eldoc           - boolean, wether to display function docs as you type. 
+                   Defaults to true
+
+:indent          - boolean, wether to auto indent code on newline. Defaults to true
+
+:redirect-output - boolean, rebinds root *out* during read to protect linereader
+                   Defaults to true
+```
 
 ## Quick Lay of the land
 
@@ -64,6 +98,9 @@ The core of the functionality is in
 `rebel-readline.clojure.line-reader` everything else is just support.
 
 ## Quick Usage
+
+These are some quick exmaple demonstrating how to use the rebel-readline
+API.
 
 The main way to utililize this readline editor is to replace the
 `clojure.main/repl-read` behavior in `clojure.main/repl`. 
@@ -85,8 +122,8 @@ Example:
 ```
 
 Another option is to just wrap a call you your REPL with
-`rebel-readline.core/with-readline-input-stream` this will bind `*in*`
-to an input-stream that is supplied by the line reader.
+`rebel-readline.core/with-readline-in` this will bind `*in*` to an
+input-stream that is supplied by the line reader.
 
 ```clojure
 (rebel-readline.core/with-readline-in 
