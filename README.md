@@ -4,8 +4,8 @@
 
 This is a pre-release. That is being made available for comment and behavior verification.
 
-[![Clojars Project](https://img.shields.io/clojars/v/rebel-readline.svg)](https://clojars.org/rebel-readline)
-[![Clojars Project](https://img.shields.io/clojars/v/rebel-readline-cljs.svg)](https://clojars.org/rebel-readline-cljs)
+[![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline.svg)](https://clojars.org
+[![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline-cljs.svg)](https://clojars.org/com.bhauman/rebel-readline-cljs)
 
 A terminal readline library for Clojure Dialects
 
@@ -40,12 +40,21 @@ If you want to try this really quickly
 [install the Clojure CLI tools](https://clojure.org/guides/getting_started) 
 and then invoke this:
 
-`clojure -Sdeps "{:deps {rebel-readline {:mvn/version \"0.1.1-SNAPSHOT\"}}}" -m rebel-readline.main`
+`clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.1\"}}}" -m rebel-readline.main`
 
 That should start a Clojure REPL that takes its input from the Rebel readline editor.
 
 Note that I am using the `clojure` command and not the `clj` command
 because the latter wraps the process with another readline program (rlwrap).
+
+#### Leinigen
+
+Add `[com.bhauman/rebel-readline "0.1.1"]` to the dependencies in your
+`project.clj`.
+
+Then invoke this:
+
+`lein trampoline -m rebel-readline.main`
 
 #### Clone repo
 
