@@ -154,7 +154,7 @@ Example:
 
 ```clojure
 (rebel-readline.core/with-line-reader
-  (rebel-readline.clojure.core/create
+  (rebel-readline.clojure.line-reader/create
     (rebel-readline.clojure.service.local/create))
   (clojure.main/repl
      :prompt (fn []) ;; prompt is handled by line-reader
@@ -167,7 +167,7 @@ input-stream that is supplied by the line reader.
 
 ```clojure
 (rebel-readline.core/with-readline-in 
-  (rebel-readline.clojure.core/create
+  (rebel-readline.clojure.line-reader/create
     (rebel-readline.clojure.service.local/create))
   (clojure.main/repl :prompt (fn[])))
 ```
@@ -177,7 +177,7 @@ Or with a fallback:
 ```clojure
 (try
   (rebel-readline.core/with-readline-in 
-    (rebel-readline.clojure.core/create
+    (rebel-readline.clojure.line-reader/create
       (rebel-readline.clojure.service.local/create))
     (clojure.main/repl :prompt (fn[])))
   (catch clojure.lang.ExceptionInfo e
@@ -193,7 +193,7 @@ The line reader provides features like completion, documentation,
 source, apropos, eval and more. The line reader needs a Service to
 provide this functionality.
 
-When you create a `rebel-readline.clojure.core/line-reader`
+When you create a `rebel-readline.clojure.line-reader`
 you need to supply this service.
 
 The more common service is the

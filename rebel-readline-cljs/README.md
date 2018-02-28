@@ -1,7 +1,10 @@
 # rebel-readline-cljs
 
+[![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline-cljs.svg)](https://clojars.org/com.bhauman/rebel-readline-cljs)
+
 A library that supplies a rebel readline service for the default
-clojurescript repl and a `cljs.repl/repl-read` replacement.
+clojurescript repl and some helpers to create CLJS repls with
+rebel-readline.
 
 ## Quick try
 
@@ -9,53 +12,44 @@ clojurescript repl and a `cljs.repl/repl-read` replacement.
 
 If you want to try this really quickly [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and then invoke this:
 
-`clojure -Sdeps "{:deps {rebel-readline-cljs {:mvn/version \"0.1.0-SNAPSHOT\"}}}" -m rebel-readline-cljs.main`
+```shell
+clojure -Sdeps "{:deps {rebel-readline-cljs {:mvn/version \"0.1.1\"}}}" -m rebel-readline-cljs.main
+```
 
-That should start a Nashorn ClojureScript REPL that takes its input from the Rebel readline editor.
+That should start a Nashorn ClojureScript REPL that takes it's input
+from the Rebel readline editor.
 
 Note that I am using the `clojure` command and not the `clj` command
 because the latter wraps the process with another readline program (`rlwrap`).
 
-Alternatively you can specify an alias in your `$HOME/.clojure/deps.edn`
+#### Leiningen
 
-```clojure
-{
- ...
- :aliases {:rebel {:extra-deps {rebel-readline-cljs {:mvn/version "0.1.0-SNAPSHOT"}}}
-}
-```
-
-And then run with a simpler:
+Add `[com.bhauman/rebel-readline-cljs "0.1.1"]` to the dependencies in your
+`project.clj` then start a REPL like this:
 
 ```shell
-$ clojure -R:rebel -m rebel-readline-cljs.main
+lein trampoline -m rebel-readline.cljs.main
 ```
 
-#### Clone repo
+#### Clone this repo
 
-`lein trampoline run` will get you into a Nashorn backed CLJS repl with the readline working.
+Clone this repo and then from the `rebel-readline-cljs` sub-directory
+typing `lein trampoline run -m rebel-readline.cljs.main` will get you into
+a Clojure REPL with the readline editor working.
+
+Note that `lein run -m rebel-readline.cljs.main` will not work!
 
 ## Usage
 
 A simple usage example:
 
 ```clojure
-(let [repl-env (cljs.repl.nashorn/repl-env)
-      line-reader (rebel-readline.core/line-reader 
-                   (rebel-readline-cljs.service/create {:repl-env repl-env}))]
-  (cljs.repl/repl repl-env
-   ;; the prompt is supplied by the readline program
-   :prompt (fn [])
-   :read (rebel-readline-cljs.core/cljs-repl-read line-reader)))
-```
-
-Or:
-
-```clojure
-(let [repl-env (cljs.repl.nashorn/repl-env)]
-  (rebel-readline.core/with-readline-input-stream (rebel-readline-cljs.service/create 
-                                                   {:repl-env repl-env})
-    (cljs.repl/repl repl-env :prompt (fn [])))
+(rebel-readline.core/with-line-reader
+  (rebel-readline.clojure.core/create
+    (rebel-readline.cljs.service.local/create))
+  (cljs.repl/repl
+     :prompt (fn []) ;; prompt is handled by line-reader
+     :read (rebel-readline.cljs.repl/create-repl-read)))
 ```
 
 ## License
