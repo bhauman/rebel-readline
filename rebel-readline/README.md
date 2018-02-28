@@ -110,14 +110,14 @@ following options:
 
 :color-theme     - either :light-screen-theme or :dark-screen-theme
 
-:highlight       - boolean, wether to syntax highlight or not. Defaults to true
+:highlight       - boolean, whether to syntax highlight or not. Defaults to true
 
-:completion      - boolean, wether to complete on tab. Defaults to true
+:completion      - boolean, whether to complete on tab. Defaults to true
 
-:eldoc           - boolean, wether to display function docs as you type. 
+:eldoc           - boolean, whether to display function docs as you type. 
                    Defaults to true
 
-:indent          - boolean, wether to auto indent code on newline. Defaults to true
+:indent          - boolean, whether to auto indent code on newline. Defaults to true
 
 :redirect-output - boolean, rebinds root *out* during read to protect linereader
                    Defaults to true
@@ -133,10 +133,10 @@ The core of the functionality is in
 
 ## Quick Usage
 
-These are some quick exmaple demonstrating how to use the rebel-readline
+These are some quick examples demonstrating how to use the rebel-readline
 API.
 
-The main way to utililize this readline editor is to replace the
+The main way to utilize this readline editor is to replace the
 `clojure.main/repl-read` behavior in `clojure.main/repl`. 
 
 The advantage of doing this is that it won't interfere with the input
@@ -190,7 +190,7 @@ provide this functionality.
 When you create a `rebel-readline.clojure.core/line-reader`
 you need to supply this service.
 
-The mose common service is the
+The more common service is the
 `rebel-readline.services.clojure.local` which uses the
 local clojure process to provide this functionality and its a good
 example of how a service works.
@@ -198,7 +198,7 @@ example of how a service works.
 https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/src/rebel_readline/clojure/service/local.clj
 
 In general, it's much better if the service is querying the Clojure process
-where the eventual repl eval takes place.
+where the eventual REPL eval takes place.
 
 However, the service doesn't necessarily have to query the same
 environment that the REPL is using for evaluation. All the editing
@@ -206,13 +206,13 @@ functionality that rebel readline provides works without an
 environment to query. And the apropos, doc and completion functionality is
 still sensible when you provide those abilities from the local clojure process.
 
-This could be helpful when you have a Clojurey repl process and you
+This could be helpful when you have a Clojurey REPL process and you
 don't have a Service for it. In this case you can just use a
 `clojure.service.local` or a `clojure.service.simple` service. If you
-do this you can expect less than optimal results but multiline
+do this you can expect less than optimal results but multi-line
 editing, syntax highlighting, auto indenting will all work just fine.
 
-## Keybindings
+## Key-bindings
 
 **Bindings of interest**
 
@@ -227,7 +227,7 @@ editing, syntax highlighting, auto indenting will all work just fine.
 * Ctrl-X_Ctrl-A => Show apropos for word at point
 * Ctrl-X_Ctrl-E => Inline eval for SEXP before the point
 
-You can examine the keybindings with the `:repl/key-bindings` command.
+You can examine the key-bindings with the `:repl/key-bindings` command.
 
 ## Commands
 
@@ -264,7 +264,7 @@ If you do contribute:
 * if the change isn't small please file an issue before a PR.
 * please put all PR changes into one commit
 * make small grokable changes. Large changes are more likely to be
-  ingored and or used as a starting issue for exploration.
+  ignored and or used as a starting issue for exploration.
 * break larger solutions down into a logical series of small PRs
 * mention it at the start, if you are filing a PR that is more of an
   exploration of an idea
