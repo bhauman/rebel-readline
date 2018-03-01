@@ -11,7 +11,7 @@ A terminal readline library for Clojure Dialects
 
 https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/doc/intro.md
 
-## Important note!!! 
+## Important note!!!
 
 The line reader will attempt to manipulate the terminal that initiates
 the JVM process. For this reason it is important to start your JVM in
@@ -21,7 +21,7 @@ That means you should launch your Java process using the
 
  * the java command
  * the Clojure `clojure` tool (without readline support)
- * lein trampoline 
+ * lein trampoline
  * boot - would need to run in boot's worker pod
 
 Launching the terminal readline process from another Java process will not work.
@@ -33,7 +33,7 @@ It's best to not launch this readline behind other readline tools like `rlwrap`.
 #### Clojure tools
 
 If you want to try this really quickly
-[install the Clojure CLI tools](https://clojure.org/guides/getting_started) 
+[install the Clojure CLI tools](https://clojure.org/guides/getting_started)
 and then invoke this:
 
 ```shell
@@ -84,6 +84,18 @@ Then you can call
 lein trampoline -m rebel-readline.main
 ```
 
+To make this less verbose you can use an alias, either in your `project.clj` or in  `$HOME/.lein/profiles.clj`
+
+```clojure
+{
+ ...
+ :aliases {"rebl" ["trampoline" "run" "-m" "rebel-readline.main"]
+           ...}
+}
+```
+
+Now you can start a rebel-readline REPL with `lein rebl`.
+
 #### Boot
 
 ```
@@ -120,7 +132,7 @@ following options:
 
 :completion      - boolean, whether to complete on tab. Defaults to true
 
-:eldoc           - boolean, whether to display function docs as you type. 
+:eldoc           - boolean, whether to display function docs as you type.
                    Defaults to true
 
 :indent          - boolean, whether to auto indent code on newline. Defaults to true
@@ -143,7 +155,7 @@ These are some quick examples demonstrating how to use the rebel-readline
 API.
 
 The main way to utilize this readline editor is to replace the
-`clojure.main/repl-read` behavior in `clojure.main/repl`. 
+`clojure.main/repl-read` behavior in `clojure.main/repl`.
 
 The advantage of doing this is that it won't interfere with the input
 stream if you are working on something that needs to read from
@@ -166,7 +178,7 @@ Another option is to just wrap a call you your REPL with
 input-stream that is supplied by the line reader.
 
 ```clojure
-(rebel-readline.core/with-readline-in 
+(rebel-readline.core/with-readline-in
   (rebel-readline.clojure.line-reader/create
     (rebel-readline.clojure.service.local/create))
   (clojure.main/repl :prompt (fn[])))
@@ -176,7 +188,7 @@ Or with a fallback:
 
 ```clojure
 (try
-  (rebel-readline.core/with-readline-in 
+  (rebel-readline.core/with-readline-in
     (rebel-readline.clojure.line-reader/create
       (rebel-readline.clojure.service.local/create))
     (clojure.main/repl :prompt (fn[])))
