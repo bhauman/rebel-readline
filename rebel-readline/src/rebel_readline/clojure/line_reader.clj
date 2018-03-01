@@ -692,17 +692,20 @@
                                     (.faint AttributedStyle/DEFAULT))})))
    true))
 
-;; ------------------------------------------
-;; In place eval widget
-;; ------------------------------------------
-
-(defn in-place-eval []
+(defn in-place-transform [f]
   (let [s (buffer-as-string)]
     (when (not (string/blank? s))
       (let [pos (cursor)
             fnw-pos (sexp/first-non-whitespace-char-backwards-from s (dec pos))
             [form-str start end typ] (sexp/sexp-or-word-ending-at-position s fnw-pos)]
-        (evaluate-str form-str)))))
+        (f form-str)))))
+
+;; ------------------------------------------
+;; In place eval widget
+;; ------------------------------------------
+
+(defn in-place-eval []
+  (in-place-transform evaluate-str))
 
 (defn inline-result-marker [^AttributedString at-str]
   (astring/astr ["#_=>" (color :widget/half-contrast-inverse)] " " at-str))
@@ -755,12 +758,7 @@
 ;; ------------------------------------------
 
 (defn in-place-macroexpand []
-  (let [s (buffer-as-string)]
-    (when (not (string/blank? s))
-      (let [pos (cursor)
-            fnw-pos (sexp/first-non-whitespace-char-backwards-from s (dec pos))
-            [form-str start end typ] (sexp/sexp-or-word-ending-at-position s fnw-pos)]
-        (macroexpand-str form-str)))))
+  (in-place-transform macroexpand-str))
 
 (def macroexpand-at-point-widget
   (create-widget
