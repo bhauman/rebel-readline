@@ -749,13 +749,12 @@
     (highlight-clj-str disassembly)))
 
 (defn disassemble-at-point []
-  (when-let [[wrd] (word-at-cursor)]
-    (when-let [{:keys [result exception] :as eval-result} (evaluate-str wrd)]
-      (if exception
-        eval-result
-        (let [disassembly (disassemble result)]
-          (when-not (string/blank? disassembly)
-            {:disassembly (string/trim disassembly)}))))))
+  (when-let [{:keys [result exception] :as eval-result} (in-place-eval)]
+    (if exception
+      eval-result
+      (let [disassembly (disassemble result)]
+        (when-not (string/blank? disassembly)
+          {:disassembly (string/trim disassembly)})))))
 
 (def disassemble-at-point-widget
   (create-widget
