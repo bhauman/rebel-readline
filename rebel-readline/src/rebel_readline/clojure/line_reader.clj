@@ -789,6 +789,13 @@
     (bind-key "clojure-apropos-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
     (bind-key "clojure-eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))))
 
+(defn bind-clojure-widgets-vi-cmd [key-map]
+  (doto key-map
+    (bind-key "clojure-doc-at-point"        (str \\ \d))
+    (bind-key "clojure-source-at-point"     (str \\ \s))
+    (bind-key "clojure-apropos-at-point"    (str \\ \a))
+    (bind-key "clojure-eval-at-point"       (str \\ \e))))
+
 (defn clojure-emacs-mode [key-map]
   (doto key-map
     bind-indents
@@ -806,7 +813,7 @@
 (def clojure-vi-insert-mode clojure-emacs-mode)
 
 (defn clojure-vi-cmd-mode [key-map]
-  (doto key-map bind-indents bind-clojure-widgets))
+  (doto key-map bind-indents bind-clojure-widgets bind-clojure-widgets-vi-cmd))
 
 (defn add-clojure-emacs-key-map [line-reader]
   (binding [*line-reader* line-reader]
