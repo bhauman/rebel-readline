@@ -271,7 +271,7 @@ If you are using `lein` you may need to use `lein trampoline`."
       (reset [a] (.setVariable this service-variable-name a)))))
 
 ;; taken from Clojure 1.10 core.print
-(defn ^java.io.PrintWriter PrintWriter-on
+(defn- ^java.io.PrintWriter PrintWriter-on*
   "implements java.io.PrintWriter given flush-fn, which will be called
   when .flush() is called, with a string built up since the last call to .flush().
   if not nil, close-fn will be called with no arguments when .close is called"
@@ -310,9 +310,9 @@ If you are using `lein` you may need to use `lein trampoline`."
           (.flush writer))))))
 
 (defn ^java.io.PrintWriter safe-terminal-writer [line-reader]
-  (PrintWriter-on #(as-> % x
-                     ;; ensure newline on flush to protect prompt
-                     (string/trim-newline x)
-                     (str x \newline)
-                     (redisplay-flush line-reader x))
+  (PrintWriter-on* #(as-> % x
+                      ;; ensure newline on flush to protect prompt
+                      (string/trim-newline x)
+                      (str x \newline)
+                      (redisplay-flush line-reader x))
                   nil))
