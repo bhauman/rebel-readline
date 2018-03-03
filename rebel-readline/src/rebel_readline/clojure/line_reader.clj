@@ -1049,10 +1049,7 @@
     (.unsetOpt LineReader$Option/INSERT_TAB)
     (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
     ;; history
-    (#(when (.exists (io/file (System/getProperty "user.home")))
-        (.setVariable % LineReader/HISTORY_FILE
-                      (str
-                       (io/file (System/getProperty "user.home") ".rebel_readline_history")))))
+    (.setVariable LineReader/HISTORY_FILE (str (io/file ".rebel_readline_history")))
     (.setOpt LineReader$Option/HISTORY_REDUCE_BLANKS)
     (.setOpt LineReader$Option/HISTORY_IGNORE_DUPS)
     (.setOpt LineReader$Option/HISTORY_INCREMENTAL)
