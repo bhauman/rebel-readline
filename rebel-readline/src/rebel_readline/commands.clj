@@ -123,9 +123,9 @@ Without any arguments displays all the current key bindings")
                          (select-keys binding-groups groups)
                          binding-groups)]
     (when-let [map-name (api/main-key-map-name)]
-      (println "Current key map:" (api/->ansi (astring/astr
-                                               [(pr-str (keyword map-name))
-                                                (color :font-lock/core-form)]))))
+      (println (api/->ansi (astring/astr
+                            ["Current key map: "         (.bold AttributedStyle/DEFAULT)]
+                            [(pr-str (keyword map-name)) (color :font-lock/core-form)]))))
     (if (and search (empty? key-data))
       (println "Binding search: No bindings found that match" (pr-str (name search)))
       (doseq [[k data] binding-groups]
