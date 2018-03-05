@@ -101,15 +101,9 @@ Without any arguments displays all the current key bindings")
    km))
 
 (defn classify-keybindings [km]
-  (let [res (group-by
-             (fn [[k v]] (boolean
-                          (#{"clojure-apropos-at-point"
-                             "clojure-doc-at-point"
-                             "clojure-eval-at-point"
-                             "clojure-source-at-point"
-                             "clojure-indent-or-complete"}
-                           v)))
-             km)]
+  (let [res (group-by (fn [[k v]]
+                        (and (string? v)
+                             (.startsWith v "clojure-"))) km)]
     (-> res
         (assoc :clojure (get res true))
         (assoc :other (get res false))
