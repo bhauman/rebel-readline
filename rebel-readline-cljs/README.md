@@ -13,7 +13,7 @@ rebel-readline.
 If you want to try this really quickly [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and then invoke this:
 
 ```shell
-clojure -Sdeps "{:deps {rebel-readline-cljs {:mvn/version \"0.1.1\"}}}" -m rebel-readline-cljs.main
+clojure -Sdeps '{:deps {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.1"}}}' -m rebel-readline.cljs.main
 ```
 
 That should start a Nashorn ClojureScript REPL that takes it's input
