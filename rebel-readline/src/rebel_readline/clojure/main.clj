@@ -58,30 +58,31 @@
    core/has-remaining?
    clojure.main/repl-read))
 
-(defn repl* [opts]
-  (core/with-line-reader
-    (clj-line-reader/create
-     (clj-service/create
-      (when api/*line-reader* @api/*line-reader*)))
-    ;; still debating about wether to include the following line in
-    ;; `with-line-reader`. I am thinking that taking over out should
-    ;; be opt in when using the lib taking over out provides
-    ;; guarantees by Jline that Ascii commands are processed correctly
-    ;; on different platforms, this particular writer also protects
-    ;; the prompt from corruption by ensuring a newline on flush and
-    ;; forcing a prompt to redisplay if the output is printed while
-    ;; the readline editor is enguaged
-    (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
-      (when-let [prompt-fn (:prompt opts)]
-        (swap! api/*line-reader* assoc :prompt prompt-fn))
-      (println (core/help-message))
-      (apply
-       clojure.main/repl
-       (-> {:print syntax-highlight-prn
-            :read (create-repl-read)}
-           (merge opts {:prompt (fn [])})
-           seq
-           flatten)))))
+(let [clj-repl clojure.main/repl]
+  (defn repl* [opts]
+    (core/with-line-reader
+      (clj-line-reader/create
+       (clj-service/create
+        (when api/*line-reader* @api/*line-reader*)))
+      ;; still debating about wether to include the following line in
+      ;; `with-line-reader`. I am thinking that taking over out should
+      ;; be opt in when using the lib taking over out provides
+      ;; guarantees by Jline that Ascii commands are processed correctly
+      ;; on different platforms, this particular writer also protects
+      ;; the prompt from corruption by ensuring a newline on flush and
+      ;; forcing a prompt to redisplay if the output is printed while
+      ;; the readline editor is enguaged
+      (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
+        (when-let [prompt-fn (:prompt opts)]
+          (swap! api/*line-reader* assoc :prompt prompt-fn))
+        (println (core/help-message))
+        (apply
+         clj-repl
+         (-> {:print syntax-highlight-prn
+              :read (create-repl-read)}
+             (merge opts {:prompt (fn [])})
+             seq
+             flatten))))))
 
 (defn repl [& opts]
   (repl* (apply hash-map opts)))
