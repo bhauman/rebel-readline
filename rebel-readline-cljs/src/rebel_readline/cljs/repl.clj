@@ -58,23 +58,26 @@
   (binding [*out* (.. api/*line-reader* getTerminal writer)]
     (println (api/->ansi (clj-line-reader/highlight-clj-str (or x ""))))))
 
-(defn repl* [repl-env opts]
-  (rebel/with-line-reader
-    (clj-line-reader/create
-     (cljs-service/create (assoc
-                           (when api/*line-reader*
-                             @api/*line-reader*)
-                           :repl-env repl-env)))
-    (when-let [prompt-fn (:prompt opts)]
-      (swap! api/*line-reader* assoc :prompt prompt-fn))
-    (println (rebel/help-message))
-    (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
-      (cljs.repl/repl* repl-env
-       (merge
-        {:print syntax-highlight-println
-         :read (create-repl-read)}
-        opts
-        {:prompt (fn [])})))))
+;; enable evil alter-var-root
+(let [cljs-repl* cljs.repl/repl*]
+  (defn repl* [repl-env opts]
+    (rebel/with-line-reader
+      (clj-line-reader/create
+       (cljs-service/create (assoc
+                             (when api/*line-reader*
+                               @api/*line-reader*)
+                             :repl-env repl-env)))
+      (when-let [prompt-fn (:prompt opts)]
+        (swap! api/*line-reader* assoc :prompt prompt-fn))
+      (println (rebel/help-message))
+      (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
+        (cljs-repl*
+         repl-env
+         (merge
+          {:print syntax-highlight-println
+           :read (create-repl-read)}
+          opts
+          {:prompt (fn [])}))))))
 
 (defn repl [repl-env & opts]
   (repl* repl-env (apply hash-map opts)))
