@@ -317,6 +317,18 @@
 (defn evaluate-str [form-str]
   (-eval-str @*line-reader* form-str))
 
+;; Macroexpand
+;; ----------------------------------------------
+
+;; TODO: add docstring
+(defmulti -macroexpand service-dispatch)
+
+(defmethod -macroexpand :default [service form-str]
+  (tools/not-implemented! service "-macroexpand"))
+
+(defn macroexpand-str [form-str]
+  (-macroexpand @*line-reader* form-str))
+
 ;; ----------------------------------------------------
 ;; ----------------------------------------------------
 ;; Widgets
@@ -679,17 +691,20 @@
                                     (.faint AttributedStyle/DEFAULT))})))
    true))
 
-;; ------------------------------------------
-;; In place eval widget
-;; ------------------------------------------
-
-(defn in-place-eval []
+(defn in-place-transform [f]
   (let [s (buffer-as-string)]
     (when (not (string/blank? s))
       (let [pos (cursor)
             fnw-pos (sexp/first-non-whitespace-char-backwards-from s (dec pos))
             [form-str start end typ] (sexp/sexp-or-word-ending-at-position s fnw-pos)]
-        (evaluate-str form-str)))))
+        (f form-str)))))
+
+;; ------------------------------------------
+;; In place eval widget
+;; ------------------------------------------
+
+(defn in-place-eval []
+  (in-place-transform evaluate-str))
 
 (defn inline-result-marker [^AttributedString at-str]
   (astring/astr ["#_=>" (color :widget/half-contrast-inverse)] " " at-str))
@@ -737,6 +752,19 @@
      (display-less (format-data-eval-result result)))
    true))
 
+;; ------------------------------------------
+;; Macroexpand widget
+;; ------------------------------------------
+
+(defn in-place-macroexpand []
+  (in-place-transform macroexpand-str))
+
+(def macroexpand-at-point-widget
+  (create-widget
+    (when-let [result (in-place-macroexpand)]
+      (display-less (format-data-eval-result result)))
+    true))
+
 ;; --------------------------------------------
 ;; Buffer position
 ;; --------------------------------------------
@@ -757,16 +785,17 @@
 
 (defn add-all-widgets [line-reader]
   (binding [*line-reader* line-reader]
-    (register-widget "clojure-self-insert"        self-insert-hook-widget)
-    (register-widget "clojure-indent-line"        indent-line-widget)
-    (register-widget "clojure-indent-or-complete" indent-or-complete-widget)
+    (register-widget "clojure-self-insert"            self-insert-hook-widget)
+    (register-widget "clojure-indent-line"            indent-line-widget)
+    (register-widget "clojure-indent-or-complete"     indent-or-complete-widget)
 
-    (register-widget "clojure-doc-at-point"       document-at-point-widget)
-    (register-widget "clojure-source-at-point"    source-at-point-widget)
-    (register-widget "clojure-apropos-at-point"   apropos-at-point-widget)
-    (register-widget "clojure-eval-at-point"      eval-at-point-widget)
-    (register-widget "end-of-buffer"              end-of-buffer)
-    (register-widget "beginning-of-buffer"        beginning-of-buffer)))
+    (register-widget "clojure-doc-at-point"           document-at-point-widget)
+    (register-widget "clojure-source-at-point"        source-at-point-widget)
+    (register-widget "clojure-apropos-at-point"       apropos-at-point-widget)
+    (register-widget "clojure-eval-at-point"          eval-at-point-widget)
+    (register-widget "clojure-macroexpand-at-point"   macroexpand-at-point-widget)
+    (register-widget "end-of-buffer"                  end-of-buffer)
+    (register-widget "beginning-of-buffer"            beginning-of-buffer)))
 
 (defn bind-indents [key-map]
   (doto key-map
@@ -784,10 +813,11 @@
 
 (defn bind-clojure-widgets [key-map]
   (doto key-map
-    (bind-key "clojure-doc-at-point"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)))
-    (bind-key "clojure-source-at-point"     (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)))
-    (bind-key "clojure-apropos-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
-    (bind-key "clojure-eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))))
+    (bind-key "clojure-doc-at-point"            (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)))
+    (bind-key "clojure-source-at-point"         (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)))
+    (bind-key "clojure-apropos-at-point"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
+    (bind-key "clojure-eval-at-point"           (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))
+    (bind-key "clojure-macroexpand-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \M)))))
 
 (defn bind-clojure-widgets-vi-cmd [key-map]
   (doto key-map

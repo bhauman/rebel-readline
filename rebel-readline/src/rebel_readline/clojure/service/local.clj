@@ -4,7 +4,8 @@
    [rebel-readline.clojure.utils :as clj-utils]
    [rebel-readline.tools :as tools]
    [compliment.core :as compliment]
-   [clojure.repl]))
+   [clojure.repl]
+   [clojure.walk :as walk]))
 
 ;; taken from replicant
 ;; https://github.com/puredanger/replicant/blobcl/master/src/replicant/util.clj
@@ -103,6 +104,12 @@
                (read {:read-cond :allow} *in*))}
       (catch Throwable e
         {:exception (Throwable->map e)}))))
+
+(defmethod clj-reader/-macroexpand ::service [self form-str]
+  (let [res (clj-reader/-read-string self form-str)]
+    (if (contains? res :form)
+      {:result (walk/macroexpand-all (:form res))}
+      res)))
 
 (defn create
   ([] (create nil))
