@@ -19,8 +19,8 @@
 
 (defn terminal-background-color? []
   (or (when-let [fgbg (System/getenv "COLORFGBG")]
-        (when-let [[fg bg] (try (map #(Integer/parseInt (string/trim %))
-                                     (string/split fgbg #";"))
+        (when-let [[fg bg] (try (mapv #(Integer/parseInt (string/trim %))
+                                      (string/split fgbg #";"))
                                 (catch Throwable t nil))]
           (when (and fg bg)
             (if (< -1 fg bg 16)
