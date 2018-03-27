@@ -50,14 +50,15 @@ Alternatively you can specify an alias in your `$HOME/.clojure/deps.edn`
 ```clojure
 {
  ...
- :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.1"}}}}
+ :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.1"}}
+                   :main-opts  ["-m" "rebel-readline.main"]}}
 }
 ```
 
 And then run with a simpler:
 
 ```shell
-$ clojure -R:rebel -m rebel-readline.main
+$ clojure -A:rebel
 ```
 
 #### Leiningen
