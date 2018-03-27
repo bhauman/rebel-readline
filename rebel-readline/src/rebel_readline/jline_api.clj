@@ -268,7 +268,8 @@ If you are using `lein` you may need to use `lein trampoline`."
       (deref [] (.getVariable this service-variable-name))
       ;; TODO implement all swaps??
       (swap  [f & args] (swap* this f args))
-      (reset [a] (.setVariable this service-variable-name a)))))
+      (reset [a] (do (.setVariable this service-variable-name a)
+                     true)))))
 
 ;; taken from Clojure 1.10 core.print
 (defn- ^java.io.PrintWriter PrintWriter-on*
