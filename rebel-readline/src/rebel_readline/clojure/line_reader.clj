@@ -406,7 +406,8 @@
                      (display-message "  ")
                      ;; pushback binding
                      (when-let [s (.getLastBinding *line-reader*)]
-                       (.runMacro *line-reader* s))))))
+                       (when (not= "q" s)
+                         (.runMacro *line-reader* s)))))))
              ;; window is too small do nothing
              nil)))))))
 
