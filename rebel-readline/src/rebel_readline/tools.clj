@@ -5,7 +5,8 @@
    [clojure.java.io :as io]
    [clojure.edn :as edn])
   (:import
-   [org.jline.utils AttributedStringBuilder AttributedStyle]))
+   [org.jline.utils AttributedStringBuilder AttributedStyle]
+   [org.jline.keymap KeyMap]))
 
 ;; ----------------------------------------------
 ;; Extra Abilities
@@ -72,9 +73,29 @@
        (filter #(.exists %))
        first))
 
+(defn translate-serialized-key-bindings [key-binding-map]
+  (into {}
+        (map
+         (fn [[map-name binds]]
+           [map-name
+            (mapv (fn [[k v]]
+                    [(cond
+                       (string? k)
+                       (KeyMap/translate k)
+                       ;; bypass translation with a list of ints and chars
+                       (and (list? k) (every? #(or (integer? %) (char? %)) k))
+                       (apply str (map char k))
+                       (vector? k)
+                       (mapv #(KeyMap/translate %) k)) v])
+                  binds)])
+         key-binding-map)))
+
 (defn user-config []
   (when-let [file (user-config-file)]
-    (try (edn/read-string (slurp file))
+    (try (let [config (edn/read-string (slurp file))]
+           (cond-> config
+             (:key-bindings config)
+             (update-in [:key-bindings] translate-serialized-key-bindings)))
          (catch Throwable e
            (binding [*out* *err*]
              (println (format "[Rebel Readline] Error reading config file %s: %s"

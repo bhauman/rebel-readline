@@ -152,6 +152,28 @@ If you are using `lein` you may need to use `lein trampoline`."
   (when key-str
     (.bind key-map (org.jline.reader.Reference. widget-id) key-str)))
 
+(defn key-binding [key-map-name key-str widget-name]
+  (swap! *line-reader* update-in
+         [::key-bindings (keyword key-map-name)]
+         #((fnil conj []) % [key-str widget-name])))
+
+(defn apply-key-bindings [key-bindings & {:keys [look-up-keymap-fn] :or {look-up-keymap-fn orig-key-map-clone}}]
+  (doall
+   (for [[key-map-name bindings'] key-bindings]
+     (when-let [km (look-up-keymap-fn (name key-map-name))]
+       (doseq [[key-str widget-name] bindings']
+         (when (and widget-name key-str)
+           (bind-key km (name widget-name) key-str)))
+       (set-key-map! (name key-map-name) km)))))
+
+(defn apply-key-bindings! []
+  (when-let [kbs (not-empty (::key-bindings @*line-reader*))]
+    (apply-key-bindings kbs))
+  ;; user level key bindings applied after
+  (when-let [kbs (not-empty (:key-bindings @*line-reader*))]
+    (apply-key-bindings kbs :look-up-keymap-fn key-map))
+  *line-reader*)
+
 ;; --------------------------------------
 ;; contextual ANSI
 ;; --------------------------------------

@@ -784,84 +784,71 @@
     (register-widget "end-of-buffer"              end-of-buffer)
     (register-widget "beginning-of-buffer"        beginning-of-buffer)))
 
-(defn bind-indents [key-map]
-  (doto key-map
-    (bind-key "clojure-indent-line"         (str (KeyMap/ctrl \X) (KeyMap/ctrl \I)))
-    (bind-key "clojure-indent-or-complete"  (str (KeyMap/ctrl \I)))))
+(defn bind-indents [km-name]
+  (doto km-name
+    (key-binding (str (KeyMap/ctrl \X) (KeyMap/ctrl \I))
+                     "clojure-indent-line")
+    (key-binding (KeyMap/ctrl \I) "clojure-indent-or-complete")))
 
-(defn bind-inserts [key-map]
-  (doto key-map
-    (bind-key "clojure-self-insert"    (KeyMap/range " -~"))
+(defn bind-inserts [km-name]
+  (doto km-name
+    (key-binding (KeyMap/range " -~") "clojure-self-insert")
     ;; the range behavior above overwrites all the bindings in the range
     ;; so this keeps the oringinal bracket matching behavior
-    (bind-key LineReader/INSERT_CLOSE_PAREN ")")
-    (bind-key LineReader/INSERT_CLOSE_SQUARE "]")
-    (bind-key LineReader/INSERT_CLOSE_CURLY "}")))
+    (key-binding ")" LineReader/INSERT_CLOSE_PAREN)
+    (key-binding "]" LineReader/INSERT_CLOSE_SQUARE)
+    (key-binding "}" LineReader/INSERT_CLOSE_CURLY)))
 
-(defn bind-clojure-widgets [key-map]
-  (doto key-map
-    (bind-key "clojure-doc-at-point"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)))
-    (bind-key "clojure-source-at-point"     (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)))
-    (bind-key "clojure-apropos-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
-    (bind-key "clojure-eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))
-    (bind-key "clojure-force-accept-line"   (str (KeyMap/ctrl \X) (KeyMap/ctrl \M)))))
+(defn bind-clojure-widgets [km-name]
+  (doto km-name
+    (key-binding (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)) "clojure-doc-at-point")
+    (key-binding (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)) "clojure-source-at-point")
+    (key-binding (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)) "clojure-apropos-at-point")
+    (key-binding (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)) "clojure-eval-at-point")
+    (key-binding (str (KeyMap/ctrl \X) (KeyMap/ctrl \M)) "clojure-force-accept-line")))
 
-(defn bind-clojure-widgets-vi-cmd [key-map]
-  (doto key-map
-    (bind-key "clojure-doc-at-point"        (str \\ \d))
-    (bind-key "clojure-source-at-point"     (str \\ \s))
-    (bind-key "clojure-apropos-at-point"    (str \\ \a))
-    (bind-key "clojure-eval-at-point"       (str \\ \e))))
+(defn bind-clojure-widgets-vi-cmd [km-name]
+  (doto km-name
+    (key-binding (str \\ \d) "clojure-doc-at-point")
+    (key-binding (str \\ \s) "clojure-source-at-point")
+    (key-binding (str \\ \a) "clojure-apropos-at-point")
+    (key-binding (str \\ \e) "clojure-eval-at-point")))
 
-(defn clojure-emacs-mode [key-map]
-  (doto key-map
+(defn clojure-emacs-mode [km-name]
+  (doto km-name
     bind-indents
     bind-inserts
     bind-clojure-widgets
-    (bind-key "end-of-buffer"
-              (KeyMap/key
-               (.getTerminal *line-reader*)
-               InfoCmp$Capability/key_end))
-    (bind-key "beginning-of-buffer"
-              (KeyMap/key
-               (.getTerminal *line-reader*)
-               InfoCmp$Capability/key_home))))
+    (key-binding
+     (KeyMap/key
+      (.getTerminal *line-reader*)
+      InfoCmp$Capability/key_end)
+     "end-of-buffer")
+    (key-binding
+     (KeyMap/key
+      (.getTerminal *line-reader*)
+      InfoCmp$Capability/key_home)
+     "beginning-of-buffer")))
 
-(defn clojure-vi-insert-mode [key-map]
-  (doto key-map
+(defn clojure-vi-insert-mode [km-name]
+  (doto km-name
     clojure-emacs-mode
-    (bind-key "clojure-force-accept-line" (str (KeyMap/ctrl \E)))))
+    (key-binding (str (KeyMap/ctrl \E)) "clojure-force-accept-line")))
 
-(defn clojure-vi-cmd-mode [key-map]
-  (doto key-map bind-indents bind-clojure-widgets bind-clojure-widgets-vi-cmd))
-
-(defn add-clojure-emacs-key-map [line-reader]
-  (binding [*line-reader* line-reader]
-    (let [clojure-emacs (orig-key-map-clone "emacs")]
-      (clojure-emacs-mode clojure-emacs)
-      (set-key-map! "emacs" clojure-emacs))))
-
-(defn add-clojure-vi-key-maps [line-reader]
-  (binding [*line-reader* line-reader]
-    (let [clojure-viins (orig-key-map-clone "viins")
-          clojure-vicmd (orig-key-map-clone "vicmd")]
-      (clojure-vi-insert-mode clojure-viins)
-      (clojure-vi-cmd-mode clojure-vicmd)
-      (set-key-map! "viins" clojure-viins)
-      (set-key-map! "vicmd" clojure-vicmd))))
-
-(defn set-word-characters [line-reader]
-  (doto line-reader (.setVariable LineReader/WORDCHARS "")))
+(defn clojure-vi-cmd-mode [km-name]
+  (doto km-name
+    bind-indents
+    bind-clojure-widgets
+    bind-clojure-widgets-vi-cmd))
 
 (defn add-widgets-and-bindings [line-reader]
   (binding [*line-reader* line-reader]
+    (clojure-emacs-mode :emacs)
+    (clojure-vi-insert-mode :viins)
+    (clojure-vi-cmd-mode :vicmd)
     (doto line-reader
-      set-word-characters
-      add-all-widgets
-      add-clojure-emacs-key-map
-      add-clojure-vi-key-maps))
-  line-reader)
-
+      (.setVariable LineReader/WORDCHARS "")
+      add-all-widgets)))
 
 ;; ----------------------------------------------------
 ;; ----------------------------------------------------
@@ -1077,6 +1064,7 @@
     (.setOpt LineReader$Option/HISTORY_INCREMENTAL)
     add-widgets-and-bindings
     (#(binding [*line-reader* %]
+        (apply-key-bindings!)
         (set-main-key-map! (get service :key-map :emacs))))))
 
 (defn create
