@@ -37,7 +37,7 @@ If you want to try this really quickly
 and then invoke this:
 
 ```shell
-clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.1\"}}}" -m rebel-readline.main
+clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.2\"}}}" -m rebel-readline.main
 ```
 
 That should start a Clojure REPL that takes its input from the Rebel readline editor.
@@ -50,7 +50,7 @@ Alternatively you can specify an alias in your `$HOME/.clojure/deps.edn`
 ```clojure
 {
  ...
- :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.1"}}
+ :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.2"}}
                    :main-opts  ["-m" "rebel-readline.main"]}}
 }
 ```
@@ -63,7 +63,7 @@ $ clojure -A:rebel
 
 #### Leiningen
 
-Add `[com.bhauman/rebel-readline "0.1.1"]` to the dependencies in your
+Add `[com.bhauman/rebel-readline "0.1.2"]` to the dependencies in your
 `project.clj` then start a REPL like this:
 
 ```shell
@@ -75,7 +75,7 @@ Alternatively, you can add rebel-readline globally to `$HOME/.lein/profiles.clj`
 ```clojure
 {
  ...
- :user {:dependencies [[com.bhauman/rebel-readline "0.1.1"]]}
+ :user {:dependencies [[com.bhauman/rebel-readline "0.1.2"]]}
 }
 ```
 
@@ -140,7 +140,37 @@ following options:
 
 :redirect-output - boolean, rebinds root *out* during read to protect linereader
                    Defaults to true
+                   
+:key-bindings    - map of key-bindings that get applied after all other key 
+                   bindings have been applied
 ```
+
+#### Key binding config
+
+You can configure key bindings in the config file, but your milage may vary.
+
+Example:
+
+```
+{ 
+...
+:key-bindings { :emacs [["^D" :clojure-doc-at-point]] 
+                :viins [["^J" :clojure-force-accept-line]] }
+}
+```
+
+Serialized keybindings are tricky and the keybinding strings are translated with
+`org.jline.keymap.KeyMap/translate` which is a bit peculiar in how it translates things.
+
+If you want literal characters you can use a list of chars or ints i.e
+`(\\ \d)` instead of the serialized key names. So you can use `(4 4)` inplace of `"^D^D"`.
+
+The best way to look up the available widget names is to use the `:repl/key-bindings`
+command at the REPL prompt.
+
+Note: I have found that JLine handles control characters and
+alphanumeric characters quite well but if you want to bind special
+characters you shouldn't be surprised if it doesn't work that well.
 
 ## Quick Lay of the land
 

@@ -1,4 +1,4 @@
-(defproject com.bhauman/rebel-readline "0.1.2-SNAPSHOT"
+(defproject com.bhauman/rebel-readline "0.1.2"
   :description "Terminal readline library for Clojure dialects"
   :url "https://github.com/bhauman/rebel-readline"
   :license {:name "Eclipse Public License"
