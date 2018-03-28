@@ -170,7 +170,7 @@ command at the REPL prompt.
 
 Note: I have found that JLine handles control characters and
 alphanumeric characters quite well but if you want to bind special
-characters you shouldn't be surprised if it doesn't work that well.
+characters you shouldn't be surprised if it doesn't work.
 
 ## Quick Lay of the land
 
