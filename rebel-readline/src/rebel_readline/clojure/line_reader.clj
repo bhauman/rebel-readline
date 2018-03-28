@@ -50,6 +50,8 @@
      :light-screen-theme
      :dark-screen-theme)})
 
+(def ^:dynamic *accept-fn* nil)
+
 (def highlight-clj-str (partial tools/highlight-str color tokenize/tag-font-lock))
 
 ;; ---------------------------------------------------------------------
@@ -409,6 +411,16 @@
              nil)))))))
 
 ;; -----------------------------------------
+;; force line accept
+;; -----------------------------------------
+
+(def always-accept-line
+  (create-widget
+   (binding [*accept-fn* (fn [l c] true)]
+     (call-widget LineReader/ACCEPT_LINE)
+     true)))
+
+;; -----------------------------------------
 ;; line indentation widget
 ;; -----------------------------------------
 
@@ -765,6 +777,9 @@
     (register-widget "clojure-source-at-point"    source-at-point-widget)
     (register-widget "clojure-apropos-at-point"   apropos-at-point-widget)
     (register-widget "clojure-eval-at-point"      eval-at-point-widget)
+
+    (register-widget "clojure-force-accept-line"  always-accept-line)
+
     (register-widget "end-of-buffer"              end-of-buffer)
     (register-widget "beginning-of-buffer"        beginning-of-buffer)))
 
@@ -787,7 +802,8 @@
     (bind-key "clojure-doc-at-point"        (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)))
     (bind-key "clojure-source-at-point"     (str (KeyMap/ctrl \X) (KeyMap/ctrl \S)))
     (bind-key "clojure-apropos-at-point"    (str (KeyMap/ctrl \X) (KeyMap/ctrl \A)))
-    (bind-key "clojure-eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))))
+    (bind-key "clojure-eval-at-point"       (str (KeyMap/ctrl \X) (KeyMap/ctrl \E)))
+    (bind-key "clojure-force-accept-line"   (str (KeyMap/ctrl \X) (KeyMap/ctrl \M)))))
 
 (defn bind-clojure-widgets-vi-cmd [key-map]
   (doto key-map
@@ -810,7 +826,10 @@
                (.getTerminal *line-reader*)
                InfoCmp$Capability/key_home))))
 
-(def clojure-vi-insert-mode clojure-emacs-mode)
+(defn clojure-vi-insert-mode [key-map]
+  (doto key-map
+    clojure-emacs-mode
+    (bind-key "clojure-force-accept-line" (str (KeyMap/ctrl \E)))))
 
 (defn clojure-vi-cmd-mode [key-map]
   (doto key-map bind-indents bind-clojure-widgets bind-clojure-widgets-vi-cmd))
@@ -917,7 +936,9 @@
         (parse [^String line cursor ^Parser$ParseContext context]
           (cond
             (= context Parser$ParseContext/ACCEPT_LINE)
-            (when-not (accept-line line cursor)
+            (when-not (or (and *accept-fn*
+                               (*accept-fn* line cursor))
+                          (accept-line line cursor))
               (indent *line-reader* line cursor)
               (throw (EOFError. -1 -1 "Unbalanced Expression" (str *ns*))))
             (= context Parser$ParseContext/COMPLETE)

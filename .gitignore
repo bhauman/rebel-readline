@@ -24,3 +24,5 @@ rebel-readline/rebel-readline-debug-log
 rebel-readline/.rebel_readline_history
 
 rebel-readline-cljs/.rebel_readline_history
+
+*.log
