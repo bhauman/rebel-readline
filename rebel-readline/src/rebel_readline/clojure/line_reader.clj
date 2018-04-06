@@ -486,7 +486,7 @@
                                              (+ leading-white-space begin-of-line-pos))]
       (if cursor-in-leading-white-space?
         (call-widget "clojure-indent-line")
-        (call-widget LineReader/MENU_COMPLETE))
+        (call-widget LineReader/COMPLETE_WORD))
       true)))
 
 ;; ------------------------------------------------
@@ -542,7 +542,6 @@
        (when-let [message (display-argument-help-message)]
          (reset! ttd-atom 1)
          (display-message message)))
-     (call-widget LineReader/SELF_INSERT)
      true)))
 
 (defn word-at-cursor []
@@ -790,15 +789,6 @@
                      "clojure-indent-line")
     (key-binding (KeyMap/ctrl \I) "clojure-indent-or-complete")))
 
-(defn bind-inserts [km-name]
-  (doto km-name
-    (key-binding (KeyMap/range " -~") "clojure-self-insert")
-    ;; the range behavior above overwrites all the bindings in the range
-    ;; so this keeps the oringinal bracket matching behavior
-    (key-binding ")" LineReader/INSERT_CLOSE_PAREN)
-    (key-binding "]" LineReader/INSERT_CLOSE_SQUARE)
-    (key-binding "}" LineReader/INSERT_CLOSE_CURLY)))
-
 (defn bind-clojure-widgets [km-name]
   (doto km-name
     (key-binding (str (KeyMap/ctrl \X) (KeyMap/ctrl \D)) "clojure-doc-at-point")
@@ -817,7 +807,6 @@
 (defn clojure-emacs-mode [km-name]
   (doto km-name
     bind-indents
-    bind-inserts
     bind-clojure-widgets
     (key-binding
      (KeyMap/key
