@@ -121,7 +121,6 @@ If you are using `lein` you may need to use `lein trampoline`."
               ;; these are too numerous
               ;; TODO would be nice to display
               ;; rolled up abbreviations
-              "clojure-self-insert"
               "self-insert"
               "digit-argument"
               "do-lowercase-version"} v))))))
@@ -281,6 +280,7 @@ If you are using `lein` you may need to use `lein trampoline`."
 
 (defn create-line-reader [terminal app-name service]
   (let [service-variable-name (name :rebel-readline.service/service)
+        ;; TODO fix this!!! Why not embed an atom?? LOL
         swap* (fn [obj f args]
                 (locking obj
                   (let [old-val @obj
@@ -293,7 +293,8 @@ If you are using `lein` you may need to use `lein trampoline`."
          (or app-name "Rebel Readline")
          (java.util.HashMap. {(name ::service) (or service {})})]
       (selfInsert []
-        (call-widget "clojure-self-insert")
+        (when-let [hooks (not-empty (:self-insert-hooks @this))]
+          (widget-exec this #(doseq [hook hooks] (hook))))
         (proxy-super selfInsert))
       (deref [] (.getVariable this service-variable-name))
       ;; TODO implement all swaps??

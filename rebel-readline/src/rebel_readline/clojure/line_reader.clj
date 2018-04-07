@@ -524,25 +524,24 @@
 
 ;; TODO this ttd (time to delete) atom doesn't work really
 ;; need a global state and countdown solution
-;; more than likely a callback on hook on key presses
+;; and a callback on hook on any key presses
 (let [ttd-atom (atom -1)]
-  (def self-insert-hook-widget
+  (defn eldoc-self-insert-hook
     "This hooks SELF_INSERT to capture most keypresses that get echoed
   out to the terminal. We are using it here to display interactive
   behavior based on the state of the buffer at the time of a keypress."
-    (create-widget
-     (when (zero? @ttd-atom)
-       (display-message " "))
-     (when-not (neg? @ttd-atom)
-       (swap! ttd-atom dec))
-     ;; hook here
-     ;; if prev-char is a space and the char before that is part
-     ;; of a word, and that word is a fn call
-     (when (:eldoc @*line-reader*)
-       (when-let [message (display-argument-help-message)]
-         (reset! ttd-atom 1)
-         (display-message message)))
-     true)))
+    []
+    (when (zero? @ttd-atom)
+      (display-message " "))
+    (when-not (neg? @ttd-atom)
+      (swap! ttd-atom dec))
+    ;; hook here
+    ;; if prev-char is a space and the char before that is part
+    ;; of a word, and that word is a fn call
+    (when (:eldoc @*line-reader*)
+      (when-let [message (display-argument-help-message)]
+        (reset! ttd-atom 1)
+        (display-message message)))))
 
 (defn word-at-cursor []
   (sexp/word-at-position (buffer-as-string) (cursor)))
@@ -769,7 +768,6 @@
 
 (defn add-all-widgets [line-reader]
   (binding [*line-reader* line-reader]
-    (register-widget "clojure-self-insert"        self-insert-hook-widget)
     (register-widget "clojure-indent-line"        indent-line-widget)
     (register-widget "clojure-indent-or-complete" indent-or-complete-widget)
 
@@ -835,6 +833,7 @@
     (clojure-emacs-mode :emacs)
     (clojure-vi-insert-mode :viins)
     (clojure-vi-cmd-mode :vicmd)
+    (swap! line-reader #(update % :self-insert-hooks (fnil conj #{}) eldoc-self-insert-hook))
     (doto line-reader
       (.setVariable LineReader/WORDCHARS "")
       add-all-widgets)))
