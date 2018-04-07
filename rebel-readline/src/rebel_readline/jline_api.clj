@@ -279,29 +279,21 @@ If you are using `lein` you may need to use `lein trampoline`."
   (.callWidget *line-reader* widget-name))
 
 (defn create-line-reader [terminal app-name service]
-  (let [service-variable-name (name :rebel-readline.service/service)
-        ;; TODO fix this!!! Why not embed an atom?? LOL
-        swap* (fn [obj f args]
-                (locking obj
-                  (let [old-val @obj
-                        new-val (apply f old-val args)]
-                    (if (= @obj old-val)
-                      (reset! obj new-val)
-                      false))))]
+  (let [service-variable-name (str ::service)]
     (proxy [LineReaderImpl clojure.lang.IDeref clojure.lang.IAtom]
         [terminal
          (or app-name "Rebel Readline")
-         (java.util.HashMap. {(name ::service) (or service {})})]
+         (java.util.HashMap. {service-variable-name (atom (or service {}))})]
       (selfInsert []
         (when-let [hooks (not-empty (:self-insert-hooks @this))]
           (widget-exec this #(doseq [hook hooks] (hook))))
         (proxy-super selfInsert))
-      (deref [] (.getVariable this service-variable-name))
-      ;; TODO implement all swaps??
-      (swap  [f & args] (swap* this f args))
+      (deref []
+        (deref (.getVariable this service-variable-name)))
+      (swap  [f & args]
+        (apply swap! (.getVariable this service-variable-name) f args))
       (reset [a]
-        (.setVariable this service-variable-name a)
-        a))))
+        (reset! (.getVariable this service-variable-name) a)))))
 
 ;; taken from Clojure 1.10 core.print
 (defn- ^java.io.PrintWriter PrintWriter-on*
