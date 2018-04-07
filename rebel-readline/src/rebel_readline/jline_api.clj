@@ -64,22 +64,27 @@ If you are using `lein` you may need to use `lein trampoline`."
       (assert-system-terminal terminal))
     terminal))
 
+(declare display-message)
+
+(defn widget-exec [line-reader thunk]
+  (binding [*line-reader* line-reader
+            *buffer* (.getBuffer line-reader)]
+    (try
+      (thunk)
+      (catch clojure.lang.ExceptionInfo e
+        (if-let [message (.getMessage e)]
+          (do (log :widget-execution-error (Throwable->map e))
+              (display-message
+               (AttributedString.
+                message (.foreground AttributedStyle/DEFAULT AttributedStyle/RED)))
+              true)
+          (throw e))))))
+
 (defmacro create-widget [& body]
   `(fn [line-reader#]
      (reify Widget
        (apply [_#]
-         (binding [*line-reader* line-reader#
-                   *buffer* (.getBuffer line-reader#)]
-           (try
-             ~@body
-             (catch clojure.lang.ExceptionInfo e#
-               (if-let [message# (.getMessage e#)]
-                 (do (log :widget-execution-error (Throwable->map e#))
-                     (display-message
-                      (AttributedString.
-                       message# (.foreground AttributedStyle/DEFAULT AttributedStyle/RED)))
-                     true)
-                 (throw e#)))))))))
+         (widget-exec line-reader# (fn [] ~@body))))))
 
 ;; very naive
 (def get-accessible-field
