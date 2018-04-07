@@ -28,7 +28,7 @@ Add `[com.bhauman/rebel-readline-cljs "0.1.1"]` to the dependencies in your
 `project.clj` then start a REPL like this:
 
 ```shell
-lein trampoline -m rebel-readline.cljs.main
+lein trampoline run -m rebel-readline.cljs.main
 ```
 
 #### Clone this repo
