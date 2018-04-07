@@ -287,6 +287,9 @@ If you are using `lein` you may need to use `lein trampoline`."
         [terminal
          (or app-name "Rebel Readline")
          (java.util.HashMap. {(name ::service) (or service {})})]
+      (selfInsert []
+        (call-widget "clojure-self-insert")
+        (proxy-super selfInsert))
       (deref [] (.getVariable this service-variable-name))
       ;; TODO implement all swaps??
       (swap  [f & args] (swap* this f args))
