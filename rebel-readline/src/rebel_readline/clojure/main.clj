@@ -5,7 +5,8 @@
    [rebel-readline.jline-api :as api]
    [rebel-readline.tools :as tools]
    [rebel-readline.clojure.service.local :as clj-service]
-   [clojure.main]))
+   [clojure.main]
+   [lazy-require.core :as lreq]))
 
 (defn syntax-highlight-prn
   "Print a syntax highlighted clojure value.
@@ -106,4 +107,5 @@
     :eval (partial contextual-eval (local-context))))
 
 (defn -main [& args]
+  (lreq/load-in-background) ;; Load deferred namespaces in a background thread.
   (core/ensure-terminal (repl)))

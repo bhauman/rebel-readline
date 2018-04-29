@@ -3,7 +3,7 @@
    [rebel-readline.clojure.line-reader :as clj-reader]
    [rebel-readline.clojure.utils :as clj-utils]
    [rebel-readline.tools :as tools]
-   [compliment.core :as compliment]
+   [lazy-require.core :as lreq]
    [clojure.repl]))
 
 ;; taken from replicant
@@ -66,9 +66,10 @@
   (resolve-meta var-str))
 
 (defmethod clj-reader/-complete ::service [_ word options]
-  (if options
-    (compliment/completions word options)
-    (compliment/completions word)))
+  (lreq/with-lazy-require [[compliment.core :as compliment]]
+    (if options
+      (compliment/completions word options)
+      (compliment/completions word))))
 
 (defmethod clj-reader/-current-ns ::service [_]
   (some-> *ns* str))
@@ -81,11 +82,12 @@
   (clojure.repl/apropos var-str))
 
 (defmethod clj-reader/-doc ::service [self var-str]
-  (when-let [{:keys [ns name]} (clj-reader/-resolve-meta self var-str)]
-    (when-let [doc (compliment/documentation var-str)]
-      (let [url (clj-utils/url-for (str ns) (str name))]
-        (cond-> {:doc doc}
-          url (assoc :url url))))))
+  (lreq/with-lazy-require [[compliment.core :as compliment]]
+    (when-let [{:keys [ns name]} (clj-reader/-resolve-meta self var-str)]
+      (when-let [doc (compliment/documentation var-str)]
+        (let [url (clj-utils/url-for (str ns) (str name))]
+          (cond-> {:doc doc}
+            url (assoc :url url)))))))
 
 (defmethod clj-reader/-eval ::service [self form]
   (let [res (call-with-timeout
