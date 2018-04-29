@@ -13,6 +13,7 @@
                  [org.jline/jline-reader "3.5.1"]
                  [org.jline/jline-terminal "3.5.1"]
                  [org.jline/jline-terminal-jansi "3.5.1"]
+                 [com.clojure-goes-fast/lazy-require "0.1.1"]
                  [cljfmt "0.5.7"]     ;; depends on tools reader
                  [compliment "0.3.6"]]
 
