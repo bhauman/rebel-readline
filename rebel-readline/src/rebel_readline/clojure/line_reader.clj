@@ -7,7 +7,8 @@
    [rebel-readline.clojure.sexp :as sexp]
    [rebel-readline.tools :as tools :refer [color service-dispatch]]
    [rebel-readline.utils :as utils :refer [log]]
-   [cljfmt.core :refer [reformat-string]]
+   ;; lazy-load
+   #_[cljfmt.core :refer [reformat-string]]
    [clojure.string :as string]
    [clojure.java.io :as io]
    [clojure.main])
@@ -440,18 +441,20 @@
   (if (zero? cursor)
     0
     (if-let [prx (indent-proxy-str s cursor)]
-      (try (->>
-            (reformat-string prx {:remove-trailing-whitespace? false
-                                  :insert-missing-whitespace? false
-                                  :remove-surrounding-whitespace? false
-                                  :remove-consecutive-blank-lines? false})
-            string/split-lines
-            last
-            sexp/count-leading-white-space)
-           (catch clojure.lang.ExceptionInfo e
-             (if (-> e ex-data :type (= :reader-exception))
-               (+ 2 (sexp/count-leading-white-space prx))
-               (throw e))))
+      ;; lazy-load for faster start up
+      (let [reformat-string (utils/require-resolve-var 'cljfmt.core/reformat-string)]
+        (try (->>
+              (reformat-string prx {:remove-trailing-whitespace? false
+                                    :insert-missing-whitespace? false
+                                    :remove-surrounding-whitespace? false
+                                    :remove-consecutive-blank-lines? false})
+              string/split-lines
+              last
+              sexp/count-leading-white-space)
+             (catch clojure.lang.ExceptionInfo e
+               (if (-> e ex-data :type (= :reader-exception))
+                 (+ 2 (sexp/count-leading-white-space prx))
+                 (throw e)))))
       0)))
 
 (def indent-line-widget

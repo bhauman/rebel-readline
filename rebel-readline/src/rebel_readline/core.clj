@@ -5,7 +5,8 @@
    [rebel-readline.commands :as commands]
    [rebel-readline.io.callback-reader]
    [rebel-readline.jline-api :as api]
-   [rebel-readline.tools :as tools])
+   [rebel-readline.tools :as tools]
+   [rebel-readline.utils :as utils])
   (:import
    [org.jline.reader
     UserInterruptException
@@ -71,6 +72,7 @@
        :prompt (fn []))))"
   [line-reader & body]
   `(ensure-terminal
+    (rebel-readline.utils/load-slow-deps!)
     (binding [rebel-readline.jline-api/*line-reader* ~line-reader]
       ~@body)))
 
