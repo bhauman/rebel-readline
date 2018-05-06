@@ -1,3 +1,10 @@
+# 0.1.3 Improved Completion and Faster startup
+
+Rebel Readline loads 2x faster and Completion now narrows choices as you type.
+
+* thanks to Alexander Yakushev for demonstrating how make startup faster
+* thanks to Michał Buczko for greatly improving how completion works
+
 # 0.1.2 Vi improvements and key binding configuration
 
 * Fixed PrintWriter->on name collision warning for Clojure 1.9
