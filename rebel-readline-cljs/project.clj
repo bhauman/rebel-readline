@@ -1,4 +1,4 @@
-(defproject com.bhauman/rebel-readline-cljs "0.1.3"
+(defproject com.bhauman/rebel-readline-cljs "0.1.4-SNAPSHOT"
   :description "A rebel readline service for ClojureScript"
   :url "https://github.com/bhauman/rebel-readline"
   :license {:name "Eclipse Public License"
