@@ -56,7 +56,10 @@
   See `rebel-readline-cljs.main` for an example of how this function is normally used"
   [x]
   (binding [*out* (.. api/*line-reader* getTerminal writer)]
-    (println (api/->ansi (clj-line-reader/highlight-clj-str (or x ""))))))
+    (try
+      (println (api/->ansi (clj-line-reader/highlight-clj-str (or x ""))))
+      (catch java.lang.StackOverflowError e
+        (println (or x ""))))))
 
 ;; enable evil alter-var-root
 (let [cljs-repl* cljs.repl/repl*]
