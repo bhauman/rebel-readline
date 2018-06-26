@@ -37,7 +37,7 @@ If you want to try this really quickly
 and then invoke this:
 
 ```shell
-clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.3\"}}}" -m rebel-readline.main
+clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.4\"}}}" -m rebel-readline.main
 ```
 
 That should start a Clojure REPL that takes its input from the Rebel readline editor.
@@ -50,7 +50,7 @@ Alternatively you can specify an alias in your `$HOME/.clojure/deps.edn`
 ```clojure
 {
  ...
- :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.3"}}
+ :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
                    :main-opts  ["-m" "rebel-readline.main"]}}
 }
 ```
@@ -63,7 +63,7 @@ $ clojure -A:rebel
 
 #### Leiningen
 
-Add `[com.bhauman/rebel-readline "0.1.3"]` to the dependencies in your
+Add `[com.bhauman/rebel-readline "0.1.4"]` to the dependencies in your
 `project.clj` then start a REPL like this:
 
 ```shell
@@ -75,7 +75,7 @@ Alternatively, you can add rebel-readline globally to `$HOME/.lein/profiles.clj`
 ```clojure
 {
  ...
- :user {:dependencies [[com.bhauman/rebel-readline "0.1.3"]]}
+ :user {:dependencies [[com.bhauman/rebel-readline "0.1.4"]]}
 }
 ```
 

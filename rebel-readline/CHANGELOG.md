@@ -1,3 +1,9 @@
+# 0.1.4 Removed regex stack overflow for large strings
+
+It is very confusing to get an error from the value printer, so this merits a release.
+
+* https://github.com/bhauman/rebel-readline/issues/161
+
 # 0.1.3 Improved Completion and Faster startup
 
 Rebel Readline loads 2x faster and Completion now narrows choices as you type.
