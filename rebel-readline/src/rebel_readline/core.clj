@@ -102,7 +102,7 @@
        mask :mask
        buffer :buffer 
        command-executed :command-executed
-       :or {prompt (tools/prompt) buffer nil mask nil command-executed ""}}]
+       :or {prompt nil buffer nil mask nil command-executed ""}}]
   
   (let [redirect-output? (:redirect-output @api/*line-reader*)
         save-out (volatile! *out*)
@@ -119,7 +119,7 @@
         ;; but we are blocking concurrent redisplays while the
         ;; readline prompt is initially drawn
         (api/block-redisplay-millis 100)
-        (let [res' (.readLine api/*line-reader* prompt mask buffer)]
+        (let [res' (.readLine api/*line-reader* (or prompt (tools/prompt)) mask buffer)]
           (if-not (commands/handle-command res')
             res'
             command-executed)))
