@@ -24,7 +24,7 @@
     (.startsWith (str ns) "clojure.")
     (cond-> "https://clojuredocs.org/"
       ns (str ns)
-      name (str "/" name))
+      name (str "/" (string/replace name #"\?" "_p"))
     (.startsWith (str ns) "cljs.")
     (cond-> "http://cljs.github.io/api/"
       ns (str ns)
