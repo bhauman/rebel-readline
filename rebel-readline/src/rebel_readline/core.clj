@@ -82,6 +82,52 @@
   []
   "[Rebel readline] Type :repl/help for online help info")
 
+(defn read-line-opts
+  "Like read-line, but allows overriding of the LineReader prompt, buffer, and mask parameters.
+   
+   :prompt 
+     Allows overriding with a cusom prompt
+   :buffer
+     The default value presented to the user to edit, may be null.
+   :mask 
+     Should be set to a single character used by jline to bit-mask.  
+     Characters will not be echoed if they mask to 0
+     Might do crazy stuff with rebel-readline, use with caution.
+     defaults to nil (no mask)
+   :command-executed
+     sentinal value to be returned when a repl command is executed, otherwise a 
+     blank string will be returned when a repl command is executed.
+  "
+  [ & {prompt :prompt
+       mask :mask
+       buffer :buffer 
+       command-executed :command-executed
+       :or {prompt nil buffer nil mask nil command-executed ""}}]
+  
+  (let [redirect-output? (:redirect-output @api/*line-reader*)
+        save-out (volatile! *out*)
+        redirect-print-writer (api/safe-terminal-writer api/*line-reader*)]
+    (when redirect-output?
+      (alter-var-root
+       #'*out*
+       (fn [root-out]
+         (vreset! save-out root-out)
+         redirect-print-writer)))
+    (try
+      (binding [*out* redirect-print-writer]
+        ;; this is intensely disatisfying
+        ;; but we are blocking concurrent redisplays while the
+        ;; readline prompt is initially drawn
+        (api/block-redisplay-millis 100)
+        (let [res' (.readLine api/*line-reader* (or prompt (tools/prompt)) mask buffer)]
+          (if-not (commands/handle-command res')
+            res'
+            command-executed)))
+      (finally
+        (when redirect-output?
+          (flush)
+          (alter-var-root #'*out* (fn [_] @save-out)))))))
+
 (defn read-line
   "Reads a line from the currently bound
   rebel-readline.jline-api/*line-reader*. If you supply the optional
@@ -117,30 +163,7 @@
   ;; The idea being that we want to catch as much concurrant output as
   ;; possible while the readline is enguaged.
   [& [command-executed]]
-  (let [command-executed (or command-executed "")]
-    (let [redirect-output? (:redirect-output @api/*line-reader*)
-          save-out (volatile! *out*)
-          redirect-print-writer (api/safe-terminal-writer api/*line-reader*)]
-      (when redirect-output?
-        (alter-var-root
-         #'*out*
-         (fn [root-out]
-           (vreset! save-out root-out)
-           redirect-print-writer)))
-      (try
-        (binding [*out* redirect-print-writer]
-          ;; this is intensely disatisfying
-          ;; but we are blocking concurrent redisplays while the
-          ;; readline prompt is initially drawn
-          (api/block-redisplay-millis 100)
-          (let [res' (.readLine api/*line-reader* (tools/prompt))]
-            (if-not (commands/handle-command res')
-              res'
-              command-executed)))
-        (finally
-          (when redirect-output?
-            (flush)
-            (alter-var-root #'*out* (fn [_] @save-out))))))))
+  (read-line-opts :command-executed (or command-executed "")))
 
 (defn repl-read-line
   "A readline function that converts the Exceptions normally thrown by
