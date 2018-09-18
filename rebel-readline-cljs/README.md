@@ -13,7 +13,7 @@ rebel-readline.
 If you want to try this really quickly [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and then invoke this:
 
 ```shell
-clojure -Sdeps '{:deps {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.3"}}}' -m rebel-readline.cljs.main
+clojure -Sdeps '{:deps {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}}}' -m rebel-readline.cljs.main
 ```
 
 That should start a Nashorn ClojureScript REPL that takes it's input
@@ -24,7 +24,7 @@ because the latter wraps the process with another readline program (`rlwrap`).
 
 #### Leiningen
 
-Add `[com.bhauman/rebel-readline-cljs "0.1.1"]` to the dependencies in your
+Add `[com.bhauman/rebel-readline-cljs "0.1.4"]` to the dependencies in your
 `project.clj` then start a REPL like this:
 
 ```shell
