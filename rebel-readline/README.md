@@ -85,13 +85,21 @@ Then you can call
 lein trampoline run -m rebel-readline.main
 ```
 
-To make this less verbose you can use an alias, either in your `project.clj` or in  `$HOME/.lein/profiles.clj`
+To make this less verbose you can use an alias in your `project.clj`:
 
 ```clojure
 {
  ...
- :aliases {"rebl" ["trampoline" "run" "-m" "rebel-readline.main"]
-           ...}
+ :aliases {"rebl" ["trampoline" "run" "-m" "rebel-readline.main"]}
+}
+```
+
+Alternatively, you can do this globally in `$HOME/.lein/profiles.clj`:
+
+```clojure
+{
+ ...
+ :user {:aliases {"rebl" ["trampoline" "run" "-m" "rebel-readline.main"]}}
 }
 ```
 
