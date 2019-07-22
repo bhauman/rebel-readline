@@ -9,7 +9,7 @@
         :dir ".."}
 
   :dependencies [[com.bhauman/rebel-readline "0.1.5-SNAPSHOT"]
-                 [org.clojure/clojurescript "1.9.946"]
+                 [org.clojure/clojurescript "1.10.520"]
                  [cljs-tooling "0.2.0"]]
 
   :profiles {:dev {:source-paths ["src" "dev"]
