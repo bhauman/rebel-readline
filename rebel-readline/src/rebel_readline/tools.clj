@@ -201,3 +201,37 @@
          :widget/apropos-namespace  (fg-color 243)))
 
 (register-color-theme! :light-screen-theme light-screen-theme)
+
+(def neutral-screen-theme
+  {:font-lock/string         (.bold (fg-color 2))
+   :font-lock/comment        (.bold (fg-color 8))
+   :font-lock/doc            (.bold (fg-color 5))
+   :font-lock/core-form      (.bold (fg-color 2))
+   :font-lock/function-name  (.bold (fg-color 6))
+   :font-lock/variable-name  (.bold (fg-color 3))
+   :font-lock/constant       (.bold (fg-color 4))
+   :font-lock/type           (.bold (fg-color 1))
+   :font-lock/foreign        (.bold (fg-color 1))
+   :font-lock/builtin        (.bold (fg-color 6))
+
+   :widget/half-contrast     (fg-color 7)
+   :widget/half-contrast-inverse (.inverse (fg-color 7))
+
+   ;; system widget colors
+   :widget/eldoc-namespace   (.faint (fg-color 2))
+   :widget/eldoc-varname     (.faint (fg-color 3))
+   :widget/eldoc-separator   (fg-color 4)
+   :widget/arglists          (fg-color 5)
+
+   :widget/doc               (fg-color 1)
+   :widget/anchor            (fg-color 5)
+   :widget/light-anchor      (.faint (fg-color 5))
+
+   :widget/apropos-word      AttributedStyle/DEFAULT
+   :widget/apropos-highlight (fg-color 7)
+   :widget/apropos-namespace (.faint (fg-color 7))
+
+   :widget/warning           AttributedStyle/DEFAULT
+   :widget/error             (fg-color 1)})
+
+(register-color-theme! :neutral-screen-theme neutral-screen-theme)
