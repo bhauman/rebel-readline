@@ -58,7 +58,7 @@ Alternatively you can specify an alias in your `$HOME/.clojure/deps.edn`
 And then run with a simpler:
 
 ```shell
-$ clojure -A:rebel
+clojure -M:rebel
 ```
 
 #### Leiningen
