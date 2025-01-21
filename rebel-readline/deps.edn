@@ -4,4 +4,11 @@
         org.jline/jline-terminal-jansi {:mvn/version "3.5.1"}
         dev.weavejester/cljfmt {:mvn/version "0.13.0"} ;; depends on tools reader
         compliment/compliment {:mvn/version "0.6.0"}}
- :aliases {:rebel {:main-opts  ["-m" "rebel-readline.main"]}}}
+ 
+ :aliases {:rebel {:main-opts  ["-m" "rebel-readline.main"]}
+           :neil {:project {:name com.bhauman/rebel-readline
+                            :version "0.1.5-SNAPSHOT"}}
+           :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.6"
+                                                         :git/sha "52cf7d6"}
+                          slipset/deps-deploy {:mvn/version "0.2.2"}}
+                   :ns-default build}}}
