@@ -9,12 +9,12 @@
         :url "https://github.com/bhauman/rebel-readline"
         :dir ".."}
 
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.jline/jline-reader "3.5.1"]
                  [org.jline/jline-terminal "3.5.1"]
                  [org.jline/jline-terminal-jansi "3.5.1"]
-                 [cljfmt "0.5.7"]     ;; depends on tools reader
-                 [compliment "0.3.6"]]
+                 [dev.weavejester/cljfmt "0.13.0"]     ;; depends on tools reader
+                 [compliment/compliment "0.6.0"]]
 
   :profiles {:dev {:source-paths ["src" "dev"]
                    :main rebel-dev.main}})

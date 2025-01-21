@@ -41,10 +41,3 @@
           (when (try (require (symbol ns)) true (catch Throwable t false))
             (when-let [var (resolve var-sym)]
               var))))))
-
-(defn load-slow-deps! []
-  (.start
-   (Thread.
-    #(do
-       (require 'cljfmt.core)
-       (require 'compliment.core)))))
