@@ -114,7 +114,7 @@
 
 (defn not-implemented! [service fn-name]
   (throw (ex-info (format "The %s service does not implement the %s function."
-                          (pr-str (::type service))
+                          (pr-str (:rebel-readline.service/type service))
                           fn-name)
                   {})))
 
@@ -130,7 +130,6 @@
 (defmethod -prompt :default [_] "")
 
 (defn prompt []
-  (log :prompt-fn @api/*line-reader*)
   (if-let [f (resolve-fn? (:prompt @api/*line-reader*))]
     ;; follow the prompt function convention here
     (with-out-str (f))
