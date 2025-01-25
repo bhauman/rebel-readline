@@ -97,13 +97,16 @@
       (set! *e ex))
     res))
 
-(defmethod clj-reader/-read-string ::service [self form-str]
+(defn default-read-string [form-str]
   (when (string? form-str)
     (try
       {:form (with-in-str form-str
                (read {:read-cond :allow} *in*))}
       (catch Throwable e
         {:exception (Throwable->map e)}))))
+
+(defmethod clj-reader/-read-string ::service [_ form-str]
+  (default-read-string form-str))
 
 (defn create
   ([] (create nil))
