@@ -1,0 +1,10 @@
+{:paths ["src"]
+ :deps  {com.bhauman/rebel-readline {:mvn/version "0.1.5-SNAPSHOT"}
+         nrepl/nrepl {:mvn/version "1.3.1"}}
+ :aliases 
+ {:rebel {:main-opts  ["-m" "rebel-readline.main"]}
+  :nrepl {:main-opts ["-m" "nrepl.cmdline"]}
+  :dev {:override-deps {com.bhauman/rebel-readline {:local/root "../rebel-readline"}}
+        :extra-paths ["dev"]
+        :main-opts ["-m" "rebel-nrepl.main"]}
+  :neil {:project {:name com.bhauman/rebel-readline-nrepl}}}}
