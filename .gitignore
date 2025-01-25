@@ -16,7 +16,8 @@ debug-log
 dev/scratch.clj
 notes
 *.bak.clj
-
+.cpcache
+.rebel_readline_history
 *~
 
 rebel-readline-cljs/rebel-readline-debug-log
