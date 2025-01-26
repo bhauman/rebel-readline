@@ -20,7 +20,7 @@
     EOFError
     Widget]
    [org.jline.reader.impl LineReaderImpl DefaultParser BufferImpl]
-   [org.jline.terminal TerminalBuilder]
+   [org.jline.terminal Terminal TerminalBuilder Attributes Attributes$LocalFlag Attributes$InputFlag]
    [org.jline.terminal.impl DumbTerminal]
    [java.io Writer]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
@@ -63,6 +63,16 @@ If you are using `lein` you may need to use `lein trampoline`."
     (when (not (false? assert-system-terminal'))
       (assert-system-terminal terminal))
     terminal))
+
+(defn toggle-input [^Terminal term on?]
+  (let [attr ^Attributes (.getAttributes term)]
+    (.setAttributes
+     term
+     (doto attr
+       (.setLocalFlag Attributes$LocalFlag/ICANON on?)
+       (.setLocalFlag Attributes$LocalFlag/ECHO on?)
+       (.setInputFlag Attributes$InputFlag/IGNCR (not on?))))
+    (.flush (.writer term))))
 
 (declare display-message)
 

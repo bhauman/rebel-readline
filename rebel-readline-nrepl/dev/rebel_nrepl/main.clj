@@ -8,8 +8,10 @@
    [rebel-readline.nrepl.service.nrepl :as clj-service]
    ;[rebel-readline.clojure.service.simple :as simple-service]
    [rebel-readline.utils :refer [*debug-log*]]
-   [clojure.main])
-  (:import (clojure.lang LispReader$ReaderException)))
+   [clojure.main]
+   [clojure.repl])
+  (:import (clojure.lang LispReader$ReaderException)
+           [org.jline.terminal Terminal Terminal$SignalHandler Terminal$Signal]))
 
 (defn read-eval-print-fn [{:keys [read printer request-prompt request-exit]}]
   (fn []
@@ -17,21 +19,26 @@
       (let [input (read request-prompt request-exit)]
         (if (#{request-prompt request-exit} input)
           input
-          (clj-service/execute-with-client @api/*line-reader*
-                                           {:print-value printer}
-                                           input)))
+          (do
+            (api/toggle-input api/*terminal* false)
+            (let [res (clj-service/execute-with-client
+                       @api/*line-reader*
+                       {:print-value printer}
+                       input)]
+              (api/toggle-input api/*terminal* true)
+              res))))
       #_(catch Throwable e
         
-        (clojure.main/repl-caught e)))))
+          (clojure.main/repl-caught e)))))
 
 (defn repl-loop []
   (let [request-prompt (Object.)
         request-exit (Object.)
         read-eval-print (read-eval-print-fn
-                            {:read core/repl-read-line
-                             :printer main/syntax-highlight-prn*
-                             :request-prompt request-prompt
-                             :request-exit request-exit})]
+                         {:read core/repl-read-line
+                          :printer main/syntax-highlight-prn*
+                          :request-prompt request-prompt
+                          :request-exit request-exit})]
     (try
       (clj-service/evaluate @api/*line-reader* (pr-str `(do
                                                           (require 'clojure.main)
@@ -40,23 +47,11 @@
         (clojure.main (clojure.main/repl-caught e))))
     (loop []
       (when-not
-          (try (identical? (read-eval-print) request-exit)
-	       #_(catch Throwable e
-	         (clojure.main/repl-caught e)))
-        (recur)))))
-
-
-#_(loop []
-         (when-not
-           (try (identical? (read-eval-print) request-exit)
-	    (catch Throwable e
-	     (caught e)
-	     (set! *e e)
-	     nil))
-           (when (need-prompt)
-             (prompt)
-             (flush))
-           (recur)))
+          (try
+            (identical? (read-eval-print) request-exit)
+	    #_(catch Throwable e
+	        (clojure.main/repl-caught e)))
+          (recur)))))
 
 ;; TODO refactor this like the cljs dev repl with a "stream" and "one-line" options
 (defn -main [& args]
@@ -67,26 +62,16 @@
        (clj-service/create
         (when api/*line-reader* @api/*line-reader*)))
       (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
-        (clj-service/start-polling (when api/*line-reader* @api/*line-reader*))
+        (clj-service/start-polling @api/*line-reader*)
+        (.handle ^Terminal api/*terminal*
+                 Terminal$Signal/INT
+                 (let [line-reader api/*line-reader*]
+                   (proxy [Terminal$SignalHandler] []
+                     (handle [sig]
+                       (tap> "HANDLED")
+                       (clj-service/interrupt @line-reader)
+                       (tap> "AFTER INT")))))
         (println (core/help-message))
-        #_((clj-repl-read) (Object.) (Object.))
-        (repl-loop)
-        #_(clojure.main/repl
-           :prompt (fn [])
-           :eval (fn [x]
-                   (let [{:keys [result out err] :as res} (clj-line-reader/evaluate (pr-str x))]
-                     (when out (print out))
-                     (when err
-                       (binding [*out* *err*]
-                         (print err)))
-                     1
-                     #_(if result
-                         (read-string result)
-                         nil)))
-           :print main/syntax-highlight-prn
-           :read (main/create-repl-read))))))
+        (repl-loop)))))
 
-#_(defn -main [& args]
-  (let [repl-env (nash/repl-env)]
-    (with-readline-input-stream (cljs-service/create {:repl-env repl-env})
-      (cljs-repl/repl repl-env :prompt (fn [])))))
+

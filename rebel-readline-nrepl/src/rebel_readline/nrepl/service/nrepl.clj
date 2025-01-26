@@ -40,19 +40,27 @@
                 TimeUnit/MILLISECONDS)
          (session-responses service session))))
 
-(defn send-message [{:keys [::state] :as service} {:keys [session id] :as message-to-send}]
+(defn send-message* [{:keys [::state] :as service} {:keys [session id] :as message-to-send}]
   (let [session (or (:session message-to-send) (:session @state))
         client (:client @state)
         session-sender (nrepl/client-session client :session session)]
+    (tap> message-to-send)
     (session-sender message-to-send)
-    (session-responses service session)))
+    nil))
+
+(defn send-message [{:keys [::state] :as service} {:keys [session id] :as message-to-send}]
+  (send-message* service message-to-send)
+  (session-responses
+   service
+   (or (:session message-to-send) (:session @state))))
 
 (defn execute-with-client* [{:keys [::state] :as service} options form]
   (let [command-id (nrepl.misc/uuid)
         client (:client @state)
         message-to-send
-        (merge (get-in options [:nrepl-context :interactive-eval])
-               {:op "eval" :code form :id command-id})]
+        (merge #_(get-in options [:nrepl-context :interactive-eval]) ;; TODO do we need this?
+               {:op "eval" :code form :id command-id :ns (:current-ns @state)}
+               (select-keys options [:session]))]
     (swap! state assoc :current-command-id command-id)
     (let [res (doall
                (take-while
@@ -101,41 +109,36 @@
      form)
     @results))
 
-(defn lookup [service symbol]
+(defn interrupt [{:keys [::state] :as service}]
+  (let [{:keys [current-command-id session]} @state]
+    (when current-command-id
+      (send-message*
+       service
+       {:op "interrupt"
+        :session session
+        :interrupt-id current-command-id}))))
+
+(defn lookup [{:keys [::state] :as service} symbol]
   ;; TODO used a cached ns to look this up on the tool session?
-  (->> (send-message service {:op "lookup" :sym symbol})
+  (->> (send-message service {:op "lookup"
+                              :sym symbol
+                              :ns (:current-ns @state)
+                              :session (:tool-session @state)})
        first))
 
-(defn completions [service prefx]
+(defn completions [{:keys [::state] :as service } prefix]
   ;; TODO used a cached ns to look this up on the tool session?
-  (->> (send-message service {:op "completions" :prefix prefx})
+  (->> (send-message service {:op "completions"
+                              :prefix prefix
+                              :ns (:current-ns @state)
+                              :session (:tool-session @state)})
        first))
-
-
-
-
-
-#_(let [var-str "range"]
-    (pr-str `(or (try
-                   (clojure.core/some->
-                    ~var-str
-                    clojure.core/symbol
-                    clojure.core/resolve
-                    clojure.core/meta)
-                   (catch Throwable ~'x nil))
-                 #_(some->
-                    ~var-str
-                    clojure.core/symbol
-                    clojure.core/find-ns
-                    meta
-                    (clojure.core/assoc :ns ~var-str)))))
 
 (defmethod clj-reader/-resolve-meta ::service [self var-str]
   (get (lookup self var-str) :info))
 
 (defmethod clj-reader/-current-ns ::service [{:keys [::state] :as self}]
-  (->> (pr-str `(clojure.core/some-> *ns* str symbol))
-       (evaluate self)))
+  (:current-ns @state))
 
 (defmethod clj-reader/-source ::service [self var-str]
   (some->> (pr-str `(clojure.repl/source-fn (symbol ~var-str)))
@@ -145,7 +148,7 @@
 
 (defmethod clj-reader/-apropos ::service [self var-str]
   (some->> (pr-str `(clojure.repl/apropos ~var-str))
-           (evaluate self)
+           (tool-evaluate self)
            read-string))
 
 (defmethod clj-reader/-complete ::service [self word options]
@@ -177,11 +180,14 @@
       (let [
             continue
             (try
-              (when-let [{:keys [out err] :as resp}
+              (when-let [{:keys [out err value ns session] :as resp}
                          (nrepl.transport/recv conn 100)]
+                (tap> resp)
                 (let [print-err-fn (get @state :print-err-fn print)
                       print-out-fn (get @state :print-out-fn print)
                       prn-output?  (get @state :prn-output? true)]
+                  (when (and (= session (:session @state)) value ns)
+                    (swap! state assoc :current-ns ns))
                   (if-not prn-output?
                     (.offer ^LinkedBlockingQueue ((:response-queues @state)
                                                   (:session resp))
@@ -216,7 +222,7 @@
 (defn create
   ([] (create nil))
   ([options]
-   (let [conn (nrepl/connect :port 49319) ;; TODO fix this
+   (let [conn (nrepl/connect :port 50668) ;; TODO fix this
          client (nrepl/client conn Long/MAX_VALUE)
          session (nrepl/new-session client)
          tool-session (nrepl/new-session client)
@@ -248,12 +254,8 @@
         service (create )]
     service
     (start-polling service)
-    (let [res (clj-reader/-complete service
-                      "ma"
-                      {}
-                      #_"(doto (Thread. ^Runnable (fn [] (Thread/sleep 2000) (println \"did it\") (flush)))
-(.setDaemon true)
-(.start))"
-                        )]
+    (swap! (::state service) assoc :command-id (nrepl.misc/uuid))
+    (let [res (interrupt service
+                         )]
       (stop-polling service)
       res))
