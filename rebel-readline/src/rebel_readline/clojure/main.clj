@@ -13,6 +13,13 @@
   `(let [thread# (Thread/currentThread)]
      (repl/set-break-handler! (fn [_signal#] (.stop thread#)))))
 
+(defn syntax-highlight-prn-unwrapped
+  [x]
+  (try
+      (println (api/->ansi (clj-line-reader/highlight-clj-str x)))
+      (catch java.lang.StackOverflowError e
+        (println x))))
+
 (defn syntax-highlight-prn*
   "Print a syntax highlighted clojure string.
 
@@ -26,10 +33,7 @@
   See `rebel-readline.main` for an example of how this function is normally used"
   [x]
   (binding [*out* (.. api/*line-reader* getTerminal writer)]
-    (try
-      (println (api/->ansi (clj-line-reader/highlight-clj-str x)))
-      (catch java.lang.StackOverflowError e
-        (println x)))))
+    (syntax-highlight-prn-unwrapped x)))
 
 (defn syntax-highlight-prn
   "Print a syntax highlighted clojure value.

@@ -1,13 +1,14 @@
-(ns rebel-nrepl.main
+(ns rebel-readline.nrepl.main
   (:require
    [rebel-readline.core :as core]
    [rebel-readline.clojure.main :as main]
    [rebel-readline.jline-api :as api]
    [rebel-readline.clojure.line-reader :as clj-line-reader]
-   ;[rebel-readline.clojure.service.local :as clj-service]
    [rebel-readline.nrepl.service.nrepl :as clj-service]
-   ;[rebel-readline.clojure.service.simple :as simple-service]
    [rebel-readline.utils :refer [*debug-log*]]
+   [clojure.tools.cli :as cli]
+   [clojure.spec.alpha :as s]
+   [clojure.string :as string]
    [clojure.main]
    [clojure.repl])
   (:import (clojure.lang LispReader$ReaderException)
@@ -59,14 +60,13 @@
 	        (clojure.main/repl-caught e)))
           (recur)))))
 
-;; TODO refactor this like the cljs dev repl with a "stream" and "one-line" options
-(defn -main [& args]
-  (println "This is the DEVELOPMENT REPL in rebel-dev.main")
+(defn start-repl* [options]
   (binding [*debug-log* true]
     (core/with-line-reader
       (clj-line-reader/create
        (clj-service/create
-        (when api/*line-reader* @api/*line-reader*)))
+        (merge (when api/*line-reader* @api/*line-reader*)
+               options)))
       (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
         (clj-service/start-polling @api/*line-reader*)
         (.handle ^Terminal api/*terminal*
@@ -74,10 +74,78 @@
                  (let [line-reader api/*line-reader*]
                    (proxy [Terminal$SignalHandler] []
                      (handle [sig]
-                       (tap> "HANDLED")
-                       (clj-service/interrupt @line-reader)
-                       (tap> "AFTER INT")))))
+                       (clj-service/interrupt @line-reader)))))
         (println (core/help-message))
         (repl-loop)))))
+
+;; accept symbols to make the command line easier
+(s/def ::sym-or-string (s/and (s/or :sym symbol?
+                                    :str string?)
+                              (s/conformer #(-> % second str))))
+(s/def ::host ::sym-or-string)
+(s/def ::port (s/and number? #(< 0 % 0x10000)))
+
+(s/def ::arg-map (s/keys :req-un [::port] :opt-un [::host]))
+
+(defn start-repl [options]
+  (if (s/valid? ::arg-map options)
+    (start-repl* (s/conform ::arg-map options))
+    (do
+      (println "Arguments didn't pass spec")
+      (println "Received these args:")
+      (clojure.pprint/pprint options)
+      (println "Which failed these specifications:")
+      (s/explain ::arg-map options))))
+
+;; CLI
+
+(def cli-options
+  ;; An option with a required argument
+  [["-p" "--port PORT" "nREPL server Port number"
+    :parse-fn parse-long
+    :required "PORT"
+    :default-desc "7888"
+    :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
+   ["-H" "--host HOST" "nREPL Server host"
+    :default "localhost"
+    :validate [string? "Must be a string"]]
+   ;; A boolean option defaulting to nil
+   ["-h" "--help"]])
+
+(defn usage [options-summary]
+  (->> ["RebelReadline nREPL client"
+        ""
+        "Usage: --host localhost --port 7888"
+        ""
+        "Options:"
+        options-summary]
+       (string/join \newline)))
+
+(defn error-msg [errors]
+  (str "The following errors occurred while parsing your command:\n\n"
+       (string/join "\n" errors)))
+
+(defn validate-args
+  [args]
+  (let [{:keys [options arguments errors summary]} (cli/parse-opts args cli-options)]
+    (cond
+      (:help options) ; help => exit OK with usage summary
+      {:exit-message (usage summary) :ok? true}
+      errors ; errors => exit with description of errors
+      {:exit-message (error-msg errors)}
+      (and (:host options) (:port options))
+      {:options options}
+      :else ; failed custom validation => exit with usage summary
+      {:exit-message (usage summary)})))
+
+(defn exit [status msg]
+  (println msg)
+  (System/exit status))
+
+(defn -main [& args]
+  (let [{:keys [options exit-message ok?]} (validate-args args)]
+    (if exit-message
+      (exit (if ok? 0 1) exit-message)
+      (start-repl options))))
 
 
