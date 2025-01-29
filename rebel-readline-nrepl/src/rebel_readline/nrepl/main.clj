@@ -6,6 +6,7 @@
    [rebel-readline.clojure.line-reader :as clj-line-reader]
    [rebel-readline.nrepl.service.nrepl :as clj-service]
    [rebel-readline.utils :refer [*debug-log*]]
+   [rebel-readline.nrepl.service.commands]
    [clojure.tools.cli :as cli]
    [clojure.spec.alpha :as s]
    [clojure.string :as string]
@@ -31,11 +32,12 @@
              @api/*line-reader*
              input
              (bound-fn*
-              (->> identity
+              (cond->> identity
+                   (not (:background-print @api/*line-reader*))
                    (clj-service/out-err
                     #(do (print %) (flush))
                     #(do (print %) (flush)))
-                   (clj-service/value #(do (printer %) (flush))))))
+                   true (clj-service/value #(do (printer %) (flush))))))
             (api/toggle-input api/*terminal* true))))
       (catch Throwable e
         (repl-caught e))
@@ -74,6 +76,7 @@
         (merge (when api/*line-reader* @api/*line-reader*)
                options)))
       (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
+        (clj-service/register-background-printing api/*line-reader*)
         (clj-service/start-polling @api/*line-reader*)
         (.handle ^Terminal api/*terminal*
                  Terminal$Signal/INT
@@ -91,13 +94,18 @@
 
 (s/def ::tls-keys-file string?)
 (s/def ::host ::sym-or-string)
+(s/def ::background-print boolean?)
 (s/def ::port (s/and number? #(< 0 % 0x10000)))
 
-(s/def ::arg-map (s/keys :req-un [::port] :opt-un [::host ::tls-keys-file]))
+(s/def ::arg-map (s/keys :req-un [::port] :opt-un [::host ::tls-keys-file ::background-print]))
 
 (defn start-repl [options]
   (if (s/valid? ::arg-map options)
-    (start-repl* (s/conform ::arg-map options))
+    (start-repl*
+     (merge
+      ;; defaults
+      {:background-print true}
+      (s/conform ::arg-map options)))
     (do
       (println "Arguments didn't pass spec")
       (println "Received these args:")
@@ -120,6 +128,7 @@
    [nil "--tls-keys-file KEYFILE" "client keys file to connect via TLS"
     :default-desc "client.keys"
     :validate [string? "Must be a string"]] ;; can check if file exists here
+   [nil "--background-print-off" "To prevent the printing of outputs after an expression has been evaled"]
    ;; A boolean option defaulting to nil
    ["-h" "--help"]])
 
@@ -157,6 +166,11 @@
   (let [{:keys [options exit-message ok?]} (validate-args args)]
     (if exit-message
       (exit (if ok? 0 1) exit-message)
-      (start-repl options))))
+      (let [opts (cond-> options
+                   (:background-print-off options)
+                   (-> (assoc :background-print false)
+                       (dissoc :background-print-off)))]
+        (start-repl opts)))))
 
+#_(-main "--port" "55" "--background-print-off")
 

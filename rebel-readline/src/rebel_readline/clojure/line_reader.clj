@@ -1011,7 +1011,7 @@
               (cljs-quit-complete (meta line))
               (completions (.word line) options))
              (map #(candidate %))
-             (take 10)
+             #_(take 12)
              (.addAll candidates))))))))
 
 ;; ----------------------------------------

@@ -229,6 +229,17 @@
 (defn stop-polling [{:keys [::state]}]
   (swap! state dissoc :response-poller))
 
+(defn register-background-printing [line-reader]
+  (let [{:keys [::state background-print] :as service} @line-reader]
+    (when background-print
+      (add-callback!
+       service
+       :background-printing
+       (->> identity
+            (out-err #(do (print %) (flush))
+                     #(do (print %) (flush)))
+            (select-key :session (:session @state)))))))
+
 (defn create
   ([] (create nil))
   ([{:keys [host port tls-keys-file] :as options}]
