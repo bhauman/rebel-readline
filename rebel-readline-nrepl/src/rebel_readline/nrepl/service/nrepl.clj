@@ -33,26 +33,29 @@
 ;; message callback-api
 (defn new-id [] (nrepl.misc/uuid))
 
-(defn session-id [session' id' k]
-  (fn [{:keys [session id] :as msg}]
-    (when (and (= session session')
-               (= id id'))
+(defn select-key [key shouldbe k]
+  (fn [msg]
+    (when (= (get msg key) shouldbe)
       (k msg))))
 
-(defn out-err [print-out print-err k]
-  (fn [{:keys [out err] :as msg}]
-    (when out (print-out out))
-    (when err (print-err err))
+(defn on-key [key callback k]
+  (fn [msg]
+    (when-let [v (get msg key)]
+      (callback v))
     (k msg)))
 
-(defn handle [callback k]
-  (fn [msg] (callback msg) (k msg)))
+(defn session-id [session' id' k]
+  (->> k
+       (select-key :id id')
+       (select-key :session session')))
+
+(defn out-err [print-out print-err k]
+  (->> k
+       (on-key :out print-out)
+       (on-key :err print-err)))
 
 (defn value [callback k]
-  (fn [{:keys [value] :as msg}]
-    (when value
-      (callback value))
-    (k msg)))
+  (on-key :value callback k))
 
 (defn handle-statuses [pred callback k]
   (fn [{:keys [status] :as msg}]
@@ -97,7 +100,7 @@
    (merge {:session (tool-session service)}
           msg)))
 
-(defn eval-code [service code-str k]
+(defn eval-code [{:keys [::state] :as service} code-str k]
   (let [{:keys [id] :as message}
         (new-message service {:op "eval" :code code-str})
         prom (promise)
@@ -107,7 +110,10 @@
     (set-current-eval-id! service id)
     (send-msg! service
                message
-               (->> k (done finish) (error finish)))
+               (->> k
+                    (on-key :ns #(swap! state assoc :current-ns %))
+                    (done finish)
+                    (error finish)))
     @prom))
 
 (defn interrupt [{:keys [::state] :as service}]
@@ -223,9 +229,10 @@
 
 (defn create
   ([] (create nil))
-  ([{:keys [host port] :as options}]
+  ([{:keys [host port tls-keys-file] :as options}]
    (let [conn (nrepl/connect (cond-> {:port port}
-                               host (assoc :host host))) ;; TODO fix this
+                               host (assoc :host host)
+                               tls-keys-file (assoc :tls-keys-file tls-keys-file))) ;; TODO fix this
          client (nrepl/client conn Long/MAX_VALUE)
          session (nrepl/new-session client)
          tool-session (nrepl/new-session client)
@@ -254,9 +261,11 @@
     (start-polling service)
     #_(swap! (::state service) assoc :command-id (nrepl.misc/uuid))
     (try
-      (let [res (lookup service "m")]
-        #_(stop-polling service)
-        res)
+      (let [res (eval-code service "(ns heythere)" identity)]
+        
+        res
+        (::state service)
+        )
       (finally
         (stop-polling service))))
 
