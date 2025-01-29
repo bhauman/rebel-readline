@@ -126,7 +126,11 @@
     (send-msg! service
                (new-tool-message service {:op "lookup" :sym symbol})
                (->> identity
-                    (done #(deliver prom (get % :info)))))
+                    (done #(deliver prom
+                                    (some-> %
+                                            :info
+                                            not-empty
+                                            (update :arglists clojure.edn/read-string))))))
     (deref prom 400 nil)))
 
 (defn completions [{:keys [::state] :as service } prefix]
@@ -247,13 +251,10 @@
 
 #_(let [out *out*
         service (create )]
-    service
     (start-polling service)
-    (swap! (::state service) assoc :command-id (nrepl.misc/uuid))
+    #_(swap! (::state service) assoc :command-id (nrepl.misc/uuid))
     (try
-      (let [res @(eval-code service "(+ 1 2 7 3)"
-                           (->> (fn [_ _])
-                                (value #(tap> [:VALUE %]))))]
+      (let [res (lookup service "m")]
         #_(stop-polling service)
         res)
       (finally
