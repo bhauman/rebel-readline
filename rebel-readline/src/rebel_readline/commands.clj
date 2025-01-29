@@ -2,6 +2,7 @@
   (:require
    [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
+   [clojure.repl]
    [rebel-readline.jline-api :as api]
    [rebel-readline.jline-api.attributed-string :as astring]
    [rebel-readline.tools :as tools :refer [color]])
@@ -219,6 +220,23 @@ Without any arguments displays all the current key bindings")
                 (string/split-lines doc)))
           "\n"))
       (sort (all-commands)))))))
+
+(defmethod command-doc :repl/*e [_]
+  "Prints last exception that occured internally to the Rebel
+Readline. Takes a single argument n the number of lines of the
+stacktrace to print. CAREFUL this shouldn't ever hold errors caused
+by evaluated code you should use *e* to inspect those.  This is mainly
+to diagnose problems in the toolchain. ")
+
+(defmethod command :repl/*e [n]
+  (some-> api/*line-reader*
+          deref
+          :repl/error
+          deref
+          (clojure.repl/pst (or (and
+                                 (number? (second n))
+                                 (second n))
+                                12))))
 
 (defn add-command [command-keyword action-fn doc]
   {:pre [(keyword? command-keyword)

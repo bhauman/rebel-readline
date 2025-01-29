@@ -14,6 +14,11 @@
   (:import (clojure.lang LispReader$ReaderException)
            [org.jline.terminal Terminal Terminal$SignalHandler Terminal$Signal]))
 
+(defn repl-caught [e]
+  (println "Internal REPL Error: this shouldn't happen. :repl/*e for stacktrace")
+  (some-> @api/*line-reader* :repl/error (reset! e))
+  (clojure.main/repl-caught e))
+
 (defn read-eval-print-fn [{:keys [read printer request-prompt request-exit]}]
   (fn []
     (try
@@ -32,9 +37,10 @@
                     #(do (print %) (flush)))
                    (clj-service/value #(do (printer %) (flush))))))
             (api/toggle-input api/*terminal* true))))
-      #_(catch Throwable e
-        
-          (clojure.main/repl-caught e)))))
+      (catch Throwable e
+        (repl-caught e))
+      (finally
+        (api/toggle-input api/*terminal* true)))))
 
 (defn repl-loop []
   (let [request-prompt (Object.)
@@ -50,14 +56,14 @@
        (pr-str `(do
                   (require 'clojure.main)
                   (require 'clojure.repl))))
-      #_(catch Throwable e
-        (clojure.main (clojure.main/repl-caught e))))
+      (catch Throwable e
+        (repl-caught e)))
     (loop []
       (when-not
           (try
             (identical? (read-eval-print) request-exit)
-	    #_(catch Throwable e
-	        (clojure.main/repl-caught e)))
+	    (catch Throwable e
+              (repl-caught e)))
           (recur)))))
 
 (defn start-repl* [options]

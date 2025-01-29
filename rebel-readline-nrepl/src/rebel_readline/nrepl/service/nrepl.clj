@@ -6,6 +6,7 @@
    [rebel-readline.jline-api.attributed-string :as as]
    [rebel-readline.clojure.utils :as clj-utils]   
    [clojure.string :as string]
+   [clojure.main]
    [nrepl.core :as nrepl]
    [nrepl.misc :as nrepl.misc])
   (:import
@@ -209,10 +210,11 @@
                 (tap> resp)
                 (dispatch-response! options resp))
               :success
-              #_(catch Throwable t
-                  #_(notify-all-queues-of-error t)
-                  #_(when (System/getenv "DEBUG") (clojure.repl/pst t))
-                  #_:failure))]
+              (catch Throwable e
+                (println "Internal REPL Error: this shouldn't happen. :repl/*e for stacktrace")
+                (some-> options :repl/error (reset! e))
+                (clojure.main/repl-caught e)
+                :success))]
         (when (= :success continue)
           (recur))))))
 
@@ -241,13 +243,12 @@
                   (tools/user-config)
                   options
                   {:rebel-readline.service/type ::service
+                   :repl/error (atom nil)
                    ::state (atom {:conn conn
                                   :current-ns "user"
                                   :client client
                                   :session session
-                                  :tool-session tool-session
-                                  ; :print-err-fn (bound-fn [s] (print (as/astr [s (tools/color :widget/error)])))
-                                  })})]
+                                  :tool-session tool-session})})]
      (swap! (::state options)
             assoc
             :runnable-poller

@@ -1,8 +1,7 @@
 (ns rebel-readline.jline-api
   (:require
    [clojure.string :as string]
-   [rebel-readline.jline-api.attributed-string :as astring]
-   [rebel-readline.utils :refer [log]])
+   [rebel-readline.jline-api.attributed-string :as astring])
   (:import
    [org.jline.keymap KeyMap]
    [org.jline.reader
@@ -83,10 +82,13 @@ If you are using `lein` you may need to use `lein trampoline`."
       (thunk)
       (catch clojure.lang.ExceptionInfo e
         (if-let [message (.getMessage e)]
-          (do (log :widget-execution-error (Throwable->map e))
-              (display-message
-               (AttributedString.
-                message (.foreground AttributedStyle/DEFAULT AttributedStyle/RED)))
+          (do
+            (some-> @line-reader :repl/error (reset! e))
+            (display-message
+             (AttributedString.
+              (str "Internal REPL Error: this shouldn't happen. :repl/*e for stacktrace\n"
+                   (class e) "\n" message)
+              (.foreground AttributedStyle/DEFAULT AttributedStyle/RED)))
               true)
           (throw e))))))
 
