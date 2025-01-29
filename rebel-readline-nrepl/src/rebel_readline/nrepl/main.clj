@@ -82,10 +82,12 @@
 (s/def ::sym-or-string (s/and (s/or :sym symbol?
                                     :str string?)
                               (s/conformer #(-> % second str))))
+
+(s/def ::tls-keys-file string?)
 (s/def ::host ::sym-or-string)
 (s/def ::port (s/and number? #(< 0 % 0x10000)))
 
-(s/def ::arg-map (s/keys :req-un [::port] :opt-un [::host]))
+(s/def ::arg-map (s/keys :req-un [::port] :opt-un [::host ::tls-keys-file]))
 
 (defn start-repl [options]
   (if (s/valid? ::arg-map options)
@@ -109,6 +111,9 @@
    ["-H" "--host HOST" "nREPL Server host"
     :default "localhost"
     :validate [string? "Must be a string"]]
+   [nil "--tls-keys-file KEYFILE" "client keys file to connect via TLS"
+    :default-desc "client.keys"
+    :validate [string? "Must be a string"]] ;; can check if file exists here
    ;; A boolean option defaulting to nil
    ["-h" "--help"]])
 
