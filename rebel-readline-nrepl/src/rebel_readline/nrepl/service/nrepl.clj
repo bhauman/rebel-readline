@@ -218,8 +218,8 @@
         (when (= :success continue)
           (recur))))))
 
-(defn start-polling [{:keys [::state]}]
-  (let [response-poller (Thread. ^Runnable (:runnable-poller @state))]
+(defn start-polling [{:keys [::state] :as service}]
+  (let [response-poller (Thread. ^Runnable (bound-fn [] (poll-for-responses service (:conn @state))))]
     (swap! state assoc :response-poller response-poller)
     (doto ^Thread response-poller
       (.setName "Rebel Readline nREPL response poller")
@@ -245,7 +245,7 @@
   ([{:keys [host port tls-keys-file] :as options}]
    (let [conn (nrepl/connect (cond-> {:port port}
                                host (assoc :host host)
-                               tls-keys-file (assoc :tls-keys-file tls-keys-file))) ;; TODO fix this
+                               tls-keys-file (assoc :tls-keys-file tls-keys-file)))          ;;; TODO fix this
          client (nrepl/client conn Long/MAX_VALUE)
          session (nrepl/new-session client)
          tool-session (nrepl/new-session client)
@@ -260,10 +260,6 @@
                                   :client client
                                   :session session
                                   :tool-session tool-session})})]
-     (swap! (::state options)
-            assoc
-            :runnable-poller
-            (bound-fn [] (poll-for-responses options conn)))
      options)))
 
 
