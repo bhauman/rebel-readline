@@ -33,11 +33,20 @@
              input
              (bound-fn*
               (cond->> identity
-                   (not (:background-print @api/*line-reader*))
-                   (clj-service/out-err
-                    #(do (print %) (flush))
-                    #(do (print %) (flush)))
-                   true (clj-service/value #(do (printer %) (flush))))))
+                (not (:background-print @api/*line-reader*))
+                (clj-service/out-err
+                 #(do (print %) (flush))
+                 #(do (print %) (flush)))
+                true (clj-service/value #(do (printer %) (flush)))
+                true (clj-service/need-input
+                      (fn [_]
+                        (api/toggle-input api/*terminal* true)
+                        (try
+                          (clj-service/send-input @api/*line-reader* (clojure.core/read-line))
+                          (catch Throwable e
+                            (repl-caught e))
+                          (finally
+                            (api/toggle-input api/*terminal* false))))))))
             (api/toggle-input api/*terminal* true))))
       (catch Throwable e
         (repl-caught e))

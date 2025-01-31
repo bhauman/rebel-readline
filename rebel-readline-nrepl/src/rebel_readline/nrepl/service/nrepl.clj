@@ -70,6 +70,9 @@
 (defn error [callback k]
   (handle-statuses #{"error" "eval-error"} callback k))
 
+(defn need-input [callback k]
+  (handle-statuses #{"need-input"} callback k))
+
 (defn send-msg! [{:keys [::state] :as service} {:keys [session id] :as msg} callback]
   (assert session)
   (assert id)
@@ -155,6 +158,12 @@
                (->> identity
                     (value #(deliver prom %))))
     (deref prom 400 nil)))
+
+(defn send-input [{:keys [::state] :as service} input]
+  (send-msg! service
+             (new-message service {:op "stdin" :stdin (when input
+                                                        (str input "\n"))})
+             identity))
 
 (defmethod clj-reader/-resolve-meta ::service [self var-str]
   (lookup self var-str))
