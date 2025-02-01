@@ -3,7 +3,8 @@
    [rebel-readline.jline-api :as api]
    [rebel-readline.utils :refer [log]]
    [clojure.java.io :as io]
-   [clojure.edn :as edn])
+   [clojure.edn :as edn]
+   [clojure.spec.alpha :as s])
   (:import
    [org.jline.utils AttributedStringBuilder AttributedStyle]
    [org.jline.keymap KeyMap]))
@@ -90,17 +91,77 @@
                   binds)])
          key-binding-map)))
 
-(defn user-config []
-  (when-let [file (user-config-file)]
-    (try (let [config (edn/read-string (slurp file))]
-           (cond-> config
-             (:key-bindings config)
-             (update-in [:key-bindings] translate-serialized-key-bindings)))
-         (catch Throwable e
-           (binding [*out* *err*]
-             (println (format "[Rebel Readline] Error reading config file %s: %s"
-                              (str file)
-                              (.getMessage e))))))))
+;;
+(s/def ::key-map #{:viins :emacs})
+(s/def ::completion boolean?)
+(s/def ::color-theme #{:light-screen-theme
+                       :dark-screen-theme
+                       :neutral-screen-theme})
+(s/def ::highlight boolean?)
+(s/def ::eldoc boolean?)
+(s/def ::indent boolean?)
+(s/def ::redirect-output boolean?)
+(s/def ::key-bindings map?)
+
+(defn absolutize-file
+  "Replaces a leading '~' in the path-string with the user's home directory,
+   converts the string to a java.io.File, and normalizes it (collapsing any '/./'
+   or '/../' references)."
+  [path-string]
+  (when path-string
+    (-> path-string
+        (clojure.string/replace-first #"^~" (System/getProperty "user.home"))
+        io/file
+        .toPath
+        .normalize
+        .toFile)))
+
+(defn file-exists? [file-path]
+  (.exists (absolutize-file file-path)))
+
+#_(absolutize-file "~/workspace/rebel-readline/rebel-readline/./src/../README.md")
+
+(s/def ::config (s/and string? file-exists?))
+(s/def ::arg-map (s/keys :opt-un [::key-map
+                                  ::color-theme
+                                  ::highlight
+                                  ::completion
+                                  ::eldoc
+                                  ::indent
+                                  ::redirect-output
+                                  ::key-bindings]))
+
+(defn explain-config [config]
+  (println "Arguments didn't pass spec")
+  (println "Received these args:")
+  (clojure.pprint/pprint config)
+  (println "Which failed these specifications:")
+  (s/explain ::arg-map config))
+
+(defn valid-config? [options]
+  (s/valid? ::arg-map (or options {})))
+
+#_(valid-config? {:highlight 1})
+
+(defn user-config [overrides]2
+  (let [cli-file (absolutize-file (:config overrides))
+        config-file (user-config-file)]
+    (when-let [file (or cli-file config-file)]
+      (try (let [config
+                 (try (edn/read-string (slurp file))
+                      (catch Throwable e
+                        (binding [*out* *err*]
+                          (println
+                           (format "[Rebel Readline] Error reading config file %s: %s"
+                                   (str file)
+                                   (.getMessage e))))))]
+             (if (valid-config? config)
+               (cond-> config
+                 overrides (merge (dissoc overrides :config))
+                 (:key-bindings config)
+                 (update-in [:key-bindings] translate-serialized-key-bindings))
+               (do (explain-config config)
+                   (throw (ex-info "Invalid config file" {})))))))))
 
 ;; Baseline services
 ;; ----------------------------------------------

@@ -112,6 +112,5 @@
   ([] (create nil))
   ([options]
    (merge clj-reader/default-config
-          (tools/user-config)
-          options
+          (tools/user-config options)
           {:rebel-readline.service/type ::service})))

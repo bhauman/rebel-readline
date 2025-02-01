@@ -91,7 +91,7 @@ map in `~/.clojure/rebel_readline.edn`. Here are the available options:
 
 ```clojure
 {:key-map         :viins ; Either :viins or :emacs. Defaults to :emacs.
- :color-theme     :dark-screen-theme ; Either :light-screen-theme, :natural-screen-theme or :dark-screen-theme.
+ :color-theme     :dark-screen-theme ; Either :light-screen-theme, :neutral-screen-theme or :dark-screen-theme.
  :highlight       true ; Boolean, whether to syntax highlight or not. Defaults to true.
  :completion      true ; Boolean, whether to complete on tab. Defaults to true.
  :eldoc           true ; Boolean, whether to display function docs as you type. Defaults to true.

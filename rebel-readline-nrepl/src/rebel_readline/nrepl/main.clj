@@ -42,6 +42,7 @@
                       (fn [_]
                         (api/toggle-input api/*terminal* true)
                         (try
+                          ;; we could use a more sophisticated input reader here
                           (clj-service/send-input @api/*line-reader* (clojure.core/read-line))
                           (catch Throwable e
                             (repl-caught e))
