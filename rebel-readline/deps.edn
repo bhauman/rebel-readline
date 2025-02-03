@@ -4,7 +4,7 @@
         org.jline/jline-terminal-jansi {:mvn/version "3.5.1"}
         dev.weavejester/cljfmt {:mvn/version "0.13.0"}
         compliment/compliment {:mvn/version "0.6.0"}}
- :tools/useage {:ns-default rebel-readline.tool}
+ :tools/usage {:ns-default rebel-readline.tool}
  :aliases {:repl-tool {:exec-fn rebel-readline.tool/repl}
            :rebel {:main-opts  ["-m" "rebel-readline.main"]}
            :dev {:extra-paths ["dev"]

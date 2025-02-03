@@ -4,7 +4,7 @@
          ;;com.bhauman/rebel-readline {:local/root "../rebel-readline"}
          nrepl/nrepl {:mvn/version "1.3.1"}
          org.clojure/tools.cli {:mvn/version "1.1.230"}}
- :tools/useage {:ns-default rebel-readline.nrepl}
+ :tools/usage {:ns-default rebel-readline.nrepl}
  :aliases
  {:rebel {:main-opts  ["-m" "rebel-readline.main"]}
   :tlsnrepl {:main-opts ["-m" "nrepl.cmdline" "--port" 50670 "--tls-keys-file" "./server.keys"]
