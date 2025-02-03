@@ -4,8 +4,8 @@
          ;;com.bhauman/rebel-readline {:local/root "../rebel-readline"}
          nrepl/nrepl {:mvn/version "1.3.1"}
          org.clojure/tools.cli {:mvn/version "1.1.230"}}
- :tools/usage {:ns-default rebel-readline.nrepl}
- :aliases 
+ :tools/useage {:ns-default rebel-readline.nrepl}
+ :aliases
  {:rebel {:main-opts  ["-m" "rebel-readline.main"]}
   :tlsnrepl {:main-opts ["-m" "nrepl.cmdline" "--port" 50670 "--tls-keys-file" "./server.keys"]
              :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
@@ -14,4 +14,9 @@
   :dev {:override-deps {com.bhauman/rebel-readline {:local/root "../rebel-readline"}}
         :extra-paths ["dev"]
         :main-opts ["-m" "rebel-nrepl.main"]}
-  :neil {:project {:name com.bhauman/rebel-readline-nrepl}}}}
+  :neil {:project {:name com.bhauman/rebel-readline-nrepl
+                   :version "0.1.5-SNAPSHOT"}}
+  :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.6"
+                                                :git/sha "52cf7d6"}
+                 slipset/deps-deploy {:mvn/version "0.2.2"}}
+          :ns-default build}}}
