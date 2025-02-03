@@ -1,6 +1,7 @@
 (ns rebel-readline.nrepl.main
   (:require
    [rebel-readline.core :as core]
+   [rebel-readline.main]
    [rebel-readline.clojure.main :as main]
    [rebel-readline.jline-api :as api]
    [rebel-readline.clojure.line-reader :as clj-line-reader]
@@ -10,6 +11,7 @@
    [clojure.tools.cli :as cli]
    [clojure.spec.alpha :as s]
    [clojure.string :as string]
+   [clojure.java.io :as io]
    [clojure.main]
    [clojure.repl])
   (:import (clojure.lang LispReader$ReaderException)
@@ -130,25 +132,37 @@
 
 (def cli-options
   ;; An option with a required argument
-  [["-p" "--port PORT" "nREPL server Port number"
-    :parse-fn parse-long
-    :required "PORT"
-    :default-desc "7888"
-    :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
-   ["-H" "--host HOST" "nREPL Server host"
-    :default "localhost"
-    :validate [string? "Must be a string"]]
-   [nil "--tls-keys-file KEYFILE" "client keys file to connect via TLS"
-    :default-desc "client.keys"
-    :validate [string? "Must be a string"]] ;; can check if file exists here
-   [nil "--background-print-off" "To prevent the printing of outputs after an expression has been evaled"]
-   ;; A boolean option defaulting to nil
-   ["-h" "--help"]])
+  (vec
+   (concat
+    [["-p" "--port PORT" "nREPL server Port number"
+      :parse-fn #(Long/parseLong %)
+      :required "PORT"
+      :default-desc "7888"
+      :missing "Must supply a -p PORT to connect to"
+      :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
+     ["-H" "--host HOST" "nREPL Server host"
+      :default "localhost"
+      :validate [string? "Must be a string"]]
+     [nil "--tls-keys-file KEYFILE" "client keys file to connect via TLS"
+      :default-desc "client.keys"
+      :parse-fn (comp str tools/absolutize-file)
+      :validate [#(.exists (io/file %)) "Must be a valid path to a readable file"]]
+     [nil "--no-background-print" "Disable background threads from printing"
+      :id :background-print
+      :update-fn (constantly false)]]
+    rebel-readline.main/cli-options)))
 
 (defn usage [options-summary]
-  (->> ["RebelReadline nREPL client"
+  (->> ["rebel-readline nREPL: An enhanced client for Clojure hosted nREPL servers"
         ""
-        "Usage: --host localhost --port 7888"
+        "This is a readline enhanced REPL client intended to connect to a "
+        "nREPL servers hosed by a Clojure dilect that includes the base"
+        "nREPL middleware."
+        ""
+        "See the full README at"
+        "at https://github.com/bhauman/rebel-readline-nrepl"
+        ""
+        "Usage: clojure -M -m rebel-readline.nrepl.main --port 50668"
         ""
         "Options:"
         options-summary]
@@ -160,16 +174,15 @@
 
 (defn validate-args
   [args]
-  (let [{:keys [options arguments errors summary]} (cli/parse-opts args cli-options)]
+  (let [{:keys [options arguments errors summary]}
+        (cli/parse-opts args cli-options :no-defaults true)]
     (cond
       (:help options)
       {:exit-message (usage summary) :ok? true}
       errors
       {:exit-message (error-msg errors)}
-      (and (:host options) (:port options))
-      {:options options}
-      :else ; failed custom validation => exit with usage summary
-      {:exit-message (usage summary)})))
+      :else
+      {:options options})))
 
 (defn exit [status msg]
   (println msg)
@@ -179,11 +192,7 @@
   (let [{:keys [options exit-message ok?]} (validate-args args)]
     (if exit-message
       (exit (if ok? 0 1) exit-message)
-      (let [opts (cond-> options
-                   (:background-print-off options)
-                   (-> (assoc :background-print false)
-                       (dissoc :background-print-off)))]
-        (start-repl opts)))))
+      (start-repl options))))
 
 #_(-main "--port" "55" "--background-print-off")
 
