@@ -139,5 +139,8 @@
     :prompt #(print "debug=> ")
     :eval (partial contextual-eval (local-context))))
 
+(defn main [options]
+  (core/ensure-terminal (repl* options)))
+
 (defn -main [& args]
   (core/ensure-terminal (repl)))
