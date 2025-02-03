@@ -79,7 +79,8 @@
 
 (defn validate-args
   [args]
-  (let [{:keys [options arguments errors summary]} (cli/parse-opts args cli-options :no-defaults true)]
+  (let [{:keys [options arguments errors summary]}
+        (cli/parse-opts args cli-options :no-defaults true)]
     (cond
       (:help options)
       (exit 0 (usage summary))

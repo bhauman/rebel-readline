@@ -251,25 +251,20 @@
 
 (defn create
   ([] (create nil))
-  ([{:keys [host port tls-keys-file] :as options}]
-   (let [conn (nrepl/connect (cond-> {:port port}
-                               host (assoc :host host)
-                               tls-keys-file (assoc :tls-keys-file tls-keys-file)))          ;;; TODO fix this
+  ([config]
+   (let [conn (nrepl/connect
+               (select-keys config [:port :host :tls-keys-file]))
          client (nrepl/client conn Long/MAX_VALUE)
          session (nrepl/new-session client)
-         tool-session (nrepl/new-session client)
-         options (merge
-                  clj-reader/default-config
-                  (tools/user-config)
-                  options
-                  {:rebel-readline.service/type ::service
-                   :repl/error (atom nil)
-                   ::state (atom {:conn conn
-                                  :current-ns "user"
-                                  :client client
-                                  :session session
-                                  :tool-session tool-session})})]
-     options)))
+         tool-session (nrepl/new-session client)]
+     (assoc config
+            :rebel-readline.service/type ::service
+            :repl/error (atom nil)
+            ::state (atom {:conn conn
+                           :current-ns "user"
+                           :client client
+                           :session session
+                           :tool-session tool-session})))))
 
 
 

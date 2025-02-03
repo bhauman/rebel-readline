@@ -5,7 +5,7 @@
    [rebel-readline.jline-api :as api]
    [rebel-readline.clojure.line-reader :as clj-line-reader]
    [rebel-readline.nrepl.service.nrepl :as clj-service]
-   [rebel-readline.utils :refer [*debug-log*]]
+   [rebel-readline.tools :as tools]
    [rebel-readline.nrepl.service.commands]
    [clojure.tools.cli :as cli]
    [clojure.spec.alpha :as s]
@@ -79,25 +79,23 @@
           (recur)))))
 
 (defn start-repl* [options]
-  (binding [*debug-log* true]
-    (core/with-line-reader
+  (core/with-line-reader
       (clj-line-reader/create
        (clj-service/create
         (merge (when api/*line-reader* @api/*line-reader*)
                options)))
-      (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
-        (clj-service/register-background-printing api/*line-reader*)
-        (clj-service/start-polling @api/*line-reader*)
-        (.handle ^Terminal api/*terminal*
-                 Terminal$Signal/INT
-                 (let [line-reader api/*line-reader*]
-                   (proxy [Terminal$SignalHandler] []
-                     (handle [sig]
-                       (clj-service/interrupt @line-reader)))))
-        (println (core/help-message))
-        (repl-loop)))))
+    (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
+      (clj-service/register-background-printing api/*line-reader*)
+      (clj-service/start-polling @api/*line-reader*)
+      (.handle ^Terminal api/*terminal*
+               Terminal$Signal/INT
+               (let [line-reader api/*line-reader*]
+                 (proxy [Terminal$SignalHandler] []
+                   (handle [sig]
+                     (clj-service/interrupt @line-reader)))))
+      (println (core/help-message))
+      (repl-loop))))
 
-;; accept symbols to make the command line easier
 (s/def ::sym-or-string (s/and (s/or :sym symbol?
                                     :str string?)
                               (s/conformer #(-> % second str))))
@@ -106,22 +104,27 @@
 (s/def ::host ::sym-or-string)
 (s/def ::background-print boolean?)
 (s/def ::port (s/and number? #(< 0 % 0x10000)))
-
-(s/def ::arg-map (s/keys :req-un [::port] :opt-un [::host ::tls-keys-file ::background-print]))
+(s/def ::arg-map (s/merge
+                  (s/keys :req-un [::port]
+                          :opt-un
+                          [::host
+                           ::tls-keys-file
+                           ::background-print])
+                  :rebel-readline.tools/arg-map))
 
 (defn start-repl [options]
-  (if (s/valid? ::arg-map options)
+  (try
     (start-repl*
      (merge
-      ;; defaults
+      clj-line-reader/default-config
+      (tools/user-config ::arg-map options)
       {:background-print true}
       (s/conform ::arg-map options)))
-    (do
-      (println "Arguments didn't pass spec")
-      (println "Received these args:")
-      (clojure.pprint/pprint options)
-      (println "Which failed these specifications:")
-      (s/explain ::arg-map options))))
+    (catch clojure.lang.ExceptionInfo e
+      (let [{:keys [spec config] :as err} (ex-data e)]
+        (if (-> err :type (= :rebel-readline/config-spec-error))
+          (tools/explain-config spec config)
+          (throw e))))))
 
 ;; CLI
 
@@ -159,9 +162,9 @@
   [args]
   (let [{:keys [options arguments errors summary]} (cli/parse-opts args cli-options)]
     (cond
-      (:help options) ; help => exit OK with usage summary
+      (:help options)
       {:exit-message (usage summary) :ok? true}
-      errors ; errors => exit with description of errors
+      errors
       {:exit-message (error-msg errors)}
       (and (:host options) (:port options))
       {:options options}
