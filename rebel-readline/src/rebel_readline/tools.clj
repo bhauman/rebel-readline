@@ -131,37 +131,43 @@
                                   ::redirect-output
                                   ::key-bindings]))
 
-(defn explain-config [config]
+(defn explain-config-header [config]
   (println "Arguments didn't pass spec")
   (println "Received these args:")
   (clojure.pprint/pprint config)
-  (println "Which failed these specifications:")
-  (s/explain ::arg-map config))
+  (println "Which failed these specifications:"))
 
-(defn valid-config? [options]
-  (s/valid? ::arg-map (or options {})))
+(defn explain-config [spec config]
+  (explain-config-header config)
+  (s/explain spec config))
+
+(defn valid-config? [spec options]
+  (s/valid? spec (or options {})))
 
 #_(valid-config? {:highlight 1})
 
-(defn user-config [overrides]2
-  (let [cli-file (absolutize-file (:config overrides))
-        config-file (user-config-file)]
-    (when-let [file (or cli-file config-file)]
-      (try (let [config
-                 (try (edn/read-string (slurp file))
-                      (catch Throwable e
-                        (binding [*out* *err*]
-                          (println
-                           (format "[Rebel Readline] Error reading config file %s: %s"
-                                   (str file)
-                                   (.getMessage e))))))]
-             (if (valid-config? config)
-               (cond-> config
-                 overrides (merge (dissoc overrides :config))
-                 (:key-bindings config)
-                 (update-in [:key-bindings] translate-serialized-key-bindings))
-               (do (explain-config config)
-                   (throw (ex-info "Invalid config file" {})))))))))
+(defn user-config [spec overrides]
+    (let [cli-file (absolutize-file (:config overrides))
+          config-file (user-config-file)]
+      (when-let [file (if (and cli-file (.exists cli-file))
+                        cli-file
+                        config-file)]
+        (try (let [config
+                   (try (edn/read-string (slurp file))
+                        (catch Throwable e
+                          (binding [*out* *err*]
+                            (println
+                             (format "[Rebel Readline] Error reading config file %s: %s"
+                                     (str file)
+                                     (.getMessage e))))))]
+               (if (valid-config? spec (merge config overrides))
+                 (cond-> config
+                   (:key-bindings config)
+                   (update-in [:key-bindings] translate-serialized-key-bindings))
+                 (throw (throw (ex-info "Invalid configuration"
+                                        {:type :rebel-readline/config-spec-error
+                                         :config (merge config overrides)
+                                         :spec spec})))))))))
 
 ;; Baseline services
 ;; ----------------------------------------------

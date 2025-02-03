@@ -87,13 +87,15 @@
 
 (let [clj-repl clojure.main/repl]
   (defn repl* [{:keys [:rebel-readline/config] :as opts}]
-    (let [opts (dissoc opts :rebel-readline/config)]
+    (let [opts (dissoc opts :rebel-readline/config)
+          ;; would prefer not to have this here
+          final-config (merge clj-line-reader/default-config
+                              (tools/user-config ::tools/arg-map config)
+                              (when api/*line-reader* @api/*line-reader*)
+                              config)]
       (core/with-line-reader
           (clj-line-reader/create
-           (clj-service/create
-            (merge
-             (when api/*line-reader* @api/*line-reader*)
-             config)))
+           (clj-service/create final-config))
         ;; still debating about wether to include the following line in
         ;; `with-line-reader`. I am thinking that taking over out should
         ;; be opt in when using the lib taking over out provides

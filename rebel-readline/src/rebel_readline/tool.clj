@@ -6,6 +6,9 @@
    [rebel-readline.clojure.main :as main]))
 
 (defn repl [options]
-  (if (tools/valid-config? options)
+  (try
     (main/repl* {:rebel-readline/config options})
-    (tools/explain-config options)))
+    (catch clojure.lang.ExceptionInfo e
+      (let [{:keys [spec config] :as err} (ex-data e)]
+        (when (-> err :type (= :rebel-readline/config-spec-error))
+          (tools/explain-config spec config))))))
