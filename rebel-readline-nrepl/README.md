@@ -1,168 +1,137 @@
 # rebel-readline-nrepl
 
-> This is still a work in progress, the instructions below are pending
-> as I haven't published the library to clojars yet
+> *Note: This library is still a work in progress and has not yet been published to Clojars.*
 
-A Clojure library that provides a Rebel Readline nREPL client.
+## Overview
 
-## Description
-This project enables you to use the power and flexibility of Rebel
-Readline in your terminal as an nREPL client. It leverages the
-features of `rebel-readline` to enhance your REPL experience when
-interacting with a remote nREPL server.
+`rebel-readline-nrepl` is a Clojure library that brings the flexibility of Rebel Readline to your terminal as an nREPL (Network REPL) client.
 
 ## Prerequisites
-Before you start, ensure you have the following installed:
 
-* [Clojure CLI tools](https://clojure.org/guides/install_clojure)
+Before you begin, make sure you have the following installed:
 
-## Installation as a Clojure Tool
+- [Clojure CLI tools](https://clojure.org/guides/install_clojure)
 
-The easiest way to use `rebel-readline-nrepl` is by installing it as a
-Clojure "tool":
+## Installation
+
+### As a Clojure Tool
+
+1. Add `rebel-readline-nrepl` to your `./clojure/deps.edn` file under aliases:
+
+    ```clojure
+    {
+      :aliases {
+        :nrebel {
+          :extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.5-SNAPSHOT"}}
+          :exec-fn rebel-readline.nrepl/connect
+          :exec-args {:background-print false} ;; Optional configuration parameters
+          :main-opts ["-m" "rebel-readline.nrepl.main"]
+        }
+      }
+    }
+    ```
+
+2. Launch it via the command line:
+
+    ```bash
+    clojure -T:nrebel :port <50668> 
+    ```
+
+### Alternative Installation Method
+
+You can also install `rebel-readline-nrepl` as a Clojure Tool with the following command:
 
 ```bash
-# One-off installation of rebel-readline-nrepl as a tool:
-clojure -Ttools install-latest :lib com.bhauman/rebel-readline-nrepl :as nrebel
+clojure -Ttools install-latest :lib com.github.bhauman/rebel-readline :coord '{:deps/root "rebel-readline-nrepl"}' :as nrebel
 ```
 
-##Usage
+Call it with:
 
-### Starting an nREPL server
+```bash
+clojure -Tnrebel connect :port <50668>
+```
 
-To use rebel-readline-nrepl, you first need an nREPL server to connect
-to. You can easily start a basic nREPL server with the following
-command:
+## Usage
+
+### Starting an nREPL Server
+
+To get started, you need an nREPL server. You can spin up a basic nREPL server by executing:
 
 ```bash
 clojure -Sdeps '{:deps {nrepl/nrepl {:mvn/version "1.0.0"}}}' -M -m nrepl.cmdline --port 7888
 ```
 
-This will start an nREPL server and print the port it's listening on.
+This command starts an nREPL server and outputs the port it is listening on. Usually, you set up the nREPL server as part of your Clojure project. Refer to the [nREPL server documentation](https://nrepl.org/nrepl/1.3/usage/server.html) for additional instructions.
 
-### Connecting to the nREPL server
+### Connecting to the nREPL Server
 
-After installing `rebel-readline-nrepl` as a tool, you can connect to
-an nREPL server using the following command:
+Once the nREPL server is running, you can connect to it using
+`rebel-readline-nrepl`.If you installed `rebel-readline-nrepl` in your
+`.clojure/deps.edn` as above hten you can run:
 
 ```bash
-# Replace 7888 with the port your nREPL server is listening on.
+clojure -T:nrebel :port 7888
+```
+
+To specify the host (default is `localhost`):
+
+```bash
+clojure -T:nrebel :host localhost :port 7888
+```
+
+If you installed it as a Clojure Tool, connect like so:
+
+```bash
 clojure -Tnrebel connect :host localhost :port 7888
 ```
 
-Alternatively, if it's on your classpath (ie. in your deps.edn file)
-you can invoke it directly using the clojure command:
+Alternatively, if it's in your classpath you can invoke it directly:
 
 ```bash
 clojure -m rebel-readline.nrepl.main --host localhost --port 7888
 ```
 
-## Using with your project's deps.edn
+### Integrating with Your Project
 
-If you want to include rebel-readline-nrepl in your project, add it as
-a dependency in your deps.edn file:
+To include `rebel-readline-nrepl` in your project directly, add it to your `deps.edn` file:
 
 ```clojure
-{:deps {com.bhauman/rebel-readline-nrepl {:mvn/version "NOT-PUBLISHED-YET"}}
- :aliases
- {:nrebel
-  {:exec-fn rebel-readline.nrepl/connect
+{:aliases
+ {:nrebelly
+  {:extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "NOT-PUBLISHED-YET"}}
+   :exec-fn rebel-readline.nrepl/connect
    :exec-args {:host "localhost" :port 7888}}}}
 ```
 
-Which you can execute with 
+You can execute it with:
 
 ```bash
-clojure -X:nrebel 
+clojure -T:nrebelly
 ```
 
-## How do I default to Vi bindings?
+## TLS Support
 
-To default to Vi key bindings, add the following to your
-`~/.clojure/rebel_readline.edn` file:
+For secure connections, refer to the [nREPL TLS documentation](https://nrepl.org/nrepl/1.3/usage/tls.html) for steps on generating keys and starting a TLS-enabled nREPL server.
 
-```clojure
-{:key-map :viins}
+Connect over TLS by specifying the TLS key file:
+
+```bash
+clojure -T:nrebel :port 50668 :tls-key-file '"client.keys"'
 ```
 
-## Configuration
-You can customize rebel-readline-nrepl by providing a configuration
-map in `~/.clojure/rebel_readline.edn`. Here are the available options:
+## Configuration Parameters
 
-```clojure
-{:key-map         :viins ; Either :viins or :emacs. Defaults to :emacs.
- :color-theme     :dark-screen-theme ; Either :light-screen-theme, :neutral-screen-theme or :dark-screen-theme.
- :highlight       true ; Boolean, whether to syntax highlight or not. Defaults to true.
- :completion      true ; Boolean, whether to complete on tab. Defaults to true.
- :eldoc           true ; Boolean, whether to display function docs as you type. Defaults to true.
- :indent          true ; Boolean, whether to auto indent code on newline. Defaults to true.
- :redirect-output true ; Boolean, rebinds root *out* during read to protect linereader. Defaults to true.
- :key-bindings    {}}   ; Map of key-bindings that get applied after all other key bindings have been applied.
-```
+`rebel-readline-nrepl` supports specific configuration options:
 
+- `:port` - Required port number for the nREPL server.
+- `:host` - Optional; defaults to `localhost`.
+- `:tls-key-file` - Path to the TLS key file.
+- `:background-print` - Boolean indicating whether to allow background threads to continue printing.
 
-#### Key binding config
-
-You can further customize key bindings in the configuration file,
-although this can be complex.
-
-Example:
-
-```clojure
-{:key-bindings 
-  {:emacs [["^D" :clojure-doc-at-point]] 
-   :viins [["^J" :clojure-force-accept-line]]}}
-```
-
-**Note**: Serialized keybindings can be tricky. The keybinding strings are
-translated using `org.jline.keymap.KeyMap/translate`, which has some
-peculiarities.
-
-If you need to use literal characters, you can represent them as a
-list of characters or their corresponding integer values. For example,
-instead of `"^D^D"`, you could use `(4 4)` (since `4` is the ASCII value for
-`Ctrl-D`).
-
-To find available widget names, use the `:repl/key-bindings` command at
-the REPL prompt.
-
-**Caveat**: JLine handles control characters and alphanumeric characters
-well, but binding special characters might not always work as
-expected.
-
-## Key-bindings
-
-Here are some useful keybindings
-
-* **Ctrl-C**: Aborts editing the current line.
-* **Ctrl-D** (at the start of a line): Sends an end-of-stream message, which typically quits the REPL.
-* **TAB**: Word completion, or code indent if the cursor is at the beginning of a line within whitespace.
-* **Ctrl-X Ctrl-D**: Shows documentation for the word at the cursor.
-* **Ctrl-X Ctrl-S**: Shows the source code for the word at the cursor.
-* **Ctrl-X Ctrl-A**: Shows apropos for the word at the cursor.
-* **Ctrl-X Ctrl-E**: Inline evaluation of the S-expression before the cursor.
-
-You can examine the key-bindings with the `:repl/key-bindings` command.
-
-## Command System
-
-`rebel-readline-nrepl` features a command system that enhances the
-REPL experience.  If a line begins with a keyword in the `repl`
-namespace (e.g., `:repl/command-name`), the line reader will interpret
-it as a command.
-
-**Discovering Available Commands:**
-
-To see a list of available commands, type either `:repl/help` and
-press Enter, or type `:repl` and press Tab for autocompletion
-suggestions.
-
+For  configuration details, refer back to the Rebel Readline documentation [here](../README.md#config-parameters).
 
 ### License
+
 Copyright © 2023 Bruce Hauman
 
 Distributed under the Eclipse Public License either version 1.0 or (at your option) any later version.
-
-
-
-

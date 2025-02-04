@@ -1,5 +1,5 @@
 {:paths ["src"]
- :deps  {com.bhauman/rebel-readline {:mvn/version "0.1.5-SNAPSHOT"}
+ :deps  {com.bhauman/rebel-readline {:mvn/version "0.1.5"}
          ;; DEV for cider
          ;;com.bhauman/rebel-readline {:local/root "../rebel-readline"}
          nrepl/nrepl {:mvn/version "1.3.1"}
@@ -15,7 +15,7 @@
         :extra-paths ["dev"]
         :main-opts ["-m" "rebel-nrepl.main"]}
   :neil {:project {:name com.bhauman/rebel-readline-nrepl
-                   :version "0.1.5-SNAPSHOT"}}
+                   :version "0.1.5"}}
   :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.6"
                                                 :git/sha "52cf7d6"}
                  slipset/deps-deploy {:mvn/version "0.2.2"}}

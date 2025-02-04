@@ -1,3 +1,16 @@
+# 0.1.5 Introducing nREPL support
+
+The `rebel-readline-nrepl` package offers nREPL support.
+
+For detailed information, please refer to the `../rebel-readline-nrepl/README.md`. This library is seperate to keep startup time for `rebel-readline` lean.
+
+Support for command-line interface (CLI) is now available through both `rebel-readline.main` and `rebel-readline.tool` entry points, along with the ability to specify a configuration file.
+
+Other updates include:
+* #b11eaf8: Introduction of a neutral screen theme
+* #9773dab: Enhanced lightweight Ctrl-C interrupt handling
+* Fixed issue #219: Removed lazy loading of packages
+
 # 0.1.4 Removed regex stack overflow for large strings
 
 It is very confusing to get an error from the value printer, so this merits a release.

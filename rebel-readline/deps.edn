@@ -11,7 +11,7 @@
                  :main-opts ["-m" "rebel-dev.main"]}
            ;; build
            :neil {:project {:name com.bhauman/rebel-readline
-                            :version "0.1.5-SNAPSHOT"}}
+                            :version "0.1.5"}}
            :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.6"
                                                          :git/sha "52cf7d6"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}

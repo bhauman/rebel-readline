@@ -1,343 +1,256 @@
-# rebel-readline
+# Rebel Readline
 
 [![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline.svg)](https://clojars.org/com.bhauman/rebel-readline)
 [![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline-cljs.svg)](https://clojars.org/com.bhauman/rebel-readline-cljs)
+[![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline-nrepl.svg)](https://clojars.org/com.bhauman/rebel-readline-nrepl)
 
-A terminal readline library for Clojure Dialects
+Welcome to **Rebel Readline** – the stylish terminal REPL for your Clojure development!
 
-[![asciicast](https://asciinema.org/a/160597.png)](https://asciinema.org/a/160597)
+![asciicast](https://asciinema.org/a/160597.png)
 
-## Why create a terminal readline library?
+## Features
 
-https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/doc/intro.md
+Rebel Readline offers a Clojure REPL with:
 
-## Important note!!!
+- Easy multi-line editing
+- Auto-indentation
+- TAB completion
+- Argument documentation displayed after typing a function name
+- Inline evaluation, allowing you to evaluate code without pressing enter
+- Quick access to documentation, source, and apropos for the symbol under the cursor
+- Familiar terminal key bindings, including history search, etc.
 
-The line reader will attempt to manipulate the terminal that initiates
-the JVM process. For this reason it is important to start your JVM in
-a terminal.
+## Purpose
 
-That means you should launch your Java process using the
+Learn more about the motivations behind creating this terminal readline library [here](https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/doc/intro.md).
 
- * the java command
- * the Clojure `clojure` tool (without readline support)
- * lein trampoline
- * boot - would need to run in boot's worker pod
+## nREPL Support
 
-Launching the terminal readline process from another Java process will not work.
+Recent updates include nREPL support. For details, refer to [rebel-readline-nrepl](./rebel-readline-nrepl).
 
-It's best to not launch this readline behind other readline tools like `rlwrap`.
+## Important Note
 
-## Quick try
+The line reader requires direct terminal access. Therefore, do not launch Rebel Readline using `clj` or any other readline processes (like `rlwrap`) to avoid conflicts. Use one of the following options to start the JVM:
 
-#### Clojure tools
+- The java command
+- The Clojure `clojure` tool (without readline support)
+- `lein trampoline`
+- `boot` (must run in Boot's worker pod)
 
-If you want to try this really quickly
-[install the Clojure CLI tools](https://clojure.org/guides/getting_started)
-and then invoke this:
+## Quick Start
+
+To quickly try Rebel Readline, [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and execute:
 
 ```shell
-clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.4\"}}}" -m rebel-readline.main
+clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.4\"}}}" -M -m rebel-readline.main
 ```
 
-That should start a Clojure REPL that takes its input from the Rebel readline editor.
+## Usage
 
-Note that I am using the `clojure` command and not the `clj` command
-because the latter wraps the process with another readline program (rlwrap).
+### Key Bindings in the REPL
 
-Alternatively you can specify an alias in your `$HOME/.clojure/deps.edn`
+Rebel Readline defaults to Emacs-style key bindings, which can be configured. 
+
+#### Notable Key Bindings:
+
+- **Ctrl-C**: Abort the current line
+- **Ctrl-D** at line start: Send an end-of-stream signal (usually quits the REPL)
+- **TAB**: Word completion or code indentation 
+- **Ctrl-X Ctrl-D**: Show documentation for the current symbol
+- **Ctrl-X Ctrl-S**: Show source code for the current symbol
+- **Ctrl-X Ctrl-A**: Show apropos information for the current symbol
+- **Ctrl-X Ctrl-E**: Inline evaluation for SEXP
+
+You can explore additional key bindings with the `:repl/key-bindings` command.
+
+### Commands in the REPL
+
+Commands start with the `:repl/...` keyword. For available commands, type `:repl/help` or `:repl` followed by TAB.
+
+You can add new commands by implementing methods for the `rebel-readline.commands/command` multimethod and documenting them using `rebel-readline.commands/command-doc`.
+
+## Installation
+
+Add Rebel Readline as a global tool within your `~/.clojure/deps.edn`:
 
 ```clojure
 {
  ...
- :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
-                   :main-opts  ["-m" "rebel-readline.main"]}}
+ :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.5-SNAPSHOT"}}
+                  :exec-fn rebel-readline.tool/repl
+                  :exec-args {}
+                  :main-opts ["-m" "rebel-readline.main"]}}
+ ...
 }
 ```
 
-And then run with a simpler:
+You can then launch the REPL in your project directory with:
 
 ```shell
-clojure -M:rebel
+clojure -Xrebel 
+```
+Remember to use `clojure` instead of `clj` to avoid interference from other readline tools.
+
+Alternatively, run it as a standalone tool:
+
+```shell
+clojure -Trebel 
 ```
 
-#### Leiningen
+## CLI Parameters
 
-Add `[com.bhauman/rebel-readline "0.1.4"]` to the dependencies in your
-`project.clj` then start a REPL like this:
+You can pass [Configurable Parameters](#config) when launching the REPL:
+
+```shell
+clojure -Xrebel :highlight false 
+```
+
+It's also possible to specify global parameters in the `:exec-args` key of your `~/.clojure/deps.edn`.
+
+## CLI Usage with `rebel-readline.main`
+
+You can also launch with the `rebel-readline.main` CLI. With the
+global configuration above you can use:
+
+```shell
+clojure -Mrebel --no-highlight
+```
+
+```shell
+Options:
+  -h, --help                                       Display help
+  -k, --key-map KEYMAP         :emacs              Choose between :viins or :emacs
+  -t, --color-theme THEME      :dark-screen-theme  :(light, dark, or neutral)-screen-theme
+      --no-highlight                               Disable syntax highlighting
+      --no-completion                              Disable code completion
+      --no-eldoc                                   Disable function documentation display
+      --no-indent                                  Disable auto indentation
+      --no-redirect-output                         Disable output redirection
+  -b, --key-bindings BINDINGS                      Specify custom key bindings
+  -c, --config CONFIG                              Path to a config file
+```
+
+## Installing with Leiningen
+
+Add the dependency to your `project.clj`:
+
+```clojure
+[com.bhauman/rebel-readline "0.1.4"]
+```
+
+Start the REPL with:
 
 ```shell
 lein trampoline run -m rebel-readline.main
 ```
 
-Alternatively, you can add rebel-readline globally to `$HOME/.lein/profiles.clj`
+You can also add it to `$HOME/.lein/profiles.clj` for global usage.
+
+To simplify REPL launches, create an alias in `project.clj`:
 
 ```clojure
-{
- ...
- :user {:dependencies [[com.bhauman/rebel-readline "0.1.4"]]}
-}
+:aliases {"rebl" ["trampoline" "run" "-m" "rebel-readline.main"]}
 ```
 
-Then you can call
+This lets you start the REPL using `lein rebl`.
+
+## Boot Integration
+
+Start Rebel Readline using Boot with:
 
 ```shell
-lein trampoline run -m rebel-readline.main
-```
-
-To make this less verbose you can use an alias in your `project.clj`:
-
-```clojure
-{
- ...
- :aliases {"rebl" ["trampoline" "run" "-m" "rebel-readline.main"]}
-}
-```
-
-Alternatively, you can do this globally in `$HOME/.lein/profiles.clj`:
-
-```clojure
-{
- ...
- :user {:aliases {"rebl" ["trampoline" "run" "-m" "rebel-readline.main"]}}
-}
-```
-
-Now you can start a rebel-readline REPL with `lein rebl`.
-
-#### Boot
-
-```
 boot -d com.bhauman/rebel-readline call -f rebel-readline.main/-main
 ```
 
-#### Clone repo
+## Default to vi Bindings
 
-Clone this repo and then from the `rebel-readline` sub-directory
-typing `lein trampoline run -m rebel-readline.main` will get you into
-a Clojure REPL with the readline editor working.
+You can set vi key bindings either in your `deps.edn` or in `~/.clojure/rebel_readline.edn`:
 
-Note that `lein run -m rebel-readline.main` will not work! See above.
-
-## How do I default to vi bindings?
-
-In `~/.clojure/rebel_readline.edn` put
-
-```
+```clojure
 {:key-map :viins}
 ```
 
-## Config
+## Configuration
 
-In `~/.clojure/rebel_readline.edn` you can provide a map with the
-following options:
+You can provide various configurable options in your `deps.edn` or `~/.clojure/rebel_readline.edn`:
 
-```
-:key-map         - either :viins or :emacs. Defaults to :emacs
+```clojure
+:config          - path to an edn configuration file
 
-:color-theme     - either :light-screen-theme or :dark-screen-theme
+:key-map         - :viins or :emacs (default: :emacs)
 
-:highlight       - boolean, whether to syntax highlight or not. Defaults to true
+:color-theme     - (:light, :dark or :neutral)-screen-theme
 
-:completion      - boolean, whether to complete on tab. Defaults to true
+:highlight       - (boolean) enable syntax highlighting (default: true)
 
-:eldoc           - boolean, whether to display function docs as you type.
-                   Defaults to true
+:completion      - (boolean) enable code completion (default: true)
 
-:indent          - boolean, whether to auto indent code on newline. Defaults to true
+:eldoc           - (boolean) enable function documentation display (default: true)
 
-:redirect-output - boolean, rebinds root *out* during read to protect linereader
-                   Defaults to true
-                   
-:key-bindings    - map of key-bindings that get applied after all other key 
-                   bindings have been applied
+:indent          - (boolean) enable auto indentation (default: true)
+
+:redirect-output - (boolean) rebinds output during read (default: true)
+
+:key-bindings    - map of key bindings to apply after others
 ```
 
-#### Key binding config
+### Key Binding Configuration
 
-You can configure key bindings in the config file, but your milage may vary.
+To configure key bindings, use your configuration file. Ensure correct
+serialization of key names.
 
-Example:
+## Using Rebel Readline as a Readline Library
 
-```
-{ 
-...
-:key-bindings { :emacs [["^D" :clojure-doc-at-point]] 
-                :viins [["^J" :clojure-force-accept-line]] }
-}
-```
-
-Serialized keybindings are tricky and the keybinding strings are translated with
-`org.jline.keymap.KeyMap/translate` which is a bit peculiar in how it translates things.
-
-If you want literal characters you can use a list of chars or ints i.e
-`(\\ \d)` instead of the serialized key names. So you can use `(4 4)` inplace of `"^D^D"`.
-
-The best way to look up the available widget names is to use the `:repl/key-bindings`
-command at the REPL prompt.
-
-Note: I have found that JLine handles control characters and
-alphanumeric characters quite well but if you want to bind special
-characters you shouldn't be surprised if it doesn't work.
-
-## Quick Lay of the land
-
-You should look at `rebel-readline.clojure.main` and `rebel-readline.core`
-to give you top level usage information.
-
-The core of the functionality is in
-`rebel-readline.clojure.line-reader` everything else is just support.
-
-## Quick Usage
-
-These are some quick examples demonstrating how to use the rebel-readline
-API.
-
-The main way to utilize this readline editor is to replace the
-`clojure.main/repl-read` behavior in `clojure.main/repl`.
-
-The advantage of doing this is that it won't interfere with the input
-stream if you are working on something that needs to read from
-`*in*`. This is because the line-reader will only be engaged when the
-REPL loop is reading.
-
-Example:
+Rebel Readline can replace the `clojure.main/repl-read` behavior:
 
 ```clojure
 (rebel-readline.core/with-line-reader
   (rebel-readline.clojure.line-reader/create
-    (rebel-readline.clojure.service.local/create))
+    (rebel-readline.clojure.service.local/create {:highlight false}))
   (clojure.main/repl
      :prompt (fn []) ;; prompt is handled by line-reader
      :read (rebel-readline.clojure.main/create-repl-read)))
 ```
 
-Another option is to just wrap a call you your REPL with
-`rebel-readline.core/with-readline-in` this will bind `*in*` to an
-input-stream that is supplied by the line reader.
+You can also use `rebel-readline.core/with-readline-in` for easier wrapping:
 
 ```clojure
 (rebel-readline.core/with-readline-in
   (rebel-readline.clojure.line-reader/create
     (rebel-readline.clojure.service.local/create))
-  (clojure.main/repl :prompt (fn[])))
-```
-
-Or with a fallback:
-
-```clojure
-(try
-  (rebel-readline.core/with-readline-in
-    (rebel-readline.clojure.line-reader/create
-      (rebel-readline.clojure.service.local/create))
-    (clojure.main/repl :prompt (fn[])))
-  (catch clojure.lang.ExceptionInfo e
-    (if (-> e ex-data :type (= :rebel-readline.jline-api/bad-terminal))
-      (do (println (.getMessage e))
-        (clojure.main/repl))
-      (throw e))))
+  (clojure.main/repl :prompt (fn [])))
 ```
 
 ## Services
 
-The line reader provides features like completion, documentation,
-source, apropos, eval and more. The line reader needs a Service to
-provide this functionality.
+The line reader provides capabilities like completion, documentation, and evaluation through a service. The common service is `rebel-readline.services.clojure.local`, which queries the local Clojure process.
 
-When you create a `rebel-readline.clojure.line-reader`
-you need to supply this service.
+For environments without a suitable service, you could use `clojure.service.local` or `clojure.service.simple`, though with less optimal results.
 
-The more common service is the
-`rebel-readline.services.clojure.local` which uses the
-local clojure process to provide this functionality and its a good
-example of how a service works.
+## CLJS Support
 
-https://github.com/bhauman/rebel-readline/blob/master/rebel-readline/src/rebel_readline/clojure/service/local.clj
+For ClojureScript, visit [this repository section](https://github.com/bhauman/rebel-readline/tree/master/rebel-readline-cljs).
 
-In general, it's much better if the service is querying the Clojure process
-where the eventual REPL eval takes place.
+## SocketREPL and pREPL Support
 
-However, the service doesn't necessarily have to query the same
-environment that the REPL is using for evaluation. All the editing
-functionality that rebel readline provides works without an
-environment to query. And the apropos, doc and completion functionality is
-still sensible when you provide those abilities from the local clojure process.
-
-This could be helpful when you have a Clojurey REPL process and you
-don't have a Service for it. In this case you can just use a
-`clojure.service.local` or a `clojure.service.simple` service. If you
-do this you can expect less than optimal results but multi-line
-editing, syntax highlighting, auto indenting will all work just fine.
-
-## Key-bindings
-
-**Bindings of interest**
-
-* Ctrl-C => aborts editing the current line
-* Ctrl-D at the start of a line => sends an end of stream message
-  which in most cases should quit the REPL
-
-* TAB => word completion or code indent if the cursor is in the whitespace at the
-  start of a line
-* Ctrl-X_Ctrl-D => Show documentation for word at point
-* Ctrl-X_Ctrl-S => Show source for word at point
-* Ctrl-X_Ctrl-A => Show apropos for word at point
-* Ctrl-X_Ctrl-E => Inline eval for SEXP before the point
-
-You can examine the key-bindings with the `:repl/key-bindings` command.
-
-## Commands
-
-There is a command system. If the line starts with a "repl" namespaced
-keyword then the line-reader will attempt to interpret it as a command.
-
-Type `:repl/help` or `:repl` TAB to see a list of available commands.
-
-You can add new commands by adding methods to the
-`rebel-readline.commands/command` multimethod. You can add
-documentation for the command by adding a method to the
-`rebel-readline.commands/command-doc` multimethod.
-
-## CLJS
-
-See https://github.com/bhauman/rebel-readline/tree/master/rebel-readline-cljs
-
-## nREPL, SocketREPL, pREPL?
-
-Services have not been written for these REPLs yet!!
-
-But you can use the `rebel-readline.clojure.service.simple` service in the meantime.
+Currently, services for SocketREPL and pREPL are not available.
 
 ## Contributing
 
-Please contribute!
+We welcome contributions! Look for issues marked `help wanted` for good starting points. 
 
-I'm trying to mark issues with `help wanted` for issues that I feel
-are good opportunities for folks to help out. If you want to work on
-one of these please mention it in the issue.
+When contributing:
 
-If you do contribute:
+- File an issue for non-trivial changes before creating a PR.
+- Consolidate PR changes into one commit.
+- Make changes small and easy to understand; this allows for better review.
+- Break larger solutions into manageable PRs.
+- Communicate if a PR represents more exploratory efforts.
 
-* if the change isn't small please file an issue before a PR.
-* please put all PR changes into one commit
-* make small grokable changes. Large changes are more likely to be
-  ignored and or used as a starting issue for exploration.
-* break larger solutions down into a logical series of small PRs
-* mention it at the start, if you are filing a PR that is more of an
-  exploration of an idea
-
-I'm going to be more open to repairing current behavior than I will be
-to increasing the scope of rebel-readline.
-
-I will have a preference for creating hooks so that additional functionality
-can be layered on with libraries.
-
-If you are wanting to contribute but don't know what to work on reach
-out to me on the clojurians slack channel.
+If you need assistance on what to work on, feel free to reach out on the Clojurians Slack channel.
 
 ## License
 
 Copyright © 2018 Bruce Hauman
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Distributed under the Eclipse Public License, version 1.0 or (at your option) any later version.
