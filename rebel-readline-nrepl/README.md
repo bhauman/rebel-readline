@@ -1,9 +1,5 @@
 # rebel-readline-nrepl
 
-> *Note: This library is still a work in progress and has not yet been published to Clojars.*
-
-## Overview
-
 `rebel-readline-nrepl` is a Clojure library that brings the flexibility of Rebel Readline to your terminal as an nREPL (Network REPL) client.
 
 ## Prerequisites
