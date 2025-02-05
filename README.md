@@ -4,7 +4,7 @@
 [![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline-cljs.svg)](https://clojars.org/com.bhauman/rebel-readline-cljs)
 [![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline-nrepl.svg)](https://clojars.org/com.bhauman/rebel-readline-nrepl)
 
-Welcome to **Rebel Readline** – the stylish terminal REPL for your Clojure development!
+Welcome to **Rebel Readline** – the snazzy terminal REPL for Clojure!
 
 ![asciicast](https://asciinema.org/a/160597.png)
 
@@ -19,6 +19,8 @@ Rebel Readline offers a Clojure REPL with:
 - Inline evaluation, allowing you to evaluate code without pressing enter
 - Quick access to documentation, source, and apropos for the symbol under the cursor
 - Familiar terminal key bindings, including history search, etc.
+
+Rebel Readline is also a library that provides a line reader for Clojure dialects.
 
 ## Purpose
 
@@ -42,7 +44,7 @@ The line reader requires direct terminal access. Therefore, do not launch Rebel 
 To quickly try Rebel Readline, [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and execute:
 
 ```shell
-clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.4\"}}}" -M -m rebel-readline.main
+clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.5\"}}}" -M -m rebel-readline.main
 ```
 
 ## Usage
@@ -71,7 +73,7 @@ You can add new commands by implementing methods for the `rebel-readline.command
 
 ## Installation
 
-Add Rebel Readline as a global tool within your `~/.clojure/deps.edn`:
+Add Rebel Readline as a tool within your `~/.clojure/deps.edn`:
 
 ```clojure
 {
@@ -105,12 +107,12 @@ You can pass [Configurable Parameters](#config) when launching the REPL:
 clojure -Xrebel :highlight false 
 ```
 
-It's also possible to specify global parameters in the `:exec-args` key of your `~/.clojure/deps.edn`.
+It's also possible to specify parameters in the `:exec-args` key of your `~/.clojure/deps.edn`.
 
 ## CLI Usage with `rebel-readline.main`
 
 You can also launch with the `rebel-readline.main` CLI. With the
-global configuration above you can use:
+configuration above you can use:
 
 ```shell
 clojure -Mrebel --no-highlight
@@ -135,7 +137,7 @@ Options:
 Add the dependency to your `project.clj`:
 
 ```clojure
-[com.bhauman/rebel-readline "0.1.4"]
+[com.bhauman/rebel-readline "0.1.5"]
 ```
 
 Start the REPL with:
@@ -144,7 +146,8 @@ Start the REPL with:
 lein trampoline run -m rebel-readline.main
 ```
 
-You can also add it to `$HOME/.lein/profiles.clj` for global usage.
+You can also add it to `$HOME/.lein/profiles.clj` so you don't have to
+add it to individual projects.
 
 To simplify REPL launches, create an alias in `project.clj`:
 

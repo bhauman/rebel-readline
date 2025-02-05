@@ -7,8 +7,8 @@ For detailed information, please refer to the `../rebel-readline-nrepl/README.md
 Support for command-line interface (CLI) is now available through both `rebel-readline.main` and `rebel-readline.tool` entry points, along with the ability to specify a configuration file.
 
 Other updates include:
-* #b11eaf8: Introduction of a neutral screen theme
-* #9773dab: Enhanced lightweight Ctrl-C interrupt handling
+* b11eaf8: Introduction of a neutral screen theme
+* 9773dab: Enhanced lightweight Ctrl-C interrupt handling
 * Fixed issue #219: Removed lazy loading of packages
 
 # 0.1.4 Removed regex stack overflow for large strings

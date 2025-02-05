@@ -18,7 +18,7 @@ Before you begin, make sure you have the following installed:
     {
       :aliases {
         :nrebel {
-          :extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.5-SNAPSHOT"}}
+          :extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.5"}}
           :exec-fn rebel-readline.nrepl/connect
           :exec-args {:background-print false} ;; Optional configuration parameters
           :main-opts ["-m" "rebel-readline.nrepl.main"]
@@ -54,7 +54,7 @@ clojure -Tnrebel connect :port <50668>
 To get started, you need an nREPL server. You can spin up a basic nREPL server by executing:
 
 ```bash
-clojure -Sdeps '{:deps {nrepl/nrepl {:mvn/version "1.0.0"}}}' -M -m nrepl.cmdline --port 7888
+clojure -Sdeps '{:deps {nrepl/nrepl {:mvn/version "1.3.1"}}}' -M -m nrepl.cmdline --port 7888
 ```
 
 This command starts an nREPL server and outputs the port it is listening on. Usually, you set up the nREPL server as part of your Clojure project. Refer to the [nREPL server documentation](https://nrepl.org/nrepl/1.3/usage/server.html) for additional instructions.
