@@ -1,5 +1,7 @@
 # rebel-readline-nrepl
 
+[![Clojars Project](https://img.shields.io/clojars/v/com.bhauman/rebel-readline-nrepl.svg)](https://clojars.org/com.bhauman/rebel-readline-nrepl)
+
 `rebel-readline-nrepl` is a Clojure library that brings the flexibility of Rebel Readline to your terminal as an nREPL (Network REPL) client.
 
 ## Prerequisites
