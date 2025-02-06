@@ -1,8 +1,8 @@
-{:deps {com.bhauman/rebel-readline {:mvn/version "0.1.5-SNAPSHOT"}
+{:deps {com.bhauman/rebel-readline {:mvn/version "0.1.5"}
         org.clojure/clojurescript {:mvn/version "1.10.758"}
         cljs-tooling/cljs-tooling {:mvn/version "0.3.1"}}
  :aliases {:neil {:project {:name com.bhauman/rebel-readline-cljs
-                            :version "0.1.5-SNAPSHOT"}}
+                            :version "0.1.5"}}
            :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.6"
                                                          :git/sha "52cf7d6"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
