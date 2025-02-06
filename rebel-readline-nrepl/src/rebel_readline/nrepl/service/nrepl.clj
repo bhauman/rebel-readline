@@ -159,6 +159,14 @@
                     (value #(deliver prom %))))
     (deref prom 400 nil)))
 
+(defn ls-middleware [{:keys [state] :as service}]
+  (let [prom (promise)]
+    (send-msg! service
+               (new-tool-message service {:op "ls-middleware"})
+               (->> identity
+                    (on-key :middleware #(deliver prom %))))
+    (deref prom 400 nil)))
+
 (defn send-input [{:keys [::state] :as service} input]
   (send-msg! service
              (new-message service {:op "stdin" :stdin (when input
@@ -266,17 +274,17 @@
                            :session session
                            :tool-session tool-session})))))
 
-
+#_(add-tap (fn [x] (prn x)))
 
 #_(let [out *out*
-        service (create )]
+        service (create {:port 1667})]
     (start-polling service)
     #_(swap! (::state service) assoc :command-id (nrepl.misc/uuid))
     (try
-      (let [res (eval-code service "(ns heythere)" identity)]
+      (let [res (completions service "ma")]
         
         res
-        (::state service)
+        #_(::state service)
         )
       (finally
         (stop-polling service))))
