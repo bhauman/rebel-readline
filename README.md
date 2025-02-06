@@ -78,10 +78,10 @@ Add Rebel Readline as a tool within your `~/.clojure/deps.edn`:
 ```clojure
 {
  ...
- :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.5-SNAPSHOT"}}
-                  :exec-fn rebel-readline.tool/repl
-                  :exec-args {}
-                  :main-opts ["-m" "rebel-readline.main"]}}
+ :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.5"}}
+                   :exec-fn rebel-readline.tool/repl
+                   :exec-args {}
+                   :main-opts ["-m" "rebel-readline.main"]}}
  ...
 }
 ```
@@ -96,7 +96,7 @@ Remember to use `clojure` instead of `clj` to avoid interference from other read
 Alternatively, run it as a standalone tool:
 
 ```shell
-clojure -Trebel 
+clojure -T:rebel 
 ```
 
 ## CLI Parameters
