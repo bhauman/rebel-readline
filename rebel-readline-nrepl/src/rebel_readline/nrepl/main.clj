@@ -26,8 +26,10 @@
   (fn []
     (try
       (let [input (read request-prompt request-exit)]
-        (if (#{request-prompt request-exit} input)
-          input
+        (cond
+          (#{request-prompt request-exit} input) input
+          (not (clj-service/polling? @api/*line-reader*)) request-exit
+          :else
           (do
             (api/toggle-input api/*terminal* false)
             (clj-service/eval-code
@@ -73,12 +75,13 @@
       (catch Throwable e
         (repl-caught e)))
     (loop []
-      (when-not
-          (try
-            (identical? (read-eval-print) request-exit)
-	    (catch Throwable e
-              (repl-caught e)))
-          (recur)))))
+      (when (and (clj-service/polling? @api/*line-reader*)
+                 (try
+                   (not (identical? (read-eval-print) request-exit))
+	           (catch Throwable e
+                     (repl-caught e)
+                     true)))
+        (recur)))))
 
 (defn start-repl* [options]
   (core/with-line-reader

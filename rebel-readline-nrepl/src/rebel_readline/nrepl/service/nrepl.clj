@@ -217,9 +217,15 @@
 (defmethod clj-reader/-read-string ::service [self form-str]
   (service-local/default-read-string form-str))
 
+(defn stop-polling [{:keys [::state]}]
+  (swap! state dissoc :response-poller))
+
+(defn polling? [{:keys [::state]}]
+  (:response-poller @state))
+
 (defn poll-for-responses [{:keys [::state] :as options} conn]
   (loop []
-    (when (:response-poller @state)
+    (when (polling? options)
       (let [continue
             (try
               (when-let [{:keys [id out err value ns session] :as resp}
@@ -227,6 +233,12 @@
                 (tap> resp)
                 (dispatch-response! options resp))
               :success
+              (catch java.io.IOException e
+                (println (class e))
+                (println (ex-message e))
+                ;; this will stop the loop here and the
+                ;; main repl loop which queries polling?
+                (stop-polling options))
               (catch Throwable e
                 (println "Internal REPL Error: this shouldn't happen. :repl/*e for stacktrace")
                 (some-> options :repl/error (reset! e))
@@ -242,9 +254,6 @@
       (.setName "Rebel Readline nREPL response poller")
       (.setDaemon true)
       (.start))))
-
-(defn stop-polling [{:keys [::state]}]
-  (swap! state dissoc :response-poller))
 
 (defn register-background-printing [line-reader]
   (let [{:keys [::state background-print] :as service} @line-reader]
