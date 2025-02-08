@@ -12,8 +12,8 @@
   :nrepl {:main-opts ["-m" "nrepl.cmdline" "--port" 50668]
           :jvm-opts ["-Djdk.attach.allowAttachSelf"]}
   :dev {:override-deps {com.bhauman/rebel-readline {:local/root "../rebel-readline"}}
-        :extra-paths ["dev"]
-        :main-opts ["-m" "rebel-nrepl.main"]}
+        :exec-fn rebel-readline.nrepl/connect
+        :exec-args {:port 50668}}
   :neil {:project {:name com.bhauman/rebel-readline-nrepl
                    :version "0.1.5"}}
   :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.6"
