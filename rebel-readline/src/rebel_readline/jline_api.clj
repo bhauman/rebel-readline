@@ -274,9 +274,12 @@ If you are using `lein` you may need to use `lein trampoline`."
         (locking writer
             (Thread/sleep time-ms)))))))
 
-(defn display-message [message]
-  (let [post-field (get-accessible-field *line-reader* "post")]
-    (.set post-field *line-reader* (supplier (fn [] (AttributedString. message))))))
+(defn display-message
+  ([message]
+   (display-message *line-reader* message))
+  ([line-reader message]
+   (let [post-field (get-accessible-field line-reader "post")]
+     (.set post-field line-reader (supplier (fn [] (AttributedString. message)))))))
 
 (defn rows-available-for-post-display []
   (let [rows (:rows (terminal-size))

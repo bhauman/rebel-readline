@@ -1,7 +1,7 @@
 {:deps {org.clojure/clojure {:mvn/version "1.10.0" }
-        org.jline/jline-reader {:mvn/version "3.25.0"}
-        org.jline/jline-terminal {:mvn/version "3.25.0"}
-        org.jline/jline-terminal-jansi {:mvn/version "3.25.0"}
+        org.jline/jline-reader {:mvn/version "3.29.0"}
+        org.jline/jline-terminal {:mvn/version "3.29.0"}
+        org.jline/jline-terminal-jni {:mvn/version "3.29.0"}
         dev.weavejester/cljfmt {:mvn/version "0.13.0"}
         compliment/compliment {:mvn/version "0.6.0"}}
  :tools/usage {:ns-default rebel-readline.tool}
