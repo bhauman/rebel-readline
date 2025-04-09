@@ -15,7 +15,7 @@
         :exec-fn rebel-readline.nrepl/connect
         :exec-args {:port 50668}}
   :neil {:project {:name com.bhauman/rebel-readline-nrepl
-                   :version "0.1.5"}}
+                   :version "0.1.6"}}
   :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.6"
                                                 :git/sha "52cf7d6"}
                  slipset/deps-deploy {:mvn/version "0.2.2"}}

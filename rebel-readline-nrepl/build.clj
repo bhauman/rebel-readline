@@ -52,12 +52,14 @@
            :uber-file uber-file
            :basis basis}))
 
+;;; clojure -T:build deploy
+
 (defn deploy [opts]
   (jar opts)
   ((requiring-resolve 'deps-deploy.deps-deploy/deploy)
-    (merge {:installer :remote
-                       :artifact jar-file
-                       :pom-file (b/pom-path {:lib lib :class-dir class-dir})}
-                    opts))
+   (merge {:installer :remote
+           :artifact jar-file
+           :pom-file (b/pom-path {:lib lib :class-dir class-dir})}
+          opts))
   opts)
 
