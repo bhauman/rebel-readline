@@ -122,11 +122,13 @@ If you are using `lein` you may need to use `lein trampoline`."
 
 (defn key-map->display-data [key-map]
   (->> (key-map->clj key-map)
-       (map (fn [[k v]] [(KeyMap/display k) (.name v)]))
+       (filter #(instance? org.jline.reader.Reference (second %)))
+       (map (fn [[k v]]
+              [(KeyMap/display k) (.name v)]))
        (filter
         (fn [[k v]]
           (not
-           (#{;; these don't exist for some reason
+           (#{ ;; these don't exist for some reason
               "character-search"
               "character-search-backward"
               "infer-next-history"
@@ -287,8 +289,7 @@ If you are using `lein` you may need to use `lein trampoline`."
     (max 0 (- rows buffer-rows))))
 
 (defn reading? [line-reader]
-  (let [reading-field (get-accessible-field line-reader "reading")]
-    (boolean (.get reading-field line-reader))))
+  (.isReading line-reader))
 
 (defn call-widget [widget-name]
   (.callWidget *line-reader* widget-name))
@@ -321,38 +322,33 @@ If you are using `lein` you may need to use `lein trampoline`."
     (-> (proxy [Writer] []
           (flush []
             (when (pos? (.length sb))
-              (flush-fn (.toString sb)))
-            (.setLength sb 0))
+              (flush-fn sb)))
           (close []
                  (.flush ^Writer this)
                  (when close-fn (close-fn))
                  nil)
           (write [str-cbuf off len]
-                 (when (pos? len)
-                   (if (instance? String str-cbuf)
-                     (.append sb ^String str-cbuf ^int off ^int len)
-                     (.append sb ^chars str-cbuf ^int off ^int len)))))
+            (when (pos? len)
+              (if (instance? String str-cbuf)
+                (.append sb ^String str-cbuf ^int off ^int len)
+                (.append sb ^chars str-cbuf ^int off ^int len)))))
         java.io.BufferedWriter.
         java.io.PrintWriter.)))
 
-(defn redisplay-flush [line-reader s]
-  (let [writer (.writer (.getTerminal line-reader))]
-    (locking writer
-      (if (reading? line-reader)
-        (do
-          (.callWidget line-reader LineReader/CLEAR)
-          (.print writer s)
-          (.flush writer)
-          (.callWidget line-reader LineReader/REDRAW_LINE)
-          (.callWidget line-reader LineReader/REDISPLAY))
-        (do
-          (.print writer s)
-          (.flush writer))))))
-
 (defn ^java.io.PrintWriter safe-terminal-writer [line-reader]
-  (PrintWriter-on* #(as-> % x
-                      ;; ensure newline on flush to protect prompt
-                      (string/trim-newline x)
-                      (str x \newline)
-                      (redisplay-flush line-reader x))
-                  nil))
+  (PrintWriter-on*
+   (fn [^StringBuilder buffer]
+     (let [s (.toString buffer)]
+       (if (reading? line-reader)
+         (let [last-newline (.lastIndexOf s "\n")]
+           (when (>= last-newline 0)
+             (let [substring-to-print (.substring s 0 (inc last-newline))]
+               (.printAbove line-reader substring-to-print)
+               (.delete buffer 0 (inc last-newline)))))
+         (do
+           (doto (.writer (.getTerminal line-reader))
+             (.print s)
+             (.flush))
+           (.setLength buffer 0)))))
+   nil))
+
