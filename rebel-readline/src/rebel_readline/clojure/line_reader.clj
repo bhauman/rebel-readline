@@ -887,8 +887,7 @@
     (wordCursor [] word-cursor)
     (words [] (java.util.LinkedList. words))
     (line [] line)
-    (cursor [] cursor)
-    (meta [] parse-data)))
+    (cursor [] cursor)))
 
 ;; this is an indent call that is specific to ACCEPT_LINE based actions
 ;; the functionality implemented here is indenting when you hit return on a line
@@ -970,10 +969,12 @@
    nil ;; key
    false))
 
-(defn command-token? [{:keys [line tokens word]} starts-with]
-  (and (= 1 (count tokens))
-       (.startsWith (string/triml line) starts-with)
-       (.startsWith word starts-with)))
+(defn command-token? [parsed-line starts-with]
+  (and (= 1 (count (.words parsed-line)))
+       (string/starts-with? (string/triml (.line parsed-line))
+                            starts-with)
+       (string/starts-with? (.word parsed-line)
+                            starts-with)))
 
 (defn find-completions [candidates prefix]
   (->> candidates
@@ -983,13 +984,13 @@
        (map #(hash-map :candidate % :type :repl-command))
        not-empty))
 
-(defn repl-command-complete [{:keys [word] :as parsed-line}]
+(defn repl-command-complete [parsed-line]
   (when (command-token? parsed-line ":r")
-    (find-completions (commands/all-commands) word)))
+    (find-completions (commands/all-commands) (.word parsed-line))))
 
-(defn cljs-quit-complete [{:keys [word] :as parsed-line}]
+(defn cljs-quit-complete [parsed-line]
   (when (command-token? parsed-line ":c")
-    (find-completions [:cljs/quit] word)))
+    (find-completions [:cljs/quit] (.word parsed-line))))
 
 ;; TODO abstract completion service here
 (defn clojure-completer []
@@ -1007,8 +1008,8 @@
                             context (assoc :context context)))]
             (->>
              (or
-              (repl-command-complete (meta line))
-              (cljs-quit-complete (meta line))
+              (repl-command-complete line)
+              (cljs-quit-complete line)
               (completions (.word line) options))
              (map #(candidate %))
              #_(take 12)
