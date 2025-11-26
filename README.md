@@ -6,7 +6,7 @@
 
 Welcome to **Rebel Readline** – the snazzy terminal REPL for Clojure!
 
-![asciicast](https://asciinema.org/a/160597.png)
+[![asciicast](https://asciinema.org/a/160597.png)](https://asciinema.org/a/160597)
 
 ## Features
 
