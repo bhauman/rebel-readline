@@ -82,7 +82,6 @@
         (error (fn [_] (remove-callback! service id)))
         (done  (fn [_] (remove-callback! service id)))
         (session-id session id)))
-  (tap> msg)
   (nrepl.transport/send (:conn @state) msg))
 
 (defn eval-session [{:keys [::state]}]
@@ -230,7 +229,6 @@
             (try
               (when-let [{:keys [id out err value ns session] :as resp}
                          (nrepl.transport/recv conn 100)]
-                (tap> resp)
                 (dispatch-response! options resp))
               :success
               (catch java.io.IOException e
