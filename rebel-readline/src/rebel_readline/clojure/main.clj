@@ -16,9 +16,9 @@
 (defn syntax-highlight-prn-unwrapped
   [x]
   (try
-      (println (api/->ansi (clj-line-reader/highlight-clj-str x)))
-      (catch java.lang.StackOverflowError e
-        (println x))))
+    (println (api/->ansi (clj-line-reader/highlight-clj-str x)))
+    (catch java.lang.StackOverflowError e
+      (println x))))
 
 (defn syntax-highlight-prn*
   "Print a syntax highlighted clojure string.

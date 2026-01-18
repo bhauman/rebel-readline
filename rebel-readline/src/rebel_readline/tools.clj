@@ -165,7 +165,8 @@
                    (:key-bindings config)
                    (update-in [:key-bindings] translate-serialized-key-bindings))
                  (throw (throw (ex-info "Invalid configuration"
-                                        {:type :rebel-readline/config-spec-error
+                                        {:rest (s/explain-str spec (merge config overrides))
+                                         :type :rebel-readline/config-spec-error
                                          :config (merge config overrides)
                                          :spec spec})))))))))
 
