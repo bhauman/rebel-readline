@@ -20,7 +20,7 @@ Before you begin, make sure you have the following installed:
     {
       :aliases {
         :nrebel {
-          :extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.5"}}
+          :extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.7"}}
           :exec-fn rebel-readline.nrepl/connect
           :exec-args {:background-print false} ;; Optional configuration parameters
           :main-opts ["-m" "rebel-readline.nrepl.main"]
