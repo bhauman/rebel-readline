@@ -5,9 +5,12 @@
         dev.weavejester/cljfmt {:mvn/version "0.13.0"}
         compliment/compliment {:mvn/version "0.6.0"}}
  :tools/usage {:ns-default rebel-readline.tool}
- :aliases {:repl-tool {:exec-fn rebel-readline.tool/repl}
-           :rebel {:main-opts  ["-m" "rebel-readline.main"]}
+ :aliases {:repl-tool {:jvm-opts ["--enable-native-access=ALL-UNNAMED"]
+                       :exec-fn rebel-readline.tool/repl}
+           :rebel {:jvm-opts ["--enable-native-access=ALL-UNNAMED"]
+                   :main-opts  ["-m" "rebel-readline.main"]}
            :dev {:extra-paths ["dev"]
+                 :jvm-opts ["--enable-native-access=ALL-UNNAMED"]
                  :main-opts ["-m" "rebel-dev.main"]}
            ;; build
            :neil {:project {:name com.bhauman/rebel-readline
