@@ -18,9 +18,8 @@
     EndOfFileException
     EOFError
     Widget]
-   [org.jline.reader.impl LineReaderImpl DefaultParser BufferImpl]
+   [org.jline.reader.impl LineReaderImpl]
    [org.jline.terminal Terminal TerminalBuilder Attributes Attributes$LocalFlag Attributes$InputFlag]
-   [org.jline.terminal.impl DumbTerminal]
    [java.io Writer]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
@@ -28,27 +27,12 @@
 (def ^:dynamic *line-reader* nil)
 (def ^:dynamic *buffer* nil)
 
-;; helper for development
-(defn buffer*
-  ([s] (buffer* s nil))
-  ([s c]
-   (doto (BufferImpl.)
-     (.write s)
-     (.cursor (or c (count s))))))
-
-;; helper for development
-#_(defmacro with-buffer [b & body]
-  `(binding [rebel-readline.jline-api/*buffer* ~b
-             rebel-readline.service/*service*
-             (rebel-readline.service.local-clojure/create)]
-     ~@body))
-
 ;; ----------------------------------------
 ;; Create a terminal
 ;; ----------------------------------------
 
 (defn assert-system-terminal [terminal]
-  (when (instance? DumbTerminal terminal)
+  (when (= "dumb" (.getType ^Terminal terminal))
     (throw (ex-info
 "Unable to detect a system Terminal, you must not launch the Rebel readline
 from an intermediate process.

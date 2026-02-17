@@ -28,9 +28,8 @@
     EndOfFileException
     EOFError
     Widget]
-   [org.jline.reader.impl LineReaderImpl DefaultParser BufferImpl]
+   [org.jline.reader.impl LineReaderImpl]
    [org.jline.terminal TerminalBuilder]
-   [org.jline.terminal.impl DumbTerminal]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
     InfoCmp$Capability]))
 
@@ -903,23 +902,19 @@
 
 ;; a parser for jline that respects clojurisms
 (defn make-parser []
-  (doto
-      (proxy [DefaultParser] []
-        (isDelimiterChar [^CharSequence buffer pos]
-          (boolean (#{\space \tab \return \newline  \, \{ \} \( \) \[ \] }
-                    (.charAt buffer pos))))
-        (parse [^String line cursor ^Parser$ParseContext context]
-          (cond
-            (= context Parser$ParseContext/ACCEPT_LINE)
-            (when-not (or (and *accept-fn*
-                               (*accept-fn* line cursor))
-                          (accept-line line cursor))
-              (indent *line-reader* line cursor)
-              (throw (EOFError. -1 -1 "Unbalanced Expression" (str *ns*))))
-            (= context Parser$ParseContext/COMPLETE)
-            (parsed-line (parse-line line cursor))
-            :else (proxy-super parse line cursor context))))
-    (.setQuoteChars (char-array [\"]))))
+  (reify Parser
+    (parse [_ line cursor context]
+      (let [^String line line
+            ^Parser$ParseContext context context]
+        (cond
+          (= context Parser$ParseContext/ACCEPT_LINE)
+          (when-not (or (and *accept-fn*
+                             (*accept-fn* line cursor))
+                        (accept-line line cursor))
+            (indent *line-reader* line cursor)
+            (throw (EOFError. -1 -1 "Unbalanced Expression" (str *ns*))))
+          :else
+          (parsed-line (parse-line line cursor)))))))
 
 ;; ----------------------------------------
 ;; Jline completer for Clojure candidates
