@@ -28,7 +28,7 @@
 
 (defn color [sk]
   (->
-   (get @api/*line-reader* :color-theme)
+   (get @api/*state* :color-theme)
    color-themes
    (get sk AttributedStyle/DEFAULT)))
 
@@ -198,10 +198,10 @@
 (defmethod -prompt :default [_] "")
 
 (defn prompt []
-  (if-let [f (resolve-fn? (:prompt @api/*line-reader*))]
+  (if-let [f (resolve-fn? (:prompt @api/*state*))]
     ;; follow the prompt function convention here
     (with-out-str (f))
-    (-prompt @api/*line-reader*)))
+    (-prompt @api/*state*)))
 
 ;; Initial Themes
 

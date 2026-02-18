@@ -19,7 +19,7 @@
 
 (defn repl-caught [e]
   (println "Internal REPL Error: this shouldn't happen. :repl/*e for stacktrace")
-  (some-> @api/*line-reader* :repl/error (reset! e))
+  (some-> @api/*state* :repl/error (reset! e))
   (clojure.main/repl-caught e))
 
 (defn read-eval-print-fn [{:keys [read printer request-prompt request-exit]}]
@@ -28,16 +28,16 @@
       (let [input (read request-prompt request-exit)]
         (cond
           (#{request-prompt request-exit} input) input
-          (not (clj-service/polling? @api/*line-reader*)) request-exit
+          (not (clj-service/polling? @api/*state*)) request-exit
           :else
           (do
             (api/toggle-input api/*terminal* false)
             (clj-service/eval-code
-             @api/*line-reader*
+             @api/*state*
              input
              (bound-fn*
               (cond->> identity
-                (not (:background-print @api/*line-reader*))
+                (not (:background-print @api/*state*))
                 (clj-service/out-err
                  #(do (print %) (flush))
                  #(do (print %) (flush)))
@@ -47,7 +47,7 @@
                         (api/toggle-input api/*terminal* true)
                         (try
                           ;; we could use a more sophisticated input reader here
-                          (clj-service/send-input @api/*line-reader* (clojure.core/read-line))
+                          (clj-service/send-input @api/*state* (clojure.core/read-line))
                           (catch Throwable e
                             (repl-caught e))
                           (finally
@@ -68,14 +68,14 @@
                           :request-exit request-exit})]
     (try
       (clj-service/tool-eval-code
-       @api/*line-reader*
+       @api/*state*
        (pr-str `(do
                   (require 'clojure.main)
                   (require 'clojure.repl))))
       (catch Throwable e
         (repl-caught e)))
     (loop []
-      (when (and (clj-service/polling? @api/*line-reader*)
+      (when (and (clj-service/polling? @api/*state*)
                  (try
                    (not (identical? (read-eval-print) request-exit))
 	           (catch Throwable e
@@ -87,17 +87,17 @@
   (core/with-line-reader
       (clj-line-reader/create
        (clj-service/create
-        (merge (when api/*line-reader* @api/*line-reader*)
+        (merge (when api/*state* @api/*state*)
                options)))
-    (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
-      (clj-service/register-background-printing api/*line-reader*)
-      (clj-service/start-polling @api/*line-reader*)
+    (binding [*out* (api/safe-terminal-writer (api/line-reader))]
+      (clj-service/register-background-printing api/*state*)
+      (clj-service/start-polling @api/*state*)
       (.handle ^Terminal api/*terminal*
                Terminal$Signal/INT
-               (let [line-reader api/*line-reader*]
+               (let [state api/*state*]
                  (proxy [Terminal$SignalHandler] []
                    (handle [sig]
-                     (clj-service/interrupt @line-reader)))))
+                     (clj-service/interrupt @state)))))
       (println (core/help-message))
       (repl-loop))))
 

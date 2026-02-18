@@ -26,13 +26,13 @@
   This printer respects the current color settings set in the
   service.
 
-  The `rebel-readline.jline-api/*line-reader*` and
+  The `rebel-readline.jline-api/*state*` and
   `rebel-readline.jline-api/*service*` dynamic vars have to be set for
   this to work.
 
   See `rebel-readline.main` for an example of how this function is normally used"
   [x]
-  (binding [*out* (.. api/*line-reader* getTerminal writer)]
+  (binding [*out* (.. (api/line-reader) getTerminal writer)]
     (syntax-highlight-prn-unwrapped x)))
 
 (defn syntax-highlight-prn
@@ -41,7 +41,7 @@
   This printer respects the current color settings set in the
   service.
 
-  The `rebel-readline.jline-api/*line-reader*` and
+  The `rebel-readline.jline-api/*state*` and
   `rebel-readline.jline-api/*service*` dynamic vars have to be set for
   this to work.
 
@@ -91,7 +91,7 @@
           ;; would prefer not to have this here
           final-config (merge clj-line-reader/default-config
                               (tools/user-config ::tools/arg-map config)
-                              (when api/*line-reader* @api/*line-reader*)
+                              (when api/*state* @api/*state*)
                               config)]
       (core/with-line-reader
           (clj-line-reader/create
@@ -104,9 +104,9 @@
         ;; the prompt from corruption by ensuring a newline on flush and
         ;; forcing a prompt to redisplay if the output is printed while
         ;; the readline editor is enguaged
-          (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
+          (binding [*out* (api/safe-terminal-writer (api/line-reader))]
             (when-let [prompt-fn (:prompt opts)]
-              (swap! api/*line-reader* assoc :prompt prompt-fn))
+              (swap! api/*state* assoc :prompt prompt-fn))
             (println (core/help-message))
             (apply
              clj-repl

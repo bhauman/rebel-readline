@@ -49,13 +49,13 @@
   This printer respects the current color settings set in the
   service.
 
-  The `rebel-readline.jline-api/*line-reader*` and
+  The `rebel-readline.jline-api/*state*` and
   `rebel-readline.jline-api/*service*` dynamic vars have to be set for
   this to work.
 
   See `rebel-readline-cljs.main` for an example of how this function is normally used"
   [x]
-  (binding [*out* (.. api/*line-reader* getTerminal writer)]
+  (binding [*out* (.. (api/line-reader) getTerminal writer)]
     (try
       (println (api/->ansi (clj-line-reader/highlight-clj-str (or x ""))))
       (catch java.lang.StackOverflowError e
@@ -67,13 +67,13 @@
     (rebel/with-line-reader
       (clj-line-reader/create
        (cljs-service/create (assoc
-                             (when api/*line-reader*
-                               @api/*line-reader*)
+                             (when api/*state*
+                               @api/*state*)
                              :repl-env repl-env)))
       (when-let [prompt-fn (:prompt opts)]
-        (swap! api/*line-reader* assoc :prompt prompt-fn))
+        (swap! api/*state* assoc :prompt prompt-fn))
       (println (rebel/help-message))
-      (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
+      (binding [*out* (api/safe-terminal-writer (api/line-reader))]
         (cljs-repl*
          repl-env
          (merge

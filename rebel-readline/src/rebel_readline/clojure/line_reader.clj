@@ -76,7 +76,7 @@
 (defmethod -current-ns :default [_])
 
 (defn current-ns []
-  (-current-ns @*line-reader*))
+  (-current-ns @*state*))
 
 ;; Prompt
 ;; ----------------------------------------------
@@ -107,8 +107,8 @@
 
 (defn default-accept-line [line-str cursor]
   (or
-   (and *line-reader*
-        (= "vicmd" (.getKeyMap *line-reader*)))
+   (and *state*
+        (= "vicmd" (.getKeyMap (line-reader))))
    (let [cursor (min (count line-str) cursor)
          x (subs line-str 0 cursor)
          tokens (tokenize/tag-sexp-traversal x)]
@@ -118,7 +118,7 @@
   (default-accept-line line-str cursor))
 
 (defn accept-line [line-str cursor]
-  (-accept-line @*line-reader* line-str cursor))
+  (-accept-line @*state* line-str cursor))
 
 ;; Completion
 ;; ----------------------------------------------
@@ -145,7 +145,7 @@
   ([word]
    (completions word nil))
   ([word options]
-   (-complete @*line-reader* word options)))
+   (-complete @*state* word options)))
 
 ;; ResolveMeta
 ;; ----------------------------------------------
@@ -168,7 +168,7 @@
 (defmethod -resolve-meta :default [service _])
 
 (defn resolve-meta [wrd]
-  (-resolve-meta @*line-reader* wrd))
+  (-resolve-meta @*state* wrd))
 
 ;; ----------------------------------------------
 ;; multi-methods that have to be defined or they
@@ -200,7 +200,7 @@
 (defmethod -source :default [service _])
 
 (defn source [wrd]
-  (-source @*line-reader* wrd))
+  (-source @*state* wrd))
 
 ;; Apropos
 ;; ----------------------------------------------
@@ -214,7 +214,7 @@
 (defmethod -apropos :default [service _])
 
 (defn apropos [wrd]
-  (-apropos @*line-reader* wrd))
+  (-apropos @*state* wrd))
 
 ;; Doc
 ;; ----------------------------------------------
@@ -234,7 +234,7 @@
 (defmethod -doc :default [service _])
 
 (defn doc [wrd]
-  (-doc @*line-reader* wrd))
+  (-doc @*state* wrd))
 
 ;; ReadString
 ;; ----------------------------------------------
@@ -245,20 +245,20 @@
   key `:form`
 
   Example:
-  (-read-string @api/*line-reader* \"1\") => {:form 1}
+  (-read-string @api/*state* \"1\") => {:form 1}
 
   If an exception is thrown this will return a throwable map under
   the key `:exception`
 
   Example:
-  (-read-string @api/*line-reader* \"#asdfasdfas\") => {:exception {:cause ...}}"
+  (-read-string @api/*state* \"#asdfasdfas\") => {:exception {:cause ...}}"
   service-dispatch)
 
 (defmethod -read-string :default [service _]
   (tools/not-implemented! service "-read-string"))
 
 (defn read-form [form-str]
-  (-read-string @*line-reader* form-str))
+  (-read-string @*state* form-str))
 
 ;; Eval
 ;; ----------------------------------------------
@@ -276,13 +276,13 @@
   of the form.
 
   Example:
-  (-eval @api/*line-reader* 1) => {:result 1 :out \"\" :err \"\"}
+  (-eval @api/*state* 1) => {:result 1 :out \"\" :err \"\"}
 
   If an exception is thrown this will return a throwable map under
   the key `:exception`
 
   Example:
-  (-eval @api/*line-reader* '(defn)) => {:exception {:cause ...}}
+  (-eval @api/*state* '(defn)) => {:exception {:cause ...}}
 
   An important thing to remember abou this eval is that it is used
   internally by the line-reader to implement various
@@ -293,7 +293,7 @@
   (tools/not-implemented! service "-eval"))
 
 (defn evaluate [form]
-  (-eval @*line-reader* form))
+  (-eval @*state* form))
 
 ;; EvalString
 ;; ----------------------------------------------
@@ -316,7 +316,7 @@
       {:exception (Throwable->map e)})))
 
 (defn evaluate-str [form-str]
-  (-eval-str @*line-reader* form-str))
+  (-eval-str @*state* form-str))
 
 ;; ----------------------------------------------------
 ;; ----------------------------------------------------
@@ -354,7 +354,7 @@
          columns     (:cols (terminal-size))
          at-str-lines (split-into-wrapped-lines at-str columns)
          rows-needed (count at-str-lines)
-         menu-keys   (get (.getKeyMaps *line-reader*)
+         menu-keys   (get (.getKeyMaps (line-reader))
                           LineReader/MENU)]
      (if (< (+ rows-needed
                (lines-needed (:header options) columns)
@@ -386,7 +386,8 @@
                                    (window-lines at-str-lines pos window-rows)
                                    footer])))
                (redisplay)
-               (let [o (.readBinding *line-reader* (.getKeys ^LineReader *line-reader*) menu-keys)
+               (let [lr (line-reader)
+                     o (.readBinding lr (.getKeys ^LineReader lr) menu-keys)
                      binding-name (.name ^org.jline.reader.Reference o)]
                  (condp contains? binding-name
                    #{LineReader/UP_LINE_OR_HISTORY
@@ -404,9 +405,9 @@
                      ;; clear the post display
                      (display-message "  ")
                      ;; pushback binding
-                     (when-let [s (.getLastBinding *line-reader*)]
+                     (when-let [s (.getLastBinding lr)]
                        (when (not= "q" s)
-                         (.runMacro *line-reader* s)))))))
+                         (.runMacro lr s)))))))
              ;; window is too small do nothing
              nil)))))))
 
@@ -455,7 +456,7 @@
 
 (def indent-line-widget
   (create-widget
-   (when (:indent @*line-reader*)
+   (when (:indent @*state*)
        (let [curs (cursor)
              s (buffer-as-string) ;; up-to-cursor better here?
              begin-of-line-pos   (sexp/search-for-line-start s (dec curs))
@@ -537,7 +538,7 @@
     ;; hook here
     ;; if prev-char is a space and the char before that is part
     ;; of a word, and that word is a fn call
-    (when (:eldoc @*line-reader*)
+    (when (:eldoc @*state*)
       (when-let [message (display-argument-help-message)]
         (reset! ttd-atom 1)
         (display-message message)))))
@@ -765,20 +766,19 @@
 ;; Base Widget registration and binding helpers
 ;; --------------------------------------------
 
-(defn add-all-widgets [line-reader]
-  (binding [*line-reader* line-reader]
-    (register-widget "clojure-indent-line"        indent-line-widget)
-    (register-widget "clojure-indent-or-complete" indent-or-complete-widget)
+(defn add-all-widgets []
+  (register-widget "clojure-indent-line"        indent-line-widget)
+  (register-widget "clojure-indent-or-complete" indent-or-complete-widget)
 
-    (register-widget "clojure-doc-at-point"       document-at-point-widget)
-    (register-widget "clojure-source-at-point"    source-at-point-widget)
-    (register-widget "clojure-apropos-at-point"   apropos-at-point-widget)
-    (register-widget "clojure-eval-at-point"      eval-at-point-widget)
+  (register-widget "clojure-doc-at-point"       document-at-point-widget)
+  (register-widget "clojure-source-at-point"    source-at-point-widget)
+  (register-widget "clojure-apropos-at-point"   apropos-at-point-widget)
+  (register-widget "clojure-eval-at-point"      eval-at-point-widget)
 
-    (register-widget "clojure-force-accept-line"  always-accept-line)
+  (register-widget "clojure-force-accept-line"  always-accept-line)
 
-    (register-widget "end-of-buffer"              end-of-buffer)
-    (register-widget "beginning-of-buffer"        beginning-of-buffer)))
+  (register-widget "end-of-buffer"              end-of-buffer)
+  (register-widget "beginning-of-buffer"        beginning-of-buffer))
 
 (defn bind-indents [km-name]
   (doto km-name
@@ -802,19 +802,16 @@
     (key-binding (str \\ \e) "clojure-eval-at-point")))
 
 (defn clojure-emacs-mode [km-name]
-  (doto km-name
-    bind-indents
-    bind-clojure-widgets
-    (key-binding
-     (KeyMap/key
-      (.getTerminal *line-reader*)
-      InfoCmp$Capability/key_end)
-     "end-of-buffer")
-    (key-binding
-     (KeyMap/key
-      (.getTerminal *line-reader*)
-      InfoCmp$Capability/key_home)
-     "beginning-of-buffer")))
+  (let [terminal (.getTerminal (line-reader))]
+    (doto km-name
+      bind-indents
+      bind-clojure-widgets
+      (key-binding
+       (KeyMap/key terminal InfoCmp$Capability/key_end)
+       "end-of-buffer")
+      (key-binding
+       (KeyMap/key terminal InfoCmp$Capability/key_home)
+       "beginning-of-buffer"))))
 
 (defn clojure-vi-insert-mode [km-name]
   (doto km-name
@@ -827,15 +824,23 @@
     bind-clojure-widgets
     bind-clojure-widgets-vi-cmd))
 
-(defn add-widgets-and-bindings [line-reader]
-  (binding [*line-reader* line-reader]
+(defn add-widgets-and-bindings []
+  (let [lr (line-reader)]
     (clojure-emacs-mode :emacs)
     (clojure-vi-insert-mode :viins)
     (clojure-vi-cmd-mode :vicmd)
-    (swap! line-reader #(update % :self-insert-hooks (fnil conj #{}) eldoc-self-insert-hook))
-    (doto line-reader
-      (.setVariable LineReader/WORDCHARS "")
-      add-all-widgets)))
+    (swap! *state* update :self-insert-hooks (fnil conj #{}) eldoc-self-insert-hook)
+    (.setVariable lr LineReader/WORDCHARS "")
+    (add-all-widgets)
+    ;; wrap self-insert widget to run hooks before each keystroke
+    (let [widgets (.getWidgets lr)
+          orig (.get widgets LineReader/SELF_INSERT)]
+      (.put widgets "self-insert"
+            (reify Widget
+              (apply [_]
+                (when-let [hooks (not-empty (:self-insert-hooks @*state*))]
+                  (widget-exec #(doseq [hook hooks] (hook))))
+                (.apply orig)))))))
 
 ;; ----------------------------------------------------
 ;; ----------------------------------------------------
@@ -911,7 +916,7 @@
           (when-not (or (and *accept-fn*
                              (*accept-fn* line cursor))
                         (accept-line line cursor))
-            (indent *line-reader* line cursor)
+            (indent (line-reader) line cursor)
             (throw (EOFError. -1 -1 "Unbalanced Expression" (str *ns*))))
           :else
           (parsed-line (parse-line line cursor)))))))
@@ -993,7 +998,7 @@
     (complete [^LineReader reader ^ParsedLine line ^java.util.List candidates]
       (let [word (.word line)]
         (when (and
-               (:completion @*line-reader*)
+               (:completion @*state*)
                (not (string/blank? word))
                (pos? (count word)))
           (let [options (let [ns' (current-ns)
@@ -1014,14 +1019,14 @@
 ;; Jline highlighter for Clojure code
 ;; ----------------------------------------
 
-(defn clojure-highlighter []
+(defn clojure-highlighter [state]
   (proxy [Highlighter] []
     (highlight [^LineReader reader ^String buffer]
       ;; this gets called on a different thread
       ;; by the window resize interrupt handler
-      ;; so add this binding here
-      (binding [*line-reader* reader]
-        (if (:highlight @reader)
+      ;; so bind *state* here from the captured atom
+      (binding [*state* state]
+        (if (:highlight @state)
           (.toAttributedString (highlight-clj-str buffer))
           (AttributedString. buffer))))))
 
@@ -1032,24 +1037,24 @@
 (defn create* [terminal service & [{:keys [completer highlighter parser]}]]
   {:pre [(instance? org.jline.terminal.Terminal terminal)
          (map? service)]}
-  (doto (create-line-reader terminal "Clojure Readline" service)
-    (.setCompleter (or completer (clojure-completer)))
-    (.setHighlighter (or highlighter (clojure-highlighter )))
-    (.setParser (or parser (make-parser)))
-    ;; make sure that we don't have to double escape things
-    (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
-        ;; never insert tabs
-    (.unsetOpt LineReader$Option/INSERT_TAB)
-    (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
-    ;; history
-    (.setVariable LineReader/HISTORY_FILE (str (io/file ".rebel_readline_history")))
-    (.setOpt LineReader$Option/HISTORY_REDUCE_BLANKS)
-    (.setOpt LineReader$Option/HISTORY_IGNORE_DUPS)
-    (.setOpt LineReader$Option/HISTORY_INCREMENTAL)
-    add-widgets-and-bindings
-    (#(binding [*line-reader* %]
-        (apply-key-bindings!)
-        (set-main-key-map! (get service :key-map :emacs))))))
+  (let [reader (create-line-reader terminal "Clojure Readline")
+        state (atom (assoc service :line-reader reader))]
+    (doto reader
+      (.setCompleter (or completer (clojure-completer)))
+      (.setHighlighter (or highlighter (clojure-highlighter state)))
+      (.setParser (or parser (make-parser)))
+      (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
+      (.unsetOpt LineReader$Option/INSERT_TAB)
+      (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
+      (.setVariable LineReader/HISTORY_FILE (str (io/file ".rebel_readline_history")))
+      (.setOpt LineReader$Option/HISTORY_REDUCE_BLANKS)
+      (.setOpt LineReader$Option/HISTORY_IGNORE_DUPS)
+      (.setOpt LineReader$Option/HISTORY_INCREMENTAL))
+    (binding [*state* state]
+      (add-widgets-and-bindings)
+      (apply-key-bindings!)
+      (set-main-key-map! (get service :key-map :emacs)))
+    state))
 
 (defn create
   "Creates a line reader takes a service as an argument.

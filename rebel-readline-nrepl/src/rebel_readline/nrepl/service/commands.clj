@@ -6,7 +6,7 @@
   "Toggle wether to continue the printing the output from backgrounded threads")
 
 (defmethod command :repl/toggle-background-print [_]
-  (swap! api/*line-reader* update :background-print #(not %))
-  (if (:background-print @api/*line-reader*)
+  (swap! api/*state* update :background-print #(not %))
+  (if (:background-print @api/*state*)
     (println "Background printing on!")
     (println "Background printing off!")))

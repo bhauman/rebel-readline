@@ -253,8 +253,8 @@
       (.setDaemon true)
       (.start))))
 
-(defn register-background-printing [line-reader]
-  (let [{:keys [::state background-print] :as service} @line-reader]
+(defn register-background-printing [state]
+  (let [{:keys [::state background-print] :as service} @state]
     (when background-print
       (add-callback!
        service
