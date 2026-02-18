@@ -5,6 +5,7 @@
   (:import
    [org.jline.keymap KeyMap]
    [org.jline.reader
+    Buffer
     Highlighter
     Completer
     Candidate
@@ -92,8 +93,8 @@ If you are using `lein` you may need to use `lein trampoline`."
                    (recur (.getSuperclass clazz))))))))
 
 (defn supplier [f]
-  (proxy [java.util.function.Supplier] []
-    (get [] (f))))
+  (reify java.util.function.Supplier
+    (get [_] (f))))
 
 ;; --------------------------------------
 ;; Key maps

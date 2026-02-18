@@ -840,7 +840,7 @@
               (apply [_]
                 (when-let [hooks (not-empty (:self-insert-hooks @*state*))]
                   (widget-exec #(doseq [hook hooks] (hook))))
-                (.apply orig)))))))
+                (.apply ^Widget orig)))))))
 
 ;; ----------------------------------------------------
 ;; ----------------------------------------------------

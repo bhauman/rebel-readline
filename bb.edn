@@ -1,1 +1,6 @@
-{:deps {com.bhauman/rebel-readline {:local/root "rebel-readline"}}}
+{:deps {com.bhauman/rebel-readline {:local/root "rebel-readline"
+                                    :deps/manifest :deps
+                                    :exclusions [#_#_#_#_org.jline/jline-reader
+                                                 org.jline/jline-terminal
+                                                 org.jline/jline-terminal-jni
+                                                 org.jline/jline-terminal-ffm]}}}
