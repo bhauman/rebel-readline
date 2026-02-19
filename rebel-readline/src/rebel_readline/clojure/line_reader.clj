@@ -28,7 +28,6 @@
     EndOfFileException
     EOFError
     Widget]
-   [org.jline.reader.impl LineReaderImpl]
    [org.jline.terminal TerminalBuilder]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle
     InfoCmp$Capability]))
@@ -885,7 +884,7 @@
      :cursor cursor}))
 
 (defn parsed-line [{:keys [word-index word word-cursor words tokens line cursor] :as parse-data}]
-  (proxy [ParsedLine clojure.lang.IMeta] []
+  (proxy [ParsedLine #_clojure.lang.IMeta] []
     (word [] word)
     (wordIndex [] word-index)
     (wordCursor [] word-cursor)

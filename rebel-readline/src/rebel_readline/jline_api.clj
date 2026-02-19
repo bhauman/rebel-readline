@@ -19,7 +19,6 @@
     EndOfFileException
     EOFError
     Widget]
-   [org.jline.reader.impl LineReaderImpl]
    [org.jline.terminal Terminal TerminalBuilder Attributes Attributes$LocalFlag Attributes$InputFlag]
    [java.io Writer]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
@@ -278,7 +277,10 @@ If you are using `lein` you may need to use `lein trampoline`."
   (.callWidget (line-reader) widget-name))
 
 (defn create-line-reader [terminal app-name]
-  (LineReaderImpl. terminal (or app-name "Rebel Readline") nil))
+  (-> (LineReaderBuilder/builder)
+      (.terminal terminal)
+      (.appName (or app-name "Rebel Readline"))
+      (.build)))
 
 ;; taken from Clojure 1.10 core.print
 (defn- ^java.io.PrintWriter PrintWriter-on*
