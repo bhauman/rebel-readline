@@ -28,6 +28,35 @@ Launching the terminal readline process from another Java process will not work.
 
 It's best to not launch this readline behind other readline tools like `rlwrap`.
 
+## Java 22+ Native Access Warning
+
+On Java 22 and later, you may see warnings like:
+
+```
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.jline.nativ.JLineNativeLoader
+```
+
+This is caused by JLine's native terminal access. To suppress the warning, add the following JVM option:
+
+```
+--enable-native-access=ALL-UNNAMED
+```
+
+For example, with the Clojure CLI:
+
+```shell
+clojure -J--enable-native-access=ALL-UNNAMED -M:rebel
+```
+
+Or in your `deps.edn` alias:
+
+```clojure
+:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.7"}}
+        :main-opts  ["-m" "rebel-readline.main"]
+        :jvm-opts   ["--enable-native-access=ALL-UNNAMED"]}
+```
+
 ## Quick try
 
 #### Clojure tools
@@ -37,7 +66,7 @@ If you want to try this really quickly
 and then invoke this:
 
 ```shell
-clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.4\"}}}" -m rebel-readline.main
+clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.7\"}}}" -m rebel-readline.main
 ```
 
 That should start a Clojure REPL that takes its input from the Rebel readline editor.
@@ -50,7 +79,7 @@ Alternatively you can specify an alias in your `$HOME/.clojure/deps.edn`
 ```clojure
 {
  ...
- :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
+ :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.7"}}
                    :main-opts  ["-m" "rebel-readline.main"]}}
 }
 ```
@@ -63,7 +92,7 @@ $ clojure -A:rebel
 
 #### Leiningen
 
-Add `[com.bhauman/rebel-readline "0.1.4"]` to the dependencies in your
+Add `[com.bhauman/rebel-readline "0.1.7"]` to the dependencies in your
 `project.clj` then start a REPL like this:
 
 ```shell
@@ -75,7 +104,7 @@ Alternatively, you can add rebel-readline globally to `$HOME/.lein/profiles.clj`
 ```clojure
 {
  ...
- :user {:dependencies [[com.bhauman/rebel-readline "0.1.4"]]}
+ :user {:dependencies [[com.bhauman/rebel-readline "0.1.7"]]}
 }
 ```
 

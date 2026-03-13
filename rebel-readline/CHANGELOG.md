@@ -1,3 +1,12 @@
+# 0.1.7 JLine 3.30.0 upgrade
+
+* Upgraded JLine from 3.21.0 to 3.30.0
+* Fixed compatibility with JLine 3.30.0 ParsedLine wrapping changes
+* Updated compliment to 0.6.0
+* Updated cljfmt to 0.13.0
+
+**Note:** On Java 22+ you may see native access warnings from JLine. Add `--enable-native-access=ALL-UNNAMED` to your JVM options to suppress them. See the README for details.
+
 # 0.1.5 Introducing nREPL support
 
 The `rebel-readline-nrepl` package offers nREPL support.
