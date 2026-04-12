@@ -130,6 +130,7 @@ Options:
       --no-redirect-output                         Disable output redirection
   -b, --key-bindings BINDINGS                      Specify custom key bindings
   -c, --config CONFIG                              Path to a config file
+  -i, --init INIT                                  Path to an initialization script (Clojure source)
 ```
 
 ## Installing with Leiningen

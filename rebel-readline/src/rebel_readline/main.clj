@@ -49,6 +49,10 @@
     :validate [map? "Must be a map"]]
    ["-c" "--config CONFIG" "Path to a config file"
     :parse-fn (comp str tools/absolutize-file)
+    :validate [#(.exists (io/file %)) "Must be a valid path to a readable file"]]
+   ["-i" "--init SCRIPT" "Path to an init script (a Clojure source file)"
+    :id :init-script
+    :parse-fn (comp str tools/absolutize-file)
     :validate [#(.exists (io/file %)) "Must be a valid path to a readable file"]]])
 
 (defn usage [options-summary]
