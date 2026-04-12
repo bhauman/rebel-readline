@@ -85,6 +85,12 @@
    core/has-remaining?
    clojure.main/repl-read))
 
+;; Define Clojure-version-specific load-init-script fns, in order to support
+;; clojure.repl.deps/add-libs on Clojure 1.12+
+(if (ns-resolve 'clojure.core '*repl*)
+  (load-file "init_script/post_1.12.clj")
+  (load-file "init_script/pre_1.12.clj"))
+
 (let [clj-repl clojure.main/repl]
   (defn repl* [{:keys [:rebel-readline/config] :as opts}]
     (let [opts (dissoc opts :rebel-readline/config)
@@ -107,6 +113,8 @@
           (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
             (when-let [prompt-fn (:prompt opts)]
               (swap! api/*line-reader* assoc :prompt prompt-fn))
+            (when-let [init-script (:init-script final-config)]
+              (load-init-script init-script))
             (println (core/help-message))
             (apply
              clj-repl
@@ -116,9 +124,7 @@
                   :read (create-repl-read)}
                  (merge opts {:prompt (fn [])})
                  seq
-                 flatten))))
-      (when (:init opts)
-        (load-file (:init opts))))))
+                 flatten)))))))
 
 (defn repl [& opts]
   (repl* (apply hash-map opts)))
