@@ -116,7 +116,9 @@
                   :read (create-repl-read)}
                  (merge opts {:prompt (fn [])})
                  seq
-                 flatten)))))))
+                 flatten))))
+      (when (:init opts)
+        (load-file (:init opts))))))
 
 (defn repl [& opts]
   (repl* (apply hash-map opts)))

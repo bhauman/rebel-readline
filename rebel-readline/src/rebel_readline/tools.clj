@@ -122,6 +122,7 @@
 #_(absolutize-file "~/workspace/rebel-readline/rebel-readline/./src/../README.md")
 
 (s/def ::config (s/and string? file-exists?))
+(s/def ::init   (s/and string? file-exists?))
 (s/def ::arg-map (s/keys :opt-un [::key-map
                                   ::color-theme
                                   ::highlight
@@ -129,7 +130,8 @@
                                   ::eldoc
                                   ::indent
                                   ::redirect-output
-                                  ::key-bindings]))
+                                  ::key-bindings
+                                  ::init]))
 
 (defn explain-config-header [config]
   (println "Arguments didn't pass spec")
