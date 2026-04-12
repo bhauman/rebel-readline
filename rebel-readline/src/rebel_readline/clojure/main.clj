@@ -88,8 +88,8 @@
 ;; Define Clojure-version-specific load-init-script fns, in order to support
 ;; clojure.repl.deps/add-libs on Clojure 1.12+
 (if (ns-resolve 'clojure.core '*repl*)
-  (load-file "init_script/post_1.12.clj")
-  (load-file "init_script/pre_1.12.clj"))
+  (load "init_script/post_1.12")
+  (load "init_script/pre_1.12"))
 
 (let [clj-repl clojure.main/repl]
   (defn repl* [{:keys [:rebel-readline/config] :as opts}]
