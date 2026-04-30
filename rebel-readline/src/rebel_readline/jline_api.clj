@@ -5,6 +5,7 @@
   (:import
    [org.jline.keymap KeyMap]
    [org.jline.reader
+    Buffer
     Highlighter
     Completer
     Candidate
@@ -18,37 +19,22 @@
     EndOfFileException
     EOFError
     Widget]
-   [org.jline.reader.impl LineReaderImpl DefaultParser BufferImpl]
    [org.jline.terminal Terminal TerminalBuilder Attributes Attributes$LocalFlag Attributes$InputFlag]
-   [org.jline.terminal.impl DumbTerminal]
    [java.io Writer]
    [org.jline.utils AttributedStringBuilder AttributedString AttributedStyle]))
 
 (def ^:dynamic *terminal* nil)
-(def ^:dynamic *line-reader* nil)
+(def ^:dynamic *state* nil)
 (def ^:dynamic *buffer* nil)
 
-;; helper for development
-(defn buffer*
-  ([s] (buffer* s nil))
-  ([s c]
-   (doto (BufferImpl.)
-     (.write s)
-     (.cursor (or c (count s))))))
-
-;; helper for development
-#_(defmacro with-buffer [b & body]
-  `(binding [rebel-readline.jline-api/*buffer* ~b
-             rebel-readline.service/*service*
-             (rebel-readline.service.local-clojure/create)]
-     ~@body))
+(defn line-reader [] (:line-reader @*state*))
 
 ;; ----------------------------------------
 ;; Create a terminal
 ;; ----------------------------------------
 
 (defn assert-system-terminal [terminal]
-  (when (instance? DumbTerminal terminal)
+  (when (= "dumb" (.getType ^Terminal terminal))
     (throw (ex-info
 "Unable to detect a system Terminal, you must not launch the Rebel readline
 from an intermediate process.
@@ -75,15 +61,14 @@ If you are using `lein` you may need to use `lein trampoline`."
 
 (declare display-message)
 
-(defn widget-exec [line-reader thunk]
-  (binding [*line-reader* line-reader
-            *buffer* (.getBuffer line-reader)]
+(defn widget-exec [thunk]
+  (binding [*buffer* (.getBuffer (line-reader))]
     (try
       (thunk)
       (catch clojure.lang.ExceptionInfo e
         (if-let [message (.getMessage e)]
           (do
-            (some-> @line-reader :repl/error (reset! e))
+            (some-> @*state* :repl/error (reset! e))
             (display-message
              (AttributedString.
               (str "Internal REPL Error: this shouldn't happen. :repl/*e for stacktrace\n"
@@ -93,24 +78,22 @@ If you are using `lein` you may need to use `lein trampoline`."
           (throw e))))))
 
 (defmacro create-widget [& body]
-  `(fn [line-reader#]
-     (reify Widget
-       (apply [_#]
-         (widget-exec line-reader# (fn [] ~@body))))))
+  `(reify Widget
+     (apply [_#]
+       (widget-exec (fn [] ~@body)))))
 
-;; very naive
 (def get-accessible-field
   (memoize (fn [obj field-name]
-             (or (when-let [field (-> obj
-                                      .getClass
-                                      .getSuperclass
-                                      (.getDeclaredField field-name))]
-                   (doto field
-                     (.setAccessible true)))))))
+             (loop [clazz (.getClass obj)]
+               (when clazz
+                 (if-let [field (try (.getDeclaredField clazz field-name)
+                                     (catch Exception _ nil))]
+                   (doto field (.setAccessible true))
+                   (recur (.getSuperclass clazz))))))))
 
 (defn supplier [f]
-  (proxy [java.util.function.Supplier] []
-    (get [] (f))))
+  (reify java.util.function.Supplier
+    (get [_] (f))))
 
 ;; --------------------------------------
 ;; Key maps
@@ -140,7 +123,7 @@ If you are using `lein` you may need to use `lein trampoline`."
               "do-lowercase-version"} v))))))
 
 (defn key-maps []
-  (-> *line-reader* (.getKeyMaps)))
+  (-> (line-reader) (.getKeyMaps)))
 
 (defn key-map [key-map-name]
   (get (key-maps) (name key-map-name)))
@@ -164,14 +147,14 @@ If you are using `lein` you may need to use `lein trampoline`."
   (key-map-name (key-map "main")))
 
 (defn orig-key-map-clone [key-map-name]
-  (get (.defaultKeyMaps *line-reader*) key-map-name))
+  (get (.defaultKeyMaps (line-reader)) key-map-name))
 
 (defn bind-key [key-map widget-id key-str]
   (when key-str
     (.bind key-map (org.jline.reader.Reference. widget-id) key-str)))
 
 (defn key-binding [key-map-name key-str widget-name]
-  (swap! *line-reader* update-in
+  (swap! *state* update-in
          [::key-bindings (keyword key-map-name)]
          #((fnil conj []) % [key-str widget-name])))
 
@@ -185,19 +168,18 @@ If you are using `lein` you may need to use `lein trampoline`."
        (set-key-map! (name key-map-name) km)))))
 
 (defn apply-key-bindings! []
-  (when-let [kbs (not-empty (::key-bindings @*line-reader*))]
+  (when-let [kbs (not-empty (::key-bindings @*state*))]
     (apply-key-bindings kbs))
   ;; user level key bindings applied after
-  (when-let [kbs (not-empty (:key-bindings @*line-reader*))]
-    (apply-key-bindings kbs :look-up-keymap-fn key-map))
-  *line-reader*)
+  (when-let [kbs (not-empty (:key-bindings @*state*))]
+    (apply-key-bindings kbs :look-up-keymap-fn key-map)))
 
 ;; --------------------------------------
 ;; contextual ANSI
 ;; --------------------------------------
 
 (defn ->ansi [at-str]
-  (if-let [t (and *line-reader* (.getTerminal *line-reader*))]
+  (if-let [t (and *state* (.getTerminal (line-reader)))]
     (astring/->ansi at-str t)
     (astring/->ansi at-str nil)))
 
@@ -254,22 +236,22 @@ If you are using `lein` you may need to use `lein trampoline`."
 ;; --------------------------------------
 
 (defn register-widget [widget-id widget]
-  (doto *line-reader*
-    (-> (.getWidgets)
-        (.put widget-id (if (fn? widget) (widget *line-reader*) widget)))))
+  (-> (line-reader) (.getWidgets) (.put widget-id widget)))
 
 (defn terminal-size []
-  (let [size-field (get-accessible-field *line-reader* "size")]
-    (when-let [sz (.get size-field *line-reader*)]
+  (let [lr (line-reader)
+        size-field (get-accessible-field lr "size")]
+    (when-let [sz (.get size-field lr)]
       {:rows (.getRows sz)
        :cols (.getColumns sz)})))
 
 (defn redisplay []
-  (locking (.writer (.getTerminal *line-reader*))
-    (.redisplay *line-reader*)))
+  (let [lr (line-reader)]
+    (locking (.writer (.getTerminal lr))
+      (.redisplay lr))))
 
 (defn block-redisplay-millis [time-ms]
-  (let [writer (.writer (.getTerminal *line-reader*))]
+  (let [writer (.writer (.getTerminal (line-reader)))]
     (.start
      (Thread.
       (fn []
@@ -278,10 +260,10 @@ If you are using `lein` you may need to use `lein trampoline`."
 
 (defn display-message
   ([message]
-   (display-message *line-reader* message))
-  ([line-reader message]
-   (let [post-field (get-accessible-field line-reader "post")]
-     (.set post-field line-reader (supplier (fn [] (AttributedString. message)))))))
+   (display-message (line-reader) message))
+  ([lr message]
+   (let [post-field (get-accessible-field lr "post")]
+     (.set post-field lr (supplier (fn [] (AttributedString. message)))))))
 
 (defn rows-available-for-post-display []
   (let [rows (:rows (terminal-size))
@@ -292,24 +274,13 @@ If you are using `lein` you may need to use `lein trampoline`."
   (.isReading line-reader))
 
 (defn call-widget [widget-name]
-  (.callWidget *line-reader* widget-name))
+  (.callWidget (line-reader) widget-name))
 
-(defn create-line-reader [terminal app-name service]
-  (let [service-variable-name (str ::service)]
-    (proxy [LineReaderImpl clojure.lang.IDeref clojure.lang.IAtom]
-        [terminal
-         (or app-name "Rebel Readline")
-         (java.util.HashMap. {service-variable-name (atom (or service {}))})]
-      (selfInsert []
-        (when-let [hooks (not-empty (:self-insert-hooks @this))]
-          (widget-exec this #(doseq [hook hooks] (hook))))
-        (proxy-super selfInsert))
-      (deref []
-        (deref (.getVariable this service-variable-name)))
-      (swap  [f & args]
-        (apply swap! (.getVariable this service-variable-name) f args))
-      (reset [a]
-        (reset! (.getVariable this service-variable-name) a)))))
+(defn create-line-reader [terminal app-name]
+  (-> (LineReaderBuilder/builder)
+      (.terminal terminal)
+      (.appName (or app-name "Rebel Readline"))
+      (.build)))
 
 ;; taken from Clojure 1.10 core.print
 (defn- ^java.io.PrintWriter PrintWriter-on*
@@ -351,4 +322,3 @@ If you are using `lein` you may need to use `lein trampoline`."
              (.flush))
            (.setLength buffer 0)))))
    nil))
-

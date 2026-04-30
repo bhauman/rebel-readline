@@ -51,10 +51,8 @@
      ~@body))
 
 (defmacro with-line-reader
-  "This macro take a line-reader and binds it.  It is one of the
-  primary ways to utilize this library. You can think of the
-  rebel-readline.jline-api/*line-reader* binding as an alternative in
-  source that the rebel-readline.core/read-line function reads from.
+  "This macro takes a state atom and binds it. It is one of the
+  primary ways to utilize this library.
 
   Example:
   (require '[rebel-readline.core :as rebel])
@@ -62,17 +60,14 @@
   (rebel/with-line-reader
     (rebel-readline.clojure.line-reader/create
       (rebel-readline.clojure.service.local/create))
-    ;; optionally bind the output directly to the jline terminal
-    ;; in such a way so that output won't corrupt the terminal
-    ;; this is optional
-    (binding [*out* (rebel-readline.jline-api/safe-terminal-writer)]
+    (binding [*out* (rebel-readline.jline-api/safe-terminal-writer
+                      (rebel-readline.jline-api/line-reader))]
       (clojure.main/repl
-        ;; this will create a fn that reads from the *line-reader*
         :read (rebel-readline.clojure.main/create-repl-read)
        :prompt (fn []))))"
-  [line-reader & body]
+  [state & body]
   `(ensure-terminal
-    (binding [rebel-readline.jline-api/*line-reader* ~line-reader]
+    (binding [rebel-readline.jline-api/*state* ~state]
       ~@body)))
 
 (defn help-message
@@ -103,9 +98,10 @@
        command-executed :command-executed
        :or {prompt nil buffer nil mask nil command-executed ""}}]
   
-  (let [redirect-output? (:redirect-output @api/*line-reader*)
+  (let [lr (api/line-reader)
+        redirect-output? (:redirect-output @api/*state*)
         save-out (volatile! *out*)
-        redirect-print-writer (api/safe-terminal-writer api/*line-reader*)]
+        redirect-print-writer (api/safe-terminal-writer lr)]
     (when redirect-output?
       (alter-var-root
        #'*out*
@@ -118,7 +114,7 @@
         ;; but we are blocking concurrent redisplays while the
         ;; readline prompt is initially drawn
         (api/block-redisplay-millis 100)
-        (let [res' (.readLine api/*line-reader* (or prompt (tools/prompt)) mask buffer)]
+        (let [res' (.readLine lr (or prompt (tools/prompt)) mask buffer)]
           (if-not (commands/handle-command res')
             res'
             command-executed)))
@@ -129,7 +125,7 @@
 
 (defn read-line
   "Reads a line from the currently bound
-  rebel-readline.jline-api/*line-reader*. If you supply the optional
+  rebel-readline.jline-api/*state*. If you supply the optional
   `command-executed` sentinal value, it will be returned when a repl
   command is executed, otherwise a blank string will be returned when
   a repl command is executed.
@@ -258,4 +254,6 @@
        ~@body)))
 
 (defn basic-line-reader [& opts]
-  (api/create-line-reader api/*terminal* nil (apply hash-map opts)))
+  (let [service (apply hash-map opts)
+        reader (api/create-line-reader api/*terminal* nil)]
+    (atom (assoc service :line-reader reader))))

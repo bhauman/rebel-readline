@@ -20,8 +20,8 @@
   "Toggle the automatic indenting of Clojure code on and off.")
 
 (defmethod command :repl/toggle-indent [_]
-  (swap! api/*line-reader* update :indent #(not %))
-  (if (:indent @api/*line-reader*)
+  (swap! api/*state* update :indent #(not %))
+  (if (:indent @api/*state*)
     (println "Indenting on!")
     (println "Indenting off!")))
 
@@ -30,8 +30,8 @@
 `:repl/toggle-color` if you want to turn color off completely.")
 
 (defmethod command :repl/toggle-highlight [_]
-  (swap! api/*line-reader* update :highlight #(not %))
-  (if (:highlight @api/*line-reader*)
+  (swap! api/*state* update :highlight #(not %))
+  (if (:highlight @api/*state*)
     (println "Highlighting on!")
     (println "Highlighting off!")))
 
@@ -39,8 +39,8 @@
   "Toggle the auto display of function signatures on and off.")
 
 (defmethod command :repl/toggle-eldoc [_]
-  (swap! api/*line-reader* update :eldoc #(not %))
-  (if (:eldoc @api/*line-reader*)
+  (swap! api/*state* update :eldoc #(not %))
+  (if (:eldoc @api/*state*)
     (println "Eldoc on!")
     (println "Eldoc off!")))
 
@@ -48,8 +48,8 @@
   "Toggle the completion functionality on and off.")
 
 (defmethod command :repl/toggle-completion [_]
-  (swap! api/*line-reader* update :completion #(not %))
-  (if (:completion @api/*line-reader*)
+  (swap! api/*state* update :completion #(not %))
+  (if (:completion @api/*state*)
     (println "Completion on!")
     (println "Completion off!")))
 
@@ -57,21 +57,21 @@
   "Toggle ANSI text coloration on and off.")
 
 (defmethod command :repl/toggle-color [_]
-  (let [{:keys [color-theme backup-color-theme]} @api/*line-reader*]
+  (let [{:keys [color-theme backup-color-theme]} @api/*state*]
     (cond
       (and (nil? color-theme)
            (some? backup-color-theme)
            (tools/color-themes backup-color-theme))
       (do (println "Activating color, using theme: " backup-color-theme)
-          (swap! api/*line-reader* assoc :color-theme backup-color-theme))
+          (swap! api/*state* assoc :color-theme backup-color-theme))
       (nil? color-theme)
       (do
-        (swap! api/*line-reader* assoc :color-theme :dark-screen-theme)
+        (swap! api/*state* assoc :color-theme :dark-screen-theme)
         (println "Activating color, theme not found, defaulting to " :dark-screen-theme))
       (some? color-theme)
       (do
-        (swap! api/*line-reader* assoc :backup-color-theme color-theme)
-        (swap! api/*line-reader* dissoc :color-theme)
+        (swap! api/*state* assoc :backup-color-theme color-theme)
+        (swap! api/*state* dissoc :color-theme)
         (println "Color deactivated!")))))
 
 (defmethod command-doc :repl/set-color-theme [_]
@@ -88,7 +88,7 @@
             "\n"
             (with-out-str
               (pprint (keys tools/color-themes)))))
-      (swap! api/*line-reader* assoc :color-theme new-theme))))
+      (swap! api/*state* assoc :color-theme new-theme))))
 
 (defmethod command-doc :repl/key-bindings [_]
   "With an argument displays a search of the current key bindings
@@ -111,7 +111,7 @@ Without any arguments displays all the current key bindings")
         (dissoc true false))))
 
 (defn display-key-bindings [search & groups]
-  (let [km (get (.getKeyMaps api/*line-reader*) "main")
+  (let [km (get (.getKeyMaps (api/line-reader)) "main")
         key-data (filter
                   (if search
                     (fn [[k v]]
@@ -165,7 +165,7 @@ Without any arguments displays all the current key bindings")
      ;; its dicey to have parallel state like this so
      ;; we are just going to have the service config
      ;; state reflect the jline reader state
-     (swap! api/*line-reader*
+     (swap! api/*state*
             assoc :key-map (keyword (api/main-key-map-name))))))
 
 (defmethod command :repl/set-key-map [[_ key-map-name]]
@@ -229,7 +229,7 @@ by evaluated code you should use *e* to inspect those.  This is mainly
 to diagnose problems in the toolchain. ")
 
 (defmethod command :repl/*e [n]
-  (some-> api/*line-reader*
+  (some-> api/*state*
           deref
           :repl/error
           deref

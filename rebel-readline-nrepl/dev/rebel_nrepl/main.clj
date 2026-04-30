@@ -22,7 +22,7 @@
           (do
             (api/toggle-input api/*terminal* false)
             (clj-service/eval-code
-             @api/*line-reader*
+             @api/*state*
              input
              (bound-fn*
               (->> identity
@@ -45,7 +45,7 @@
                           :request-exit request-exit})]
     (try
       (clj-service/tool-eval-code
-       @api/*line-reader*
+       @api/*state*
        (pr-str `(do
                   (require 'clojure.main)
                   (require 'clojure.repl))))
@@ -66,16 +66,16 @@
     (core/with-line-reader
       (clj-line-reader/create
        (clj-service/create
-        (when api/*line-reader* @api/*line-reader*)))
-      (binding [*out* (api/safe-terminal-writer api/*line-reader*)]
-        (clj-service/start-polling @api/*line-reader*)
+        (when api/*state* @api/*state*)))
+      (binding [*out* (api/safe-terminal-writer (api/line-reader))]
+        (clj-service/start-polling @api/*state*)
         (.handle ^Terminal api/*terminal*
                  Terminal$Signal/INT
-                 (let [line-reader api/*line-reader*]
+                 (let [state api/*state*]
                    (proxy [Terminal$SignalHandler] []
                      (handle [sig]
                        (tap> "HANDLED")
-                       (clj-service/interrupt @line-reader)
+                       (clj-service/interrupt @state)
                        (tap> "AFTER INT")))))
         (println (core/help-message))
         (repl-loop)))))
