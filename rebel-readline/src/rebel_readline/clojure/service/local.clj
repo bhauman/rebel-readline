@@ -66,9 +66,13 @@
 (defmethod clj-reader/-resolve-meta ::service [_ var-str]
   (resolve-meta var-str))
 
+(defn- normalize-completion-options [options]
+  (cond-> options
+    (string? (:ns options)) (update :ns symbol)))
+
 (defmethod clj-reader/-complete ::service [_ word options]
   (if options
-    (compliment/completions word options)
+    (compliment/completions word (normalize-completion-options options))
     (compliment/completions word)))
 
 (defmethod clj-reader/-current-ns ::service [_]
