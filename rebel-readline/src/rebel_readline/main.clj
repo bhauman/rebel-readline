@@ -88,6 +88,12 @@
       (exit 1 (error-msg errors))
       :else options)))
 
+(defn- main-options
+  [args]
+  (if (every? string? args)
+    (validate-args args)
+    {}))
+
 (defn -main [& args]
-  (let [options (validate-args args)]
+  (let [options (main-options args)]
     (main/main {:rebel-readline/config options})))
