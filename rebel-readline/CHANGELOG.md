@@ -1,3 +1,8 @@
+# 0.1.8 Completion namespace fix
+
+* Fixed local completions for vars loaded in the current namespace after the Compliment upgrade.
+* `rebel-readline-cljs` and `rebel-readline-nrepl` now depend on this fixed `rebel-readline` release.
+
 # 0.1.7 JLine 3.30.0 upgrade
 
 * Upgraded JLine from 3.21.0 to 3.30.0

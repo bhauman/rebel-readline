@@ -96,7 +96,7 @@ To include `rebel-readline-nrepl` in your project directly, add it to your `deps
 ```clojure
 {:aliases
  {:nrebelly
-  {:extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "NOT-PUBLISHED-YET"}}
+  {:extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.8"}}
    :exec-fn rebel-readline.nrepl/connect
    :exec-args {:host "localhost" :port 7888}}}}
 ```
