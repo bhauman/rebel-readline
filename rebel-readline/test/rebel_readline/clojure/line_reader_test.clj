@@ -52,3 +52,11 @@
   (is (not (indent-proxy-str "(list \"hello\"" 7)))
   (is (not (indent-proxy-str "(list \"hello\"" 12)))
   (is (indent-proxy-str "(list \"hello\"" 13)))
+
+(deftest candidate-test
+  (testing "coerces symbolic completion candidates for JLine"
+    (let [candidate (core/candidate {:candidate 'dl/local-alpha
+                                     :type :function
+                                     :ns 'demo.local})]
+      (is (= "dl/local-alpha" (.value candidate)))
+      (is (= "dl/local-alpha" (.displ candidate))))))

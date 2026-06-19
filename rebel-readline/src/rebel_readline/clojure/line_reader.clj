@@ -957,16 +957,17 @@
                nil))))))
 
 (defn candidate [{:keys [candidate type ns]}]
-  (Candidate.
-   candidate ;; value
-   candidate ;; display
-   nil ;; group
-   (cond-> nil
-     type (str (first (name type)))
-     ns   (str (when type " ") ns))
-   nil ;; suffix
-   nil ;; key
-   false))
+  (let [candidate (str candidate)]
+    (Candidate.
+     candidate ;; value
+     candidate ;; display
+     nil ;; group
+     (cond-> nil
+       type (str (first (name type)))
+       ns   (str (when type " ") ns))
+     nil ;; suffix
+     nil ;; key
+     false)))
 
 (defn command-token? [parsed-line starts-with]
   (and (= 1 (count (.words parsed-line)))

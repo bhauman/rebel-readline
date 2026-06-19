@@ -102,7 +102,7 @@
 
 (defmethod clj-reader/-complete ::service [_ word {:keys [ns]}]
   (let [options (cond-> nil
-                  ns (assoc :current-ns ns))]
+                  ns (assoc :context-ns ns))]
     (cljs-complete/completions @cljs.env/*compiler* word options)))
 
 (defmethod clj-reader/-resolve-meta ::service [self var-str]
