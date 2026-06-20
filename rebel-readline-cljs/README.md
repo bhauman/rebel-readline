@@ -8,6 +8,10 @@ rebel-readline.
 
 ## Quick try
 
+Current `rebel-readline-cljs` uses ClojureScript 1.12.x and requires
+Java 21 or newer. This project includes a `.java-version` file for
+`jenv` users that selects Java 26.
+
 #### Clojure tools
 
 If you want to try this really quickly [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and then invoke this:
@@ -16,7 +20,7 @@ If you want to try this really quickly [install the Clojure CLI tools](https://c
 clojure -Sdeps '{:deps {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.8"}}}' -m rebel-readline.cljs.main
 ```
 
-That should start a Nashorn ClojureScript REPL that takes it's input
+That should start a Node-backed ClojureScript REPL that takes its input
 from the Rebel readline editor.
 
 Note that I am using the `clojure` command and not the `clj` command
@@ -34,10 +38,10 @@ lein trampoline run -m rebel-readline.cljs.main
 #### Clone this repo
 
 Clone this repo and then from the `rebel-readline-cljs` sub-directory
-typing `lein trampoline run -m rebel-readline.cljs.main` will get you into
+typing `clojure -M:dev -m rebel-readline.cljs.main` will get you into
 a Clojure REPL with the readline editor working.
 
-Note that `lein run -m rebel-readline.cljs.main` will not work!
+Node.js must be available on `PATH`.
 
 ## Usage
 
