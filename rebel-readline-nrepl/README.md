@@ -64,11 +64,11 @@ For aliases, add the same option to `:jvm-opts`.
 ### Install from the Git Release
 
 You can also install `rebel-readline-nrepl` as a Clojure tool from the latest
-Git release tag. Because this repository has multiple subprojects, pass
-`:deps/root` for the nREPL project:
+Git release tag. Because this repository has multiple subprojects, pass the Git
+URL with `:deps/root` for the nREPL project:
 
 ```bash
-clojure -Ttools install-latest :lib com.github.bhauman/rebel-readline :coord '{:deps/root "rebel-readline-nrepl"}' :as nrebel
+clojure -Ttools install-latest :lib com.github.bhauman/rebel-readline :coord '{:git/url "https://github.com/bhauman/rebel-readline.git" :deps/root "rebel-readline-nrepl"}' :as nrebel
 ```
 
 Call it with:

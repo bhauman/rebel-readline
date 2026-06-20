@@ -69,7 +69,7 @@ clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.11\"}}}" 
 To install Rebel Readline as a Clojure tool from the latest Git release tag:
 
 ```shell
-clojure -Ttools install-latest :lib com.github.bhauman/rebel-readline :coord '{:deps/root "rebel-readline"}' :as rebel
+clojure -Ttools install-latest :lib com.github.bhauman/rebel-readline :coord '{:git/url "https://github.com/bhauman/rebel-readline.git" :deps/root "rebel-readline"}' :as rebel
 ```
 
 Then launch it from a project directory with:

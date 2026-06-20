@@ -86,7 +86,7 @@ You can also install Rebel Readline as a Clojure tool from the latest Git
 release tag:
 
 ```shell
-clojure -Ttools install-latest :lib com.github.bhauman/rebel-readline :coord '{:deps/root "rebel-readline"}' :as rebel
+clojure -Ttools install-latest :lib com.github.bhauman/rebel-readline :coord '{:git/url "https://github.com/bhauman/rebel-readline.git" :deps/root "rebel-readline"}' :as rebel
 clojure -Trebel repl
 ```
 
