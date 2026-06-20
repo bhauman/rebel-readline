@@ -78,17 +78,17 @@
       (when (and (clj-service/polling? @api/*state*)
                  (try
                    (not (identical? (read-eval-print) request-exit))
-	           (catch Throwable e
+                   (catch Throwable e
                      (repl-caught e)
                      true)))
         (recur)))))
 
 (defn start-repl* [options]
   (core/with-line-reader
-      (clj-line-reader/create
-       (clj-service/create
-        (merge (when api/*state* @api/*state*)
-               options)))
+    (clj-line-reader/create
+     (clj-service/create
+      (merge (when api/*state* @api/*state*)
+             options)))
     (binding [*out* (api/safe-terminal-writer (api/line-reader))]
       (clj-service/register-background-printing api/*state*)
       (clj-service/start-polling @api/*state*)
@@ -112,10 +112,10 @@
 (s/def ::port-file string?)
 (s/def ::arg-map (s/merge
                   (s/keys :opt-un [::port
-                                    ::port-file
-                                    ::host
-                                    ::tls-keys-file
-                                    ::background-print])
+                                   ::port-file
+                                   ::host
+                                   ::tls-keys-file
+                                   ::background-print])
                   :rebel-readline.tools/arg-map))
 
 (s/def ::resolved-arg-map (s/merge
@@ -143,19 +143,16 @@
         (catch NumberFormatException _ nil)))))
 
 (defn resolve-options [options]
-  (let [options (or options {})]
-    (if (:port options)
-      (dissoc options :port-file)
-      (let [explicit-port-file? (contains? options :port-file)
-            port-file (or (:port-file options) default-port-file)]
-        (if-let [port (read-port-file port-file)]
-          (assoc (dissoc options :port-file) :port port)
-          (if explicit-port-file?
-            (throw (ex-info (port-file-error-message port-file)
-                            {:type :rebel-readline/port-file-error
-                             :port-file port-file
-                             :config options}))
-            options))))))
+  (let [options   (or options {})
+        port-file (or (:port-file options) default-port-file)
+        port      (or (:port options) (read-port-file port-file))]
+    (when (and (not port) (contains? options :port-file))
+      (throw (ex-info (port-file-error-message port-file)
+                      {:type :rebel-readline/port-file-error
+                       :port-file port-file
+                       :config options})))
+    (cond-> (dissoc options :port-file)
+      port (assoc :port port))))
 
 (defn conform-options [options]
   (let [resolved-options (resolve-options options)]
@@ -188,17 +185,10 @@
         options)))
     (catch clojure.lang.ExceptionInfo e
       (let [{:keys [spec config type]} (ex-data e)]
-        (cond
-          (= type :rebel-readline/port-file-error)
-          (println (ex-message e))
-
-          (= type :rebel-readline/missing-port)
-          (println (ex-message e))
-
-          (= type :rebel-readline/config-spec-error)
-          (tools/explain-config spec config)
-
-          :else
+        (case type
+          (:rebel-readline/port-file-error
+           :rebel-readline/missing-port)    (println (ex-message e))
+          :rebel-readline/config-spec-error (tools/explain-config spec config)
           (throw e))))))
 
 ;; CLI
