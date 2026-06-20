@@ -1,9 +1,13 @@
 (ns rebel-readline.clojure.line-reader-test
   (:require
-   [rebel-readline.clojure.line-reader :as core :refer [indent-proxy-str]]
-   [clojure.test :refer [deftest is are testing]]))
+   [clojure.java.io :as io]
+   [clojure.test :refer [deftest is are testing]]
+   [rebel-readline.clojure.line-reader :as core :refer [indent-proxy-str]])
+  (:import
+   [java.nio.file Files]
+   [java.nio.file.attribute PosixFilePermissions]))
 
-#_ (remove-ns 'rebel-readline.clojure.line-reader-test)
+#_(remove-ns 'rebel-readline.clojure.line-reader-test)
 
 (deftest default-accept-line-test
   (is (core/default-accept-line "()" 0))
@@ -24,10 +28,7 @@
 
   ;; don't accept a line if there is an imcomplete form at the end
   ;; TODO not sure about this behavior
-  #_(is (not (core/default-accept-line "()(" 2)))
-
-  )
-
+  #_(is (not (core/default-accept-line "()(" 2))))
 
 (deftest indent-proxy-str-test
   (let [tstr "(let [x 1] mark11 (let [y 2] mark29 (list 1 2 3 mark48"]
@@ -48,7 +49,7 @@
 
   ;; don't indent strings
   (is (= "(list \n1)"
-       (indent-proxy-str "(list \"hello\"" 6)))
+         (indent-proxy-str "(list \"hello\"" 6)))
   (is (not (indent-proxy-str "(list \"hello\"" 7)))
   (is (not (indent-proxy-str "(list \"hello\"" 12)))
   (is (indent-proxy-str "(list \"hello\"" 13)))
@@ -60,3 +61,34 @@
                                      :ns 'demo.local})]
       (is (= "dl/local-alpha" (.value candidate)))
       (is (= "dl/local-alpha" (.displ candidate))))))
+
+(deftest ensure-secure-history-file-test
+  (let [temp-dir (.toFile (Files/createTempDirectory "rebel-history-test"
+                                                     (make-array java.nio.file.attribute.FileAttribute 0)))
+        history-file (io/file temp-dir ".rebel_readline_history")
+        get-permissions #(Files/getPosixFilePermissions
+                          (.toPath history-file)
+                          (make-array java.nio.file.LinkOption 0))]
+    (try
+      (if (core/posix-file-attributes-supported? history-file)
+        (do
+          (testing "creates history file with owner-only permissions"
+            (is (= (str history-file)
+                   (core/ensure-secure-history-file! history-file)))
+            (is (= (PosixFilePermissions/fromString "rw-------")
+                   (get-permissions))))
+
+          (testing "tightens permissions on an existing history file"
+            (Files/setPosixFilePermissions
+             (.toPath history-file)
+             (PosixFilePermissions/fromString "rw-r--r--"))
+            (core/ensure-secure-history-file! history-file)
+            (is (= (PosixFilePermissions/fromString "rw-------")
+                   (get-permissions)))))
+        (testing "creates history file on non-POSIX filesystems"
+          (is (= (str history-file)
+                 (core/ensure-secure-history-file! history-file)))
+          (is (.exists history-file))))
+      (finally
+        (Files/deleteIfExists (.toPath history-file))
+        (Files/deleteIfExists (.toPath temp-dir))))))

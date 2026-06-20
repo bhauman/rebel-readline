@@ -12,7 +12,10 @@
    [clojure.java.io :as io]
    [clojure.main])
   (:import
+   [java.io IOException]
    [java.nio CharBuffer]
+   [java.nio.file Files]
+   [java.nio.file.attribute PosixFilePermissions]
    [org.jline.keymap KeyMap]
    [org.jline.reader
     Highlighter
@@ -52,6 +55,31 @@
 
 (def highlight-clj-str (partial tools/highlight-str color tokenize/tag-font-lock))
 
+(def default-history-file ".rebel_readline_history")
+
+(defn posix-file-attributes-supported?
+  [file]
+  (contains? (.. (io/file file) toPath getFileSystem supportedFileAttributeViews)
+             "posix"))
+
+(defn ensure-secure-history-file!
+  "Ensure the history file (and its parents) exists, restricting it to the
+  current user on POSIX filesystems since REPL history can capture secrets.
+  Warns rather than aborting if the file can't be created or secured."
+  [file]
+  (let [file (io/file file)]
+    (io/make-parents file)
+    (try
+      (.createNewFile file)
+      (when (posix-file-attributes-supported? file)
+        (Files/setPosixFilePermissions (.toPath file)
+                                       (PosixFilePermissions/fromString "rw-------")))
+      (catch IOException e
+        (binding [*out* *err*]
+          (println "WARNING: could not secure Rebel readline history file"
+                   (str file) "-" (.getMessage e)))))
+    (str file)))
+
 ;; ---------------------------------------------------------------------
 ;; ---------------------------------------------------------------------
 ;; Service Abstraction
@@ -59,7 +87,6 @@
 ;; This readline has pluggable service behavior to allow for fetching
 ;; docs, etc from the appropriate environment.
 ;; ---------------------------------------------------------------------
-
 
 ;; CurrentNS
 ;; ----------------------------------------------
@@ -322,7 +349,6 @@
 ;; Widgets
 ;; ----------------------------------------------------
 
-
 ;; ----------------------------------------------------
 ;; Less Display
 ;; ----------------------------------------------------
@@ -381,9 +407,9 @@
                (display-message (astring/join
                                  "\n"
                                  (keep identity
-                                  [header
-                                   (window-lines at-str-lines pos window-rows)
-                                   footer])))
+                                       [header
+                                        (window-lines at-str-lines pos window-rows)
+                                        footer])))
                (redisplay)
                (let [lr (line-reader)
                      o (.readBinding lr (.getKeys ^LineReader lr) menu-keys)
@@ -441,9 +467,9 @@
     (if-let [prx (indent-proxy-str s cursor)]
       (try (->>
             (reformat-string prx {:remove-trailing-whitespace? false
-                                         :insert-missing-whitespace? false
-                                         :remove-surrounding-whitespace? false
-                                         :remove-consecutive-blank-lines? false})
+                                  :insert-missing-whitespace? false
+                                  :remove-surrounding-whitespace? false
+                                  :remove-consecutive-blank-lines? false})
             string/split-lines
             last
             sexp/count-leading-white-space)
@@ -456,37 +482,37 @@
 (def indent-line-widget
   (create-widget
    (when (:indent @*state*)
-       (let [curs (cursor)
-             s (buffer-as-string) ;; up-to-cursor better here?
-             begin-of-line-pos   (sexp/search-for-line-start s (dec curs))
-             leading-white-space (sexp/count-leading-white-space (subs s begin-of-line-pos))
-         indent-amount       (indent-amount s begin-of-line-pos)
-         cursor-in-leading-white-space? (< curs
-                                           (+ leading-white-space begin-of-line-pos))]
+     (let [curs (cursor)
+           s (buffer-as-string) ;; up-to-cursor better here?
+           begin-of-line-pos   (sexp/search-for-line-start s (dec curs))
+           leading-white-space (sexp/count-leading-white-space (subs s begin-of-line-pos))
+           indent-amount       (indent-amount s begin-of-line-pos)
+           cursor-in-leading-white-space? (< curs
+                                             (+ leading-white-space begin-of-line-pos))]
 
-     (cursor begin-of-line-pos)
-     (delete leading-white-space)
-     (write  (apply str (repeat indent-amount \space)))
+       (cursor begin-of-line-pos)
+       (delete leading-white-space)
+       (write  (apply str (repeat indent-amount \space)))
 
      ;; rectify cursor
-     (when-not cursor-in-leading-white-space?
-       (cursor (+ indent-amount (- curs leading-white-space))))))
+       (when-not cursor-in-leading-white-space?
+         (cursor (+ indent-amount (- curs leading-white-space))))))
    ;; return true to re-render
    true))
 
 (def indent-or-complete-widget
   (create-widget
-    (let [curs (cursor)
-          s (buffer-as-string) ;; up-to-cursor better here?
-          begin-of-line-pos (sexp/search-for-line-start s (dec curs))
-          leading-white-space (sexp/count-leading-white-space (subs s begin-of-line-pos))
+   (let [curs (cursor)
+         s (buffer-as-string) ;; up-to-cursor better here?
+         begin-of-line-pos (sexp/search-for-line-start s (dec curs))
+         leading-white-space (sexp/count-leading-white-space (subs s begin-of-line-pos))
           ;; indent-amount (#'ind/indent-amount s begin-of-line-pos)
-          cursor-in-leading-white-space? (<= curs
-                                             (+ leading-white-space begin-of-line-pos))]
-      (if cursor-in-leading-white-space?
-        (call-widget "clojure-indent-line")
-        (call-widget LineReader/COMPLETE_WORD))
-      true)))
+         cursor-in-leading-white-space? (<= curs
+                                            (+ leading-white-space begin-of-line-pos))]
+     (if cursor-in-leading-white-space?
+       (call-widget "clojure-indent-line")
+       (call-widget LineReader/COMPLETE_WORD))
+     true)))
 
 ;; ------------------------------------------------
 ;; Display argument docs on keypress functionality
@@ -732,7 +758,7 @@
       exception (.styled (color :widget/error)
                          (str "=>!! "
                               (or (:cause exception)
-                                  (some-> exception :via first :type))) )
+                                  (some-> exception :via first :type))))
       (not (string/blank? out)) (.append (ensure-newline out))
       (not (string/blank? err)) (.styled (color :widget/error) (ensure-newline err))
       (and (not exception) printed-result)
@@ -782,7 +808,7 @@
 (defn bind-indents [km-name]
   (doto km-name
     (key-binding (str (KeyMap/ctrl \X) (KeyMap/ctrl \I))
-                     "clojure-indent-line")
+                 "clojure-indent-line")
     (key-binding (KeyMap/ctrl \I) "clojure-indent-or-complete")))
 
 (defn bind-clojure-widgets [km-name]
@@ -846,7 +872,6 @@
 ;; Building a Line Reader
 ;; ----------------------------------------------------
 ;; ----------------------------------------------------
-
 
 ;; ---------------------------------------
 ;; Jline parser for Clojure
@@ -941,8 +966,8 @@
         [_ _ _ typ] (:word-token (meta parsed-line))
         line (.line parsed-line)]
     [(str (subs line 0 start)
-         "__prefix__" (when (= typ :unterm-string-literal-without-quotes) \")
-         (subs line end (count line)))
+          "__prefix__" (when (= typ :unterm-string-literal-without-quotes) \")
+          (subs line end (count line)))
      (+ start (count "__prefix__")
         (if (#{:string-literal-without-quotes :unterm-string-literal-without-quotes}
              typ) 1 0))]))
@@ -1046,7 +1071,8 @@
       (.setOpt LineReader$Option/DISABLE_EVENT_EXPANSION)
       (.unsetOpt LineReader$Option/INSERT_TAB)
       (.setVariable LineReader/SECONDARY_PROMPT_PATTERN "%P #_=> ")
-      (.setVariable LineReader/HISTORY_FILE (str (io/file ".rebel_readline_history")))
+      (.setVariable LineReader/HISTORY_FILE
+                    (ensure-secure-history-file! default-history-file))
       (.setOpt LineReader$Option/HISTORY_REDUCE_BLANKS)
       (.setOpt LineReader$Option/HISTORY_IGNORE_DUPS)
       (.setOpt LineReader$Option/HISTORY_INCREMENTAL))
