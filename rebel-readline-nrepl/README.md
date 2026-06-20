@@ -45,7 +45,20 @@ For aliases, add the same option to `:jvm-opts`.
 2. Launch it via the command line:
 
     ```bash
-    clojure -T:nrebel :port <50668> 
+    clojure -T:nrebel :port <50668>
+    ```
+
+    If the current directory has a `.nrepl-port` file, the port argument can be
+    omitted:
+
+    ```bash
+    clojure -T:nrebel
+    ```
+
+    To connect from another directory, pass a specific port file:
+
+    ```bash
+    clojure -T:nrebel :port-file '"subproject/.nrepl-port"'
     ```
 
 ### Alternative Installation Method
@@ -60,6 +73,18 @@ Call it with:
 
 ```bash
 clojure -Tnrebel connect :port <50668>
+```
+
+When the current directory has a `.nrepl-port` file, the port can be omitted:
+
+```bash
+clojure -Tnrebel connect
+```
+
+To connect from another directory, pass a specific port file:
+
+```bash
+clojure -Tnrebel connect :port-file '"subproject/.nrepl-port"'
 ```
 
 ## Usage
@@ -77,11 +102,24 @@ This command starts an nREPL server and outputs the port it is listening on. Usu
 ### Connecting to the nREPL Server
 
 Once the nREPL server is running, you can connect to it using
-`rebel-readline-nrepl`.If you installed `rebel-readline-nrepl` in your
-`.clojure/deps.edn` as above hten you can run:
+`rebel-readline-nrepl`. If you installed `rebel-readline-nrepl` in your
+`.clojure/deps.edn` as above then you can run:
 
 ```bash
 clojure -T:nrebel :port 7888
+```
+
+If your nREPL server wrote a `.nrepl-port` file in the current directory, the
+port is detected automatically:
+
+```bash
+clojure -T:nrebel
+```
+
+If the port file is in another directory, pass its path:
+
+```bash
+clojure -T:nrebel :port-file '"subproject/.nrepl-port"'
 ```
 
 To specify the host (default is `localhost`):
@@ -111,7 +149,8 @@ To include `rebel-readline-nrepl` in your project directly, add it to your `deps
  {:nrebelly
   {:extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.10"}}
    :exec-fn rebel-readline.nrepl/connect
-   :exec-args {:host "localhost" :port 7888}}}}
+   :exec-args {:host "localhost"
+               :port-file "subproject/.nrepl-port"}}}}
 ```
 
 You can execute it with:
@@ -134,7 +173,10 @@ clojure -T:nrebel :port 50668 :tls-key-file '"client.keys"'
 
 `rebel-readline-nrepl` supports specific configuration options:
 
-- `:port` - Required port number for the nREPL server.
+- `:port` - Port number for the nREPL server. Required unless the current
+  directory has a `.nrepl-port` file or `:port-file` is supplied.
+- `:port-file` - Optional path to a file containing the nREPL server port.
+  Defaults to `.nrepl-port` in the current directory.
 - `:host` - Optional; defaults to `localhost`.
 - `:tls-key-file` - Path to the TLS key file.
 - `:background-print` - Boolean indicating whether to allow background threads to continue printing.

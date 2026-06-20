@@ -18,6 +18,21 @@ Connect the Rebel Readline nREPL client to a server:
 clojure -M:dev -m rebel-readline.nrepl.main --port 50668
 ```
 
+When the current directory has a `.nrepl-port` file, the client can infer the
+port:
+
+```bash
+clojure -M:dev -m rebel-readline.nrepl.main
+clojure -T:dev
+```
+
+When the port file is elsewhere, pass it explicitly:
+
+```bash
+clojure -M:dev -m rebel-readline.nrepl.main --port-file ../some-project/.nrepl-port
+clojure -T:dev :port-file '"../some-project/.nrepl-port"'
+```
+
 Smoke-load the client namespaces:
 
 ```bash
