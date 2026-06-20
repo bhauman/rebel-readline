@@ -44,7 +44,7 @@ The line reader requires direct terminal access. Therefore, do not launch Rebel 
 To quickly try Rebel Readline, [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and execute:
 
 ```shell
-clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.8\"}}}" -M -m rebel-readline.main
+clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.10\"}}}" -M -m rebel-readline.main
 ```
 
 ## Usage
@@ -78,7 +78,7 @@ Add Rebel Readline as a tool within your `~/.clojure/deps.edn`:
 ```clojure
 {
  ...
- :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.8"}}
+ :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.10"}}
                    :exec-fn rebel-readline.tool/repl
                    :exec-args {}
                    :main-opts ["-m" "rebel-readline.main"]}}
@@ -137,7 +137,7 @@ Options:
 Add the dependency to your `project.clj`:
 
 ```clojure
-[com.bhauman/rebel-readline "0.1.8"]
+[com.bhauman/rebel-readline "0.1.10"]
 ```
 
 Start the REPL with:

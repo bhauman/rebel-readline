@@ -2,8 +2,15 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
+
+## [0.1.10] - 2026-06-20
 ### Changed
-- Add a new arity to `make-widget-async` to provide a different widget shape.
+- Updated ClojureScript to 1.12.145.
+- Switched the dev entrypoint to a Node-backed ClojureScript REPL.
+- Depends on `com.bhauman/rebel-readline` 0.1.10.
+
+### Fixed
+- Fixed alias completions by passing the current namespace as `:context-ns`.
 
 ## [0.1.1] - 2018-02-05
 ### Changed

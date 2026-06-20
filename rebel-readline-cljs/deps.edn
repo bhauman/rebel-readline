@@ -1,10 +1,10 @@
-{:deps {com.bhauman/rebel-readline {:mvn/version "0.1.8"}
+{:deps {com.bhauman/rebel-readline {:mvn/version "0.1.10"}
         org.clojure/clojurescript {:mvn/version "1.12.145"}
         cljs-tooling/cljs-tooling {:mvn/version "0.3.1"}}
  :aliases {:dev {:extra-paths ["dev"]
                  :override-deps {com.bhauman/rebel-readline {:local/root "../rebel-readline"}}}
            :neil {:project {:name com.bhauman/rebel-readline-cljs
-                            :version "0.1.8"}}
+                            :version "0.1.10"}}
            :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.6"
                                                          :git/sha "52cf7d6"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}

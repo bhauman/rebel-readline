@@ -20,7 +20,7 @@ Before you begin, make sure you have the following installed:
     {
       :aliases {
         :nrebel {
-          :extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.9"}}
+          :extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.10"}}
           :exec-fn rebel-readline.nrepl/connect
           :exec-args {:background-print false} ;; Optional configuration parameters
           :main-opts ["-m" "rebel-readline.nrepl.main"]
@@ -96,7 +96,7 @@ To include `rebel-readline-nrepl` in your project directly, add it to your `deps
 ```clojure
 {:aliases
  {:nrebelly
-  {:extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.9"}}
+  {:extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.10"}}
    :exec-fn rebel-readline.nrepl/connect
    :exec-args {:host "localhost" :port 7888}}}}
 ```
