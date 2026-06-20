@@ -12,6 +12,10 @@ Current `rebel-readline-cljs` uses ClojureScript 1.12.x and requires
 Java 21 or newer. This project includes a `.java-version` file for
 `jenv` users that selects Java 26.
 
+On Java 22 and newer, JLine can emit native access warnings while starting the
+terminal. The REPL can still start normally. To suppress the warning, pass
+`-J--enable-native-access=ALL-UNNAMED` to the Clojure CLI.
+
 #### Clojure tools
 
 If you want to try this really quickly [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and then invoke this:
@@ -22,6 +26,12 @@ clojure -Sdeps '{:deps {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.10"}}
 
 That should start a Node-backed ClojureScript REPL that takes its input
 from the Rebel readline editor.
+
+With the Java native access warning suppressed:
+
+```shell
+clojure -J--enable-native-access=ALL-UNNAMED -Sdeps '{:deps {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.10"}}}' -m rebel-readline.cljs.main
+```
 
 Note that I am using the `clojure` command and not the `clj` command
 because the latter wraps the process with another readline program (`rlwrap`).

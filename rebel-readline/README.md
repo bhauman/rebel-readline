@@ -37,7 +37,9 @@ WARNING: A restricted method in java.lang.System has been called
 WARNING: java.lang.System::load has been called by org.jline.nativ.JLineNativeLoader
 ```
 
-This is caused by JLine's native terminal access. To suppress the warning, add the following JVM option:
+Older Rebel Readline versions may report the caller as Jansi or HawtJNI instead
+of JLine. This is caused by native terminal access and does not mean Rebel
+Readline failed to start. To suppress the warning, add the following JVM option:
 
 ```
 --enable-native-access=ALL-UNNAMED
@@ -47,6 +49,12 @@ For example, with the Clojure CLI:
 
 ```shell
 clojure -J--enable-native-access=ALL-UNNAMED -M:rebel
+```
+
+Or with a one-off `-Sdeps` invocation:
+
+```shell
+clojure -J--enable-native-access=ALL-UNNAMED -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.10\"}}}" -M -m rebel-readline.main
 ```
 
 Or in your `deps.edn` alias:

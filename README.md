@@ -39,6 +39,25 @@ The line reader requires direct terminal access. Therefore, do not launch Rebel 
 - `lein trampoline`
 - `boot` (must run in Boot's worker pod)
 
+## Java 22+ Native Access Warning
+
+On Java 22 and later, Rebel Readline can show a native access warning from
+JLine or one of its terminal support libraries. The warning does not mean Rebel
+Readline failed to start. To suppress it, pass this JVM option:
+
+```shell
+clojure -J--enable-native-access=ALL-UNNAMED -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.10\"}}}" -M -m rebel-readline.main
+```
+
+For an alias, add the option to `:jvm-opts`:
+
+```clojure
+:aliases
+{:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.10"}}
+         :main-opts ["-m" "rebel-readline.main"]
+         :jvm-opts ["--enable-native-access=ALL-UNNAMED"]}}
+```
+
 ## Quick Start
 
 To quickly try Rebel Readline, [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and execute:

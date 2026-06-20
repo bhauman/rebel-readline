@@ -10,6 +10,18 @@ Before you begin, make sure you have the following installed:
 
 - [Clojure CLI tools](https://clojure.org/guides/install_clojure)
 
+## Java 22+ Native Access Warning
+
+On Java 22 and later, JLine can emit native access warnings while starting the
+terminal. The client can still start normally. To suppress the warning, pass
+`-J--enable-native-access=ALL-UNNAMED` to the Clojure CLI:
+
+```bash
+clojure -J--enable-native-access=ALL-UNNAMED -Tnrebel connect :port 7888
+```
+
+For aliases, add the same option to `:jvm-opts`.
+
 ## Installation
 
 ### As a Clojure Tool
@@ -24,6 +36,7 @@ Before you begin, make sure you have the following installed:
           :exec-fn rebel-readline.nrepl/connect
           :exec-args {:background-print false} ;; Optional configuration parameters
           :main-opts ["-m" "rebel-readline.nrepl.main"]
+          :jvm-opts ["--enable-native-access=ALL-UNNAMED"]
         }
       }
     }
