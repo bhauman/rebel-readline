@@ -54,13 +54,13 @@ clojure -J--enable-native-access=ALL-UNNAMED -M:rebel
 Or with a one-off `-Sdeps` invocation:
 
 ```shell
-clojure -J--enable-native-access=ALL-UNNAMED -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.10\"}}}" -M -m rebel-readline.main
+clojure -J--enable-native-access=ALL-UNNAMED -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.11\"}}}" -M -m rebel-readline.main
 ```
 
 Or in your `deps.edn` alias:
 
 ```clojure
-:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.10"}}
+:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.11"}}
         :main-opts  ["-m" "rebel-readline.main"]
         :jvm-opts   ["--enable-native-access=ALL-UNNAMED"]}
 ```
@@ -74,7 +74,7 @@ If you want to try this really quickly
 and then invoke this:
 
 ```shell
-clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.10\"}}}" -m rebel-readline.main
+clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.11\"}}}" -m rebel-readline.main
 ```
 
 That should start a Clojure REPL that takes its input from the Rebel readline editor.
@@ -82,12 +82,20 @@ That should start a Clojure REPL that takes its input from the Rebel readline ed
 Note that I am using the `clojure` command and not the `clj` command
 because the latter wraps the process with another readline program (rlwrap).
 
+You can also install Rebel Readline as a Clojure tool from the latest Git
+release tag:
+
+```shell
+clojure -Ttools install-latest :lib com.github.bhauman/rebel-readline :coord '{:deps/root "rebel-readline"}' :as rebel
+clojure -Trebel repl
+```
+
 Alternatively you can specify an alias in your `$HOME/.clojure/deps.edn`
 
 ```clojure
 {
  ...
- :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.10"}}
+ :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.11"}}
                    :main-opts  ["-m" "rebel-readline.main"]}}
 }
 ```
@@ -100,7 +108,7 @@ $ clojure -A:rebel
 
 #### Leiningen
 
-Add `[com.bhauman/rebel-readline "0.1.10"]` to the dependencies in your
+Add `[com.bhauman/rebel-readline "0.1.11"]` to the dependencies in your
 `project.clj` then start a REPL like this:
 
 ```shell
@@ -112,7 +120,7 @@ Alternatively, you can add rebel-readline globally to `$HOME/.lein/profiles.clj`
 ```clojure
 {
  ...
- :user {:dependencies [[com.bhauman/rebel-readline "0.1.10"]]}
+ :user {:dependencies [[com.bhauman/rebel-readline "0.1.11"]]}
 }
 ```
 

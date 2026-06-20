@@ -32,7 +32,7 @@ For aliases, add the same option to `:jvm-opts`.
     {
       :aliases {
         :nrebel {
-          :extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.10"}}
+          :extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.11"}}
           :exec-fn rebel-readline.nrepl/connect
           :exec-args {:background-print false} ;; Optional configuration parameters
           :main-opts ["-m" "rebel-readline.nrepl.main"]
@@ -61,9 +61,11 @@ For aliases, add the same option to `:jvm-opts`.
     clojure -T:nrebel :port-file '"subproject/.nrepl-port"'
     ```
 
-### Alternative Installation Method
+### Install from the Git Release
 
-You can also install `rebel-readline-nrepl` as a Clojure Tool with the following command:
+You can also install `rebel-readline-nrepl` as a Clojure tool from the latest
+Git release tag. Because this repository has multiple subprojects, pass
+`:deps/root` for the nREPL project:
 
 ```bash
 clojure -Ttools install-latest :lib com.github.bhauman/rebel-readline :coord '{:deps/root "rebel-readline-nrepl"}' :as nrebel
@@ -147,7 +149,7 @@ To include `rebel-readline-nrepl` in your project directly, add it to your `deps
 ```clojure
 {:aliases
  {:nrebelly
-  {:extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.10"}}
+  {:extra-deps {com.bhauman/rebel-readline-nrepl {:mvn/version "0.1.11"}}
    :exec-fn rebel-readline.nrepl/connect
    :exec-args {:host "localhost"
                :port-file "subproject/.nrepl-port"}}}}

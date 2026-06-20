@@ -46,14 +46,14 @@ JLine or one of its terminal support libraries. The warning does not mean Rebel
 Readline failed to start. To suppress it, pass this JVM option:
 
 ```shell
-clojure -J--enable-native-access=ALL-UNNAMED -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.10\"}}}" -M -m rebel-readline.main
+clojure -J--enable-native-access=ALL-UNNAMED -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.11\"}}}" -M -m rebel-readline.main
 ```
 
 For an alias, add the option to `:jvm-opts`:
 
 ```clojure
 :aliases
-{:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.10"}}
+{:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.11"}}
          :main-opts ["-m" "rebel-readline.main"]
          :jvm-opts ["--enable-native-access=ALL-UNNAMED"]}}
 ```
@@ -63,7 +63,19 @@ For an alias, add the option to `:jvm-opts`:
 To quickly try Rebel Readline, [install the Clojure CLI tools](https://clojure.org/guides/getting_started) and execute:
 
 ```shell
-clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.10\"}}}" -M -m rebel-readline.main
+clojure -Sdeps "{:deps {com.bhauman/rebel-readline {:mvn/version \"0.1.11\"}}}" -M -m rebel-readline.main
+```
+
+To install Rebel Readline as a Clojure tool from the latest Git release tag:
+
+```shell
+clojure -Ttools install-latest :lib com.github.bhauman/rebel-readline :coord '{:deps/root "rebel-readline"}' :as rebel
+```
+
+Then launch it from a project directory with:
+
+```shell
+clojure -Trebel repl
 ```
 
 ## Usage
@@ -97,7 +109,7 @@ Add Rebel Readline as a tool within your `~/.clojure/deps.edn`:
 ```clojure
 {
  ...
- :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.10"}}
+ :aliases {:rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.11"}}
                    :exec-fn rebel-readline.tool/repl
                    :exec-args {}
                    :main-opts ["-m" "rebel-readline.main"]}}
@@ -156,7 +168,7 @@ Options:
 Add the dependency to your `project.clj`:
 
 ```clojure
-[com.bhauman/rebel-readline "0.1.10"]
+[com.bhauman/rebel-readline "0.1.11"]
 ```
 
 Start the REPL with:

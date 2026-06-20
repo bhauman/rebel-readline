@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-06-20
+### Changed
+- Depends on `com.bhauman/rebel-readline` 0.1.11.
+
 ## [0.1.10] - 2026-06-20
 ### Changed
 - Updated ClojureScript to 1.12.145.
